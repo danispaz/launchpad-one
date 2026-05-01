@@ -43,11 +43,11 @@ function LaunchesList() {
   });
 
   const setStatusFilter = (newStatus: LaunchStatus | "all") => {
-    navigate({ search: (prev) => ({ ...prev, status: newStatus }) });
+    navigate({ search: (prev: LaunchesSearch) => ({ ...prev, status: newStatus }) });
   };
 
   const setTeamFilter = (newTeam: TeamKey | "all") => {
-    navigate({ search: (prev) => ({ ...prev, team: newTeam }) });
+    navigate({ search: (prev: LaunchesSearch) => ({ ...prev, team: newTeam }) });
   };
 
   const clearFilters = () => {
