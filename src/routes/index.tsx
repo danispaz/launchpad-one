@@ -182,13 +182,13 @@ function Overview() {
                       }`} />
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
-                          <p className="text-sm font-bold text-slate-800 leading-tight">{task.title}</p>
+                          <p className="text-sm font-bold text-slate-800 leading-tight">{task.title || 'Tarefa sem título'}</p>
                           <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${
                             task.urgency === 'critical' ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-500'
-                          }`}>{task.urgency}</span>
+                          }`}>{task.urgency || 'medium'}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <p className="text-[10px] font-bold text-primary uppercase tracking-wider">{task.launch}</p>
+                          <p className="text-[10px] font-bold text-primary uppercase tracking-wider">{task.launch || 'Geral'}</p>
                           <span className="text-[10px] text-slate-400 font-medium">· {task.due}</span>
                         </div>
                       </div>
