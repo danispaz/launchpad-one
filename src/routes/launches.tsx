@@ -17,22 +17,18 @@ type LaunchesSearch = {
 export const Route = createFileRoute("/launches")({
   head: () => ({ meta: [{ title: "Lançamentos — LaunchHub" }] }),
   validateSearch: (search: Record<string, unknown>): LaunchesSearch => {
-    // Try to recover from localStorage if search is empty
-    if (Object.keys(search).length === 0 && typeof window !== 'undefined') {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {
-          // ignore
-        }
-      }
-    }
     return {
       status: (search.status as LaunchStatus) || "all",
       team: (search.team as TeamKey) || "all",
       q: (search.q as string) || "",
     };
+  },
+  loaderDeps: ({ search }) => search,
+  loader: ({ deps }) => {
+    // Save to localStorage if we have search params and are in the browser
+    if (typeof window !== 'undefined' && Object.keys(deps).length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(deps));
+    }
   },
   component: LaunchesList,
 });
@@ -52,8 +48,26 @@ function LaunchesList() {
   const { status, team, q } = useSearch({ from: "/launches" });
   const navigate = useNavigate({ from: "/launches" });
 
+  // Use useEffect only to initialize search if it's empty
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ status, team, q }));
+    if (status === "all" && team === "all" && !q) {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          navigate({ search: parsed, replace: true });
+        } catch (e) {
+          // ignore
+        }
+      }
+    }
+  }, []);
+
+  // Update storage whenever filters change
+  useEffect(() => {
+    if (status !== "all" || team !== "all" || q) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ status, team, q }));
+    }
   }, [status, team, q]);
 
   const filteredList = launches.filter((l) => {
