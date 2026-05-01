@@ -19,14 +19,21 @@ function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const router = useRouter();
   const search = useSearch({ from: "/login" });
   const { user, loading: authLoading } = useAuth();
 
+  const handleRedirect = useCallback(() => {
+    const redirectUrl = (search as any).redirect || "/";
+    // Using router.history.push to handle strings that might contain query params
+    router.history.push(redirectUrl);
+  }, [router, search]);
+
   useEffect(() => {
     if (!authLoading && user) {
-      navigate({ to: (search as any).redirect || "/" });
+      handleRedirect();
     }
-  }, [user, authLoading, navigate, (search as any).redirect]);
+  }, [user, authLoading, handleRedirect]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
