@@ -83,17 +83,17 @@ export function useDashboardData() {
     // Set up real-time subscriptions
     const launchesSub = supabase
       .channel('launches-changes')
-      .on('postgres_changes', { event: '*', table: 'launches' }, fetchData)
+      .on('postgres_changes' as any, { event: '*', table: 'launches' }, fetchData)
       .subscribe();
 
     const tasksSub = supabase
       .channel('tasks-changes')
-      .on('postgres_changes', { event: '*', table: 'tasks' }, fetchData)
+      .on('postgres_changes' as any, { event: '*', table: 'tasks' }, fetchData)
       .subscribe();
 
     const activitySub = supabase
       .channel('activity-changes')
-      .on('postgres_changes', { event: '*', table: 'activity_log' }, fetchData)
+      .on('postgres_changes' as any, { event: '*', table: 'activity_log' }, fetchData)
       .subscribe();
 
     return () => {
