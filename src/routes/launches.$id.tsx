@@ -17,10 +17,10 @@ export const Route = createFileRoute("/launches/$id")({
 function LaunchDetail() {
   const { launch: l } = Route.useLoaderData();
 
-  const byTeam = l.teams.reduce<Partial<Record<TeamKey, typeof l.activities>>>((acc, t) => {
+  const byTeam = l.teams.reduce((acc: any, t: TeamKey) => {
     acc[t] = l.activities.filter((a: any) => a.team === t);
     return acc;
-  }, {});
+  }, {} as any);
 
   return (
     <AppLayout>
