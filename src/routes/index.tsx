@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
 import { StatusBadge, ProgressBar, Avatar } from "@/components/Badges";
-import { launches, teams as teamsMeta } from "@/lib/mockData";
+import { launches, teams as teamsMeta, type TeamKey } from "@/lib/mockData";
 import { useAuth } from "@/hooks/useAuth";
 import { 
   Rocket, 
@@ -14,18 +14,7 @@ import {
   CheckSquare,
   ChevronRight,
   ChevronLeft,
-  Filter
 } from "lucide-react";
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  Cell
-} from "recharts";
 import { useState, useMemo } from "react";
 
 export const Route = createFileRoute("/")({
@@ -37,15 +26,6 @@ export const Route = createFileRoute("/")({
   component: Overview,
 });
 
-const chartData = [
-  { name: "Aurora", progress: 68 },
-  { name: "Mobile 2.0", progress: 42 },
-  { name: "HubSpot", progress: 18 },
-  { name: "Pricing", progress: 30 },
-  { name: "Partner", progress: 100 },
-  { name: "API v3", progress: 55 },
-];
-
 function Overview() {
   const { user } = useAuth();
   
@@ -55,8 +35,12 @@ function Overview() {
     // Simple mock logic: PMs see all, others see based on team
     const email = user.email || '';
     if (email.includes('pm') || email.includes('exec')) return launches;
-    const userTeam = email.split('@')[0].split('.')[1]; // mock extraction
-    return userTeam ? launches.filter(l => l.teams.includes(userTeam as any)) : launches;
+    
+    // Improved mock extraction: name.team@domain.com
+    const parts = email.split('@')[0].split('.');
+    const userTeam = parts.length > 1 ? parts[1] : null; 
+    
+    return userTeam ? launches.filter(l => l.teams.includes(userTeam as TeamKey)) : launches;
   }, [user]);
 
   const active = filteredLaunches.filter((l) => l.status !== "launched");
@@ -230,14 +214,14 @@ function Overview() {
               <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
                 <div className="space-y-8 relative before:absolute before:inset-y-0 before:left-[11px] before:w-[1px] before:bg-slate-200">
                   {[
-                    { user: "Marina R.", action: "atualizou o status", target: "Aurora", time: "2h", team: "product" },
-                    { user: "João P.", action: "concluiu tarefa", target: "HubSpot", time: "4h", team: "dev" },
-                    { user: "Lia S.", action: "reportou um risco", target: "Mobile 2.0", time: "1d", team: "dev" },
-                    { user: "Beatriz L.", action: "adicionou marcos", target: "Pricing Page", time: "1d", team: "marketing" },
+                    { user: "Marina R.", action: "atualizou o status", target: "Aurora", time: "2h", team: "product" as TeamKey },
+                    { user: "João P.", action: "concluiu tarefa", target: "HubSpot", time: "4h", team: "dev" as TeamKey },
+                    { user: "Lia S.", action: "reportou um risco", target: "Mobile 2.0", time: "1d", team: "dev" as TeamKey },
+                    { user: "Beatriz L.", action: "adicionou marcos", target: "Pricing Page", time: "1d", team: "marketing" as TeamKey },
                   ].map((item, i) => (
                     <div key={i} className="relative pl-8">
                       <div className="absolute left-0 top-0.5 w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center z-10 shadow-sm">
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: teamsMeta[item.team as keyof typeof teamsMeta].color }} />
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: teamsMeta[item.team].color }} />
                       </div>
                       <div>
                         <p className="text-xs text-slate-600 leading-normal">

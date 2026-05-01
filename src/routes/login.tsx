@@ -24,10 +24,14 @@ function Login() {
   const { user, loading: authLoading } = useAuth();
 
   const handleRedirect = useCallback(() => {
-    const redirectUrl = (search as any).redirect || "/";
-    // Using router.history.push to handle strings that might contain query params
-    router.history.push(redirectUrl);
-  }, [router, search]);
+    const redirectUrl = search.redirect || "/";
+    // Check if redirect is already in a valid route format or just a string path
+    if (redirectUrl.startsWith('/')) {
+      router.history.push(redirectUrl);
+    } else {
+      navigate({ to: "/" });
+    }
+  }, [router, search, navigate]);
 
   useEffect(() => {
     if (!authLoading && user) {
