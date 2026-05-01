@@ -17,10 +17,10 @@ export const Route = createFileRoute("/launches/$id")({
 function LaunchDetail() {
   const { launch: l } = Route.useLoaderData();
 
-  const byTeam = l.teams.reduce<Record<TeamKey, typeof l.activities>>((acc, t) => {
-    acc[t] = l.activities.filter((a) => a.team === t);
+  const byTeam = l.teams.reduce((acc: any, t: TeamKey) => {
+    acc[t] = l.activities.filter((a: any) => a.team === t);
     return acc;
-  }, {} as Record<TeamKey, typeof l.activities>);
+  }, {} as any);
 
   return (
     <AppLayout>
@@ -53,7 +53,7 @@ function LaunchDetail() {
           <section>
             <h3 className="text-xl font-bold mb-8">Atividades</h3>
             <div className="space-y-10">
-              {l.teams.map((t) => {
+              {l.teams.map((t: TeamKey) => {
                 const acts = byTeam[t];
                 if (!acts || acts.length === 0) return null;
                 return (
@@ -63,9 +63,9 @@ function LaunchDetail() {
                       <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{acts.length} tarefas</span>
                     </div>
                     <ul className="space-y-3">
-                      {acts.map((a) => (
+                      {acts.map((a: any) => (
                         <li key={a.id} className="flex items-start gap-3 group">
-                          {a.done ? <CheckCircle2 className="h-5 w-5 text-success-foreground shrink-0" /> : <Circle className="h-5 w-5 text-muted-foreground shrink-0" />}
+                          {a.done ? <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" /> : <Circle className="h-5 w-5 text-muted-foreground shrink-0" />}
                           <div className="flex-1 min-w-0">
                             <p className={`text-sm ${a.done ? "line-through text-muted-foreground" : "text-foreground"}`}>{a.title}</p>
                             <p className="text-[11px] text-muted-foreground mt-0.5">{a.owner} · {fmtDate(a.due)}</p>
@@ -86,7 +86,7 @@ function LaunchDetail() {
               <h3 className="text-xl font-bold">Registro de Atividades</h3>
             </div>
             <div className="space-y-6 border-l border-border pl-6 relative">
-              {l.updates.map((u, i) => (
+              {l.updates.map((u: any, i: number) => (
                 <div key={i} className="relative">
                   <div className="absolute -left-[31px] top-1.5 h-2 w-2 rounded-full bg-border" />
                   <p className="text-xs font-medium text-muted-foreground mb-1">{u.author} · {u.at}</p>
