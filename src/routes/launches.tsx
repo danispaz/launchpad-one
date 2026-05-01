@@ -3,11 +3,12 @@ import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
 import { StatusBadge, TeamChip, Avatar } from "@/components/Badges";
 import { launches, type LaunchStatus, type TeamKey, teams as teamsMeta } from "@/lib/mockData";
-import { Filter, X } from "lucide-react";
+import { Filter, X, Search } from "lucide-react";
 
 type LaunchesSearch = {
   status?: LaunchStatus | "all";
   team?: TeamKey | "all";
+  q?: string;
 };
 
 export const Route = createFileRoute("/launches")({
@@ -16,6 +17,7 @@ export const Route = createFileRoute("/launches")({
     return {
       status: (search.status as LaunchStatus) || "all",
       team: (search.team as TeamKey) || "all",
+      q: (search.q as string) || "",
     };
   },
   component: LaunchesList,
@@ -33,13 +35,20 @@ const statusFilters: { key: LaunchStatus | "all"; label: string }[] = [
 const teamKeys = Object.keys(teamsMeta) as TeamKey[];
 
 function LaunchesList() {
-  const { status, team } = useSearch({ from: "/launches" });
+  const { status, team, q } = useSearch({ from: "/launches" });
   const navigate = useNavigate({ from: "/launches" });
 
   const filteredList = launches.filter((l) => {
     const statusMatch = status === "all" || l.status === status;
     const teamMatch = team === "all" || l.teams.includes(team as TeamKey);
-    return statusMatch && teamMatch;
+    
+    const searchLower = (q || "").toLowerCase();
+    const qMatch = !q || 
+      l.name.toLowerCase().includes(searchLower) || 
+      l.code.toLowerCase().includes(searchLower) || 
+      l.owner.name.toLowerCase().includes(searchLower);
+
+    return statusMatch && teamMatch && qMatch;
   });
 
   const setStatusFilter = (newStatus: LaunchStatus | "all") => {
@@ -50,18 +59,58 @@ function LaunchesList() {
     navigate({ search: (prev: LaunchesSearch) => ({ ...prev, team: newTeam }) });
   };
 
-  const clearFilters = () => {
-    navigate({ search: { status: "all", team: "all" } });
+  const setQuery = (newQ: string) => {
+    navigate({ search: (prev: LaunchesSearch) => ({ ...prev, q: newQ || undefined }) });
   };
 
-  const hasFilters = status !== "all" || team !== "all";
+  const clearFilters = () => {
+    navigate({ search: { status: "all", team: "all", q: "" } });
+  };
+
+  const hasFilters = status !== "all" || team !== "all" || !!q;
 
   return (
     <AppLayout>
       <TopBar title="Lançamentos" subtitle="Base de dados central" />
       <div className="flex-1 px-8 py-10 max-w-[1200px] mx-auto w-full">
-        <div className="flex flex-wrap items-center gap-4 mb-8">
-          <div className="flex items-center gap-1 p-1 bg-surface rounded-lg border border-border/50">
+        <div className="flex flex-col gap-6 mb-8">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="relative flex-1 min-w-[300px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Buscar por nome, código ou responsável..."
+                className="w-full bg-white border border-border/50 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/20 transition-shadow"
+                value={q}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <select 
+                className="bg-white border border-border/50 rounded-lg px-3 py-2 text-[11px] font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary/20"
+                value={team}
+                onChange={(e) => setTeamFilter(e.target.value as TeamKey | "all")}
+              >
+                <option value="all">Todos os Times</option>
+                {teamKeys.map(tk => (
+                  <option key={tk} value={tk}>{teamsMeta[tk].label}</option>
+                ))}
+              </select>
+
+              {hasFilters && (
+                <button 
+                  onClick={clearFilters}
+                  className="flex items-center gap-1.5 px-3 py-2 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                  Limpar
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1 p-1 bg-surface rounded-lg border border-border/50 w-fit">
             {statusFilters.map((f) => (
               <button
                 key={f.key}
@@ -75,29 +124,6 @@ function LaunchesList() {
                 {f.label}
               </button>
             ))}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <select 
-              className="bg-surface border border-border/50 rounded-lg px-3 py-1.5 text-[11px] font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary/20"
-              value={team}
-              onChange={(e) => setTeamFilter(e.target.value as TeamKey | "all")}
-            >
-              <option value="all">Todos os Times</option>
-              {teamKeys.map(tk => (
-                <option key={tk} value={tk}>{teamsMeta[tk].label}</option>
-              ))}
-            </select>
-
-            {hasFilters && (
-              <button 
-                onClick={clearFilters}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <X className="w-3 h-3" />
-                Limpar
-              </button>
-            )}
           </div>
         </div>
 
