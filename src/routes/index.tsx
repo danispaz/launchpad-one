@@ -112,7 +112,7 @@ function Overview() {
                     <div className="space-y-3">
                       <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase">
                         <span>Progresso</span>
-                        <span>{l.progress}%</span>
+                        <span>{l.progresso}%</span>
                       </div>
                       <ProgressBar value={l.progresso} />
                       <div className="flex items-center justify-between mt-4">
