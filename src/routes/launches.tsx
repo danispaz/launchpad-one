@@ -4,6 +4,9 @@ import { TopBar } from "@/components/TopBar";
 import { StatusBadge, TeamChip, Avatar } from "@/components/Badges";
 import { launches, type LaunchStatus, type TeamKey, teams as teamsMeta } from "@/lib/mockData";
 import { Filter, X, Search } from "lucide-react";
+import { useEffect } from "react";
+
+const STORAGE_KEY = "launchhub_launches_filters";
 
 type LaunchesSearch = {
   status?: LaunchStatus | "all";
@@ -14,6 +17,17 @@ type LaunchesSearch = {
 export const Route = createFileRoute("/launches")({
   head: () => ({ meta: [{ title: "Lançamentos — LaunchHub" }] }),
   validateSearch: (search: Record<string, unknown>): LaunchesSearch => {
+    // Try to recover from localStorage if search is empty
+    if (Object.keys(search).length === 0 && typeof window !== 'undefined') {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          // ignore
+        }
+      }
+    }
     return {
       status: (search.status as LaunchStatus) || "all",
       team: (search.team as TeamKey) || "all",
@@ -37,6 +51,10 @@ const teamKeys = Object.keys(teamsMeta) as TeamKey[];
 function LaunchesList() {
   const { status, team, q } = useSearch({ from: "/launches" });
   const navigate = useNavigate({ from: "/launches" });
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ status, team, q }));
+  }, [status, team, q]);
 
   const filteredList = launches.filter((l) => {
     const statusMatch = status === "all" || l.status === status;
