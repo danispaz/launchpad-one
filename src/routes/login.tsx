@@ -1,5 +1,5 @@
-import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { createFileRoute, useNavigate, useSearch, useRouter } from "@tanstack/react-router";
+import { useState, useEffect, useCallback } from "react";
 import { Zap, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
@@ -19,14 +19,21 @@ function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const router = useRouter();
   const search = useSearch({ from: "/login" });
   const { user, loading: authLoading } = useAuth();
 
+  const handleRedirect = useCallback(() => {
+    const redirectUrl = (search as any).redirect || "/";
+    // Using router.history.push to handle strings that might contain query params
+    router.history.push(redirectUrl);
+  }, [router, search]);
+
   useEffect(() => {
     if (!authLoading && user) {
-      navigate({ to: (search as any).redirect || "/" });
+      handleRedirect();
     }
-  }, [user, authLoading, navigate, (search as any).redirect]);
+  }, [user, authLoading, handleRedirect]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +48,7 @@ function Login() {
       if (error) throw error;
       
       toast.success("Bem-vindo ao LaunchHub!");
-      navigate({ to: (search as any).redirect || "/" });
+      handleRedirect();
     } catch (error: any) {
       toast.error(error.message || "Erro ao entrar");
     } finally {
