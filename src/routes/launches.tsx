@@ -21,8 +21,8 @@ export const Route = createFileRoute("/launches")({
   component: LaunchesList,
 });
 
-const filters: { key: LaunchStatus | "all"; label: string }[] = [
-  { key: "all", label: "Todos" },
+const statusFilters: { key: LaunchStatus | "all"; label: string }[] = [
+  { key: "all", label: "Todos Status" },
   { key: "in_progress", label: "Execução" },
   { key: "planning", label: "Planejamento" },
   { key: "at_risk", label: "Risco" },
@@ -30,67 +30,123 @@ const filters: { key: LaunchStatus | "all"; label: string }[] = [
   { key: "launched", label: "Lançado" },
 ];
 
+const teamKeys = Object.keys(teamsMeta) as TeamKey[];
+
 function LaunchesList() {
-  const [filter, setFilter] = useState<(typeof filters)[number]["key"]>("all");
-  const list = filter === "all" ? launches : launches.filter((l) => l.status === filter);
+  const { status, team } = useSearch({ from: "/launches" });
+  const navigate = useNavigate({ from: "/launches" });
+
+  const filteredList = launches.filter((l) => {
+    const statusMatch = status === "all" || l.status === status;
+    const teamMatch = team === "all" || l.teams.includes(team as TeamKey);
+    return statusMatch && teamMatch;
+  });
+
+  const setStatusFilter = (newStatus: LaunchStatus | "all") => {
+    navigate({ search: (prev) => ({ ...prev, status: newStatus }) });
+  };
+
+  const setTeamFilter = (newTeam: TeamKey | "all") => {
+    navigate({ search: (prev) => ({ ...prev, team: newTeam }) });
+  };
+
+  const clearFilters = () => {
+    navigate({ search: { status: "all", team: "all" } });
+  };
+
+  const hasFilters = status !== "all" || team !== "all";
 
   return (
     <AppLayout>
       <TopBar title="Lançamentos" subtitle="Base de dados central" />
       <div className="flex-1 px-8 py-10 max-w-[1200px] mx-auto w-full">
-        <div className="flex items-center gap-1 mb-8">
-          {filters.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
-                filter === f.key ? "bg-surface-elevated text-foreground" : "text-muted-foreground hover:bg-surface"
-              }`}
+        <div className="flex flex-wrap items-center gap-4 mb-8">
+          <div className="flex items-center gap-1 p-1 bg-surface rounded-lg border border-border/50">
+            {statusFilters.map((f) => (
+              <button
+                key={f.key}
+                onClick={() => setStatusFilter(f.key)}
+                className={`px-3 py-1.5 rounded-md text-[11px] font-medium transition-all ${
+                  status === f.key 
+                    ? "bg-white text-foreground shadow-sm ring-1 ring-border/50" 
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <select 
+              className="bg-surface border border-border/50 rounded-lg px-3 py-1.5 text-[11px] font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary/20"
+              value={team}
+              onChange={(e) => setTeamFilter(e.target.value as TeamKey | "all")}
             >
-              {f.label}
-            </button>
-          ))}
+              <option value="all">Todos os Times</option>
+              {teamKeys.map(tk => (
+                <option key={tk} value={tk}>{teamsMeta[tk].label}</option>
+              ))}
+            </select>
+
+            {hasFilters && (
+              <button 
+                onClick={clearFilters}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="w-3 h-3" />
+                Limpar
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="w-full overflow-x-auto">
+        <div className="w-full overflow-x-auto bg-white rounded-xl border border-border shadow-sm">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="border-b border-border text-[10px] uppercase tracking-widest text-muted-foreground">
-                <th className="px-4 py-3 text-left font-medium">Cód.</th>
-                <th className="px-4 py-3 text-left font-medium">Nome</th>
-                <th className="px-4 py-3 text-left font-medium">Status</th>
-                <th className="px-4 py-3 text-left font-medium">Times</th>
-                <th className="px-4 py-3 text-left font-medium">Owner</th>
-                <th className="px-4 py-3 text-right font-medium">Prazo</th>
+              <tr className="border-b border-border bg-slate-50/50 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
+                <th className="px-6 py-4 text-left">Cód.</th>
+                <th className="px-6 py-4 text-left">Nome</th>
+                <th className="px-6 py-4 text-left">Status</th>
+                <th className="px-6 py-4 text-left">Times</th>
+                <th className="px-6 py-4 text-left">Owner</th>
+                <th className="px-6 py-4 text-right">Prazo</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/40">
-              {list.map((l) => (
-                <tr key={l.id} className="group hover:bg-surface/50 transition-colors">
-                  <td className="px-4 py-4 text-xs font-mono text-muted-foreground">{l.code}</td>
-                  <td className="px-4 py-4">
-                    <Link to="/launches/$id" params={{ id: l.id }} className="text-sm font-semibold hover:underline">
+              {filteredList.map((l) => (
+                <tr key={l.id} className="group hover:bg-slate-50/50 transition-colors">
+                  <td className="px-6 py-5 text-xs font-mono text-muted-foreground">{l.code}</td>
+                  <td className="px-6 py-5">
+                    <Link to="/launches/$id" params={{ id: l.id }} className="text-sm font-semibold text-foreground hover:text-primary transition-colors">
                       {l.name}
                     </Link>
                   </td>
-                  <td className="px-4 py-4"><StatusBadge status={l.status} /></td>
-                  <td className="px-4 py-4">
+                  <td className="px-6 py-5"><StatusBadge status={l.status} /></td>
+                  <td className="px-6 py-5">
                     <div className="flex flex-wrap gap-1">
                       {l.teams.slice(0, 3).map((t) => <TeamChip key={t} team={t} />)}
-                      {l.teams.length > 3 && <span className="text-[10px] text-muted-foreground">+{l.teams.length - 3}</span>}
+                      {l.teams.length > 3 && <span className="text-[10px] text-muted-foreground self-center ml-1">+{l.teams.length - 3}</span>}
                     </div>
                   </td>
-                  <td className="px-4 py-4">
+                  <td className="px-6 py-5">
                     <div className="flex items-center gap-2">
                       <Avatar initials={l.owner.initials} />
                       <span className="text-xs text-muted-foreground">{l.owner.name}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-4 text-right">
-                    <span className="text-xs text-muted-foreground">{fmtDate(l.targetDate)}</span>
+                  <td className="px-6 py-5 text-right">
+                    <span className="text-xs font-medium text-muted-foreground">{fmtDate(l.targetDate)}</span>
                   </td>
                 </tr>
               ))}
+              {filteredList.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-sm text-muted-foreground italic">
+                    Nenhum lançamento encontrado com esses filtros.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
