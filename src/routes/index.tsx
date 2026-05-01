@@ -102,19 +102,21 @@ function Overview() {
                   >
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 uppercase tracking-wider">{l.nome?.substring(0, 3).toUpperCase()}</span>
-                        <StatusBadge status={l.status as any} />
+                        <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 uppercase tracking-wider">
+                          {l.nome?.substring(0, 3).toUpperCase() || 'LCH'}
+                        </span>
+                        <StatusBadge status={(l.status as any) || 'planejamento'} />
                       </div>
                       <Avatar initials={l.owner?.nome ? l.owner.nome.split(' ').map(n => n[0]).join('').substring(0, 2) : '??'} />
                     </div>
-                    <h4 className="font-bold text-slate-800 mb-6 group-hover:text-primary transition-colors text-base">{l.nome}</h4>
+                    <h4 className="font-bold text-slate-800 mb-6 group-hover:text-primary transition-colors text-base">{l.nome || 'Lançamento sem nome'}</h4>
 
                     <div className="space-y-3">
                       <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase">
                         <span>Progresso</span>
-                        <span>{l.progresso}%</span>
+                        <span>{l.progresso ?? 0}%</span>
                       </div>
-                      <ProgressBar value={l.progresso} />
+                      <ProgressBar value={l.progresso ?? 0} />
                       <div className="flex items-center justify-between mt-4">
                         <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold uppercase">
                           <Calendar className="w-3.5 h-3.5" />
@@ -180,13 +182,13 @@ function Overview() {
                       }`} />
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
-                          <p className="text-sm font-bold text-slate-800 leading-tight">{task.title}</p>
+                          <p className="text-sm font-bold text-slate-800 leading-tight">{task.title || 'Tarefa sem título'}</p>
                           <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${
                             task.urgency === 'critical' ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-500'
-                          }`}>{task.urgency}</span>
+                          }`}>{task.urgency || 'medium'}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <p className="text-[10px] font-bold text-primary uppercase tracking-wider">{task.launch}</p>
+                          <p className="text-[10px] font-bold text-primary uppercase tracking-wider">{task.launch || 'Geral'}</p>
                           <span className="text-[10px] text-slate-400 font-medium">· {task.due}</span>
                         </div>
                       </div>
