@@ -76,8 +76,8 @@ function RootComponent() {
       // how the router handles the search object if it contains non-serializable data.
       navigate({ 
         to: "/login", 
-        search: { redirect: fullPath } as any
-      });
+        search: { redirect: fullPath }
+      } as any);
     }
   }, [user, loading, navigate, location.pathname, location.search]);
 
