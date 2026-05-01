@@ -9,9 +9,20 @@ const toneStyles: Record<string, string> = {
 };
 
 export function StatusBadge({ status }: { status: LaunchStatus }) {
-  const meta = statusMeta[status];
+  const mapping: Record<string, LaunchStatus> = {
+    'planejamento': 'planning',
+    'em_andamento': 'in_progress',
+    'em_risco': 'at_risk',
+    'atrasado': 'blocked',
+    'lançado': 'launched',
+    'cancelado': 'blocked' // Defaulting cancelado to blocked style
+  };
+
+  const normalizedStatus = mapping[status] || status;
+  const meta = statusMeta[normalizedStatus as LaunchStatus] || statusMeta['planning'];
+  
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium ${toneStyles[meta.tone]}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium ${toneStyles[meta.tone] || toneStyles.info}`}>
       <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
       {meta.label}
     </span>
@@ -19,31 +30,61 @@ export function StatusBadge({ status }: { status: LaunchStatus }) {
 }
 
 export function TeamChip({ team }: { team: TeamKey }) {
-  const t = teams[team];
+  const mapping: Record<string, TeamKey> = {
+    'marketing': 'marketing',
+    'sales': 'sales',
+    'vendas': 'sales',
+    'engineering': 'dev',
+    'dev': 'dev',
+    'desenvolvimento': 'dev',
+    'product': 'product',
+    'produto': 'product',
+    'executive': 'exec',
+    'diretoria': 'exec',
+    'exec': 'exec'
+  };
+
+  const normalizedTeam = mapping[team] || 'product';
+  const t = teams[normalizedTeam as TeamKey];
+  
   return (
     <span
       className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
-      style={{ backgroundColor: t.color + "40" }} // Add some transparency to the team color variable
-      title={t.label}
+      style={{ backgroundColor: t?.color ? t.color + "40" : "transparent" }}
+      title={t?.label || team}
     >
-      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: t.color }} />
-      {t.label}
+      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: t?.color || "currentColor" }} />
+      {t?.label || team}
     </span>
   );
 }
 
 export function PriorityDot({ priority }: { priority: Priority }) {
+  const mapping: Record<string, Priority> = {
+    'baixa': 'low',
+    'média': 'medium',
+    'alta': 'high',
+    'crítica': 'critical'
+  };
+
+  const normalizedPriority = mapping[priority] || priority;
+  
   const map = {
     low: "bg-muted-foreground/30",
     medium: "bg-info-foreground",
     high: "bg-warning-foreground",
     critical: "bg-destructive",
   } as const;
+  
   const labels = { low: "Baixa", medium: "Média", high: "Alta", critical: "Crítica" } as const;
+  
+  const currentClass = map[normalizedPriority as Priority] || map.medium;
+  const currentLabel = labels[normalizedPriority as Priority] || labels.medium;
+
   return (
-    <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground" title={labels[priority]}>
-      <span className={`h-2 w-2 rounded-full ${map[priority]}`} />
-      {labels[priority]}
+    <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground" title={currentLabel}>
+      <span className={`h-2 w-2 rounded-full ${currentClass}`} />
+      {currentLabel}
     </span>
   );
 }
