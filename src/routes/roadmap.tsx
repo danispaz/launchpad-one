@@ -5,7 +5,7 @@ import { StatusBadge } from "@/components/Badges";
 import { launches } from "@/lib/mockData";
 
 export const Route = createFileRoute("/roadmap")({
-  head: () => ({ meta: [{ title: "Roadmap — LaunchHub" }, { name: "description", content: "Roadmap visual dos lançamentos." }] }),
+  head: () => ({ meta: [{ title: "Roadmap — LaunchHub" }] }),
   component: Roadmap,
 });
 
@@ -15,42 +15,40 @@ function Roadmap() {
 
   return (
     <AppLayout>
-      <TopBar title="Roadmap" subtitle="Linha do tempo dos próximos lançamentos" />
-      <div className="flex-1 px-6 py-6 max-w-[1400px]">
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <TopBar title="Roadmap" subtitle="Cronograma de lançamentos" />
+      <div className="flex-1 px-8 py-10 max-w-[1000px] mx-auto w-full">
+        <div className="space-y-12">
           {months.map((m) => {
             const items = sorted.filter((l) => l.targetDate.startsWith(m));
             const monthLabel = new Date(m + "-01").toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
             return (
-              <div key={m} className="border-b border-border last:border-0">
-                <div className="px-4 py-2 bg-surface/40 text-[10px] uppercase tracking-widest text-muted-foreground sticky top-14">
+              <div key={m}>
+                <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground mb-6 pb-2 border-b border-border">
                   {monthLabel}
-                </div>
-                <ul className="divide-y divide-border">
+                </h3>
+                <div className="space-y-2">
                   {items.map((l) => (
-                    <li key={l.id}>
-                      <Link to="/launches/$id" params={{ id: l.id }} className="flex items-center gap-3 px-4 py-3 hover:bg-surface/50">
-                        <div className="h-9 w-9 rounded-lg bg-surface-elevated flex flex-col items-center justify-center border border-border">
-                          <span className="text-xs font-semibold leading-none">{new Date(l.targetDate).getDate()}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-[10px] text-muted-foreground">{l.code}</span>
-                            <span className="text-sm font-medium truncate">{l.name}</span>
-                          </div>
-                          <p className="mt-0.5 text-[11px] text-muted-foreground line-clamp-1">{l.description}</p>
-                        </div>
-                        <div className="hidden md:block w-48">
-                          <div className="h-1.5 rounded-full bg-surface-elevated overflow-hidden">
-                            <div className="h-full bg-gradient-primary" style={{ width: `${l.progress}%` }} />
-                          </div>
-                          <p className="mt-1 text-[10px] text-muted-foreground text-right tabular-nums">{l.progress}%</p>
-                        </div>
+                    <Link
+                      key={l.id}
+                      to="/launches/$id"
+                      params={{ id: l.id }}
+                      className="flex items-center gap-4 p-3 rounded hover:bg-surface transition-colors group"
+                    >
+                      <div className="w-10 h-10 rounded border border-border bg-surface flex flex-col items-center justify-center shrink-0">
+                        <span className="text-[10px] uppercase text-muted-foreground leading-none">{new Date(l.targetDate).toLocaleString("pt-BR", { month: "short" }).replace(".", "")}</span>
+                        <span className="text-sm font-bold leading-none mt-1">{new Date(l.targetDate).getDate()}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold group-hover:underline">{l.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{l.description}</p>
+                      </div>
+                      <div className="flex items-center gap-4 shrink-0">
+                        <span className="text-[11px] font-mono text-muted-foreground tabular-nums">{l.progress}%</span>
                         <StatusBadge status={l.status} />
-                      </Link>
-                    </li>
+                      </div>
+                    </Link>
                   ))}
-                </ul>
+                </div>
               </div>
             );
           })}

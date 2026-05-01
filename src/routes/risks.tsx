@@ -2,10 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
 import { launches, teams } from "@/lib/mockData";
-import { AlertTriangle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
 export const Route = createFileRoute("/risks")({
-  head: () => ({ meta: [{ title: "Riscos — LaunchHub" }, { name: "description", content: "Riscos abertos em todos os lançamentos" }] }),
+  head: () => ({ meta: [{ title: "Riscos — LaunchHub" }] }),
   component: Risks,
 });
 
@@ -13,31 +13,33 @@ function Risks() {
   const all = launches.flatMap((l) => l.risks.map((r) => ({ ...r, launch: l })));
   return (
     <AppLayout>
-      <TopBar title="Riscos" subtitle={`${all.length} riscos abertos`} />
-      <div className="flex-1 px-6 py-6 max-w-[1400px]">
-        <div className="rounded-xl border border-border bg-card divide-y divide-border">
+      <TopBar title="Riscos" subtitle="Incidentes monitorados" />
+      <div className="flex-1 px-8 py-10 max-w-[1000px] mx-auto w-full">
+        <div className="space-y-4">
           {all.map((r) => (
-            <div key={r.launch.id + r.id} className="px-4 py-3 flex items-start gap-3">
-              <span className={`mt-1.5 h-2 w-2 rounded-full shrink-0 ${r.severity === "high" ? "bg-destructive" : r.severity === "medium" ? "bg-warning" : "bg-muted-foreground"}`} />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">{r.title}</p>
-                <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground">
-                  <span>{teams[r.team].label}</span>
-                  <span>·</span>
-                  <span>{r.owner}</span>
-                  <span>·</span>
-                  <Link to="/launches/$id" params={{ id: r.launch.id }} className="font-mono hover:text-primary">{r.launch.code} {r.launch.name}</Link>
-                </div>
+            <div key={r.launch.id + r.id} className="p-4 rounded-lg border border-border hover:bg-surface transition-colors flex items-start gap-4">
+              <div className={`mt-1 p-1 rounded ${r.severity === "high" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning-foreground"}`}>
+                <AlertCircle className="h-4 w-4" />
               </div>
-              <span className={`text-[10px] uppercase tracking-widest ${r.severity === "high" ? "text-destructive" : r.severity === "medium" ? "text-warning" : "text-muted-foreground"}`}>
-                {r.severity === "high" ? "Alta" : r.severity === "medium" ? "Média" : "Baixa"}
-              </span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{teams[r.team].label}</span>
+                  <span className="text-muted-foreground text-[10px]">·</span>
+                  <Link to="/launches/$id" params={{ id: r.launch.id }} className="text-[10px] font-mono hover:underline">{r.launch.code}</Link>
+                </div>
+                <p className="text-sm font-semibold">{r.title}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Responsável: {r.owner}</p>
+              </div>
+              <div className="shrink-0 pt-1">
+                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${r.severity === "high" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning-foreground"}`}>
+                  {r.severity}
+                </span>
+              </div>
             </div>
           ))}
           {all.length === 0 && (
-            <div className="p-12 text-center">
-              <AlertTriangle className="mx-auto h-8 w-8 text-muted-foreground" />
-              <p className="mt-2 text-sm text-muted-foreground">Nenhum risco aberto.</p>
+            <div className="p-12 text-center border-2 border-dashed border-border rounded-xl">
+              <p className="text-sm text-muted-foreground">Nenhum risco monitorado no momento.</p>
             </div>
           )}
         </div>

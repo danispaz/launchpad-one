@@ -4,7 +4,7 @@ import { TopBar } from "@/components/TopBar";
 import { launches, teams, type TeamKey } from "@/lib/mockData";
 
 export const Route = createFileRoute("/teams")({
-  head: () => ({ meta: [{ title: "Times — LaunchHub" }, { name: "description", content: "Atividade por time" }] }),
+  head: () => ({ meta: [{ title: "Times — LaunchHub" }] }),
   component: Teams,
 });
 
@@ -12,44 +12,42 @@ function Teams() {
   const teamKeys = Object.keys(teams) as TeamKey[];
   return (
     <AppLayout>
-      <TopBar title="Times" subtitle="Carga de trabalho e atividades por equipe" />
-      <div className="flex-1 px-6 py-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 max-w-[1400px]">
+      <TopBar title="Times" subtitle="Distribuição de carga" />
+      <div className="flex-1 px-8 py-10 max-w-[1200px] mx-auto w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {teamKeys.map((t) => {
           const teamLaunches = launches.filter((l) => l.teams.includes(t));
           const activities = launches.flatMap((l) => l.activities.filter((a) => a.team === t));
           const open = activities.filter((a) => !a.done).length;
           return (
-            <div key={t} className="rounded-xl border border-border bg-card p-5">
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: teams[t].color }} />
-                <h3 className="text-base font-semibold">{teams[t].label}</h3>
+            <div key={t} className="p-6 rounded-lg border border-border bg-card">
+              <div className="flex items-center gap-2 mb-6">
+                <span className="h-3 w-3 rounded-full" style={{ backgroundColor: teams[t].color }} />
+                <h3 className="text-lg font-bold">{teams[t].label}</h3>
               </div>
-              <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-                <Stat n={teamLaunches.length} label="Lançamentos" />
-                <Stat n={activities.length} label="Atividades" />
-                <Stat n={open} label="Abertas" />
+              <div className="flex gap-6 mb-8">
+                <div>
+                  <p className="text-2xl font-bold">{teamLaunches.length}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Lançamentos</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{open}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Tarefas</p>
+                </div>
               </div>
-              <div className="mt-4 space-y-1.5">
-                {teamLaunches.slice(0, 4).map((l) => (
-                  <div key={l.id} className="flex items-center justify-between text-xs">
-                    <span className="truncate">{l.name}</span>
-                    <span className="text-muted-foreground tabular-nums">{l.progress}%</span>
+              <div className="space-y-3">
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Projetos ativos</p>
+                {teamLaunches.slice(0, 3).map((l) => (
+                  <div key={l.id} className="text-xs flex items-center justify-between">
+                    <span className="truncate pr-2">{l.name}</span>
+                    <span className="text-muted-foreground shrink-0">{l.progress}%</span>
                   </div>
                 ))}
+                {teamLaunches.length === 0 && <p className="text-xs text-muted-foreground italic">Sem projetos no momento.</p>}
               </div>
             </div>
           );
         })}
       </div>
     </AppLayout>
-  );
-}
-
-function Stat({ n, label }: { n: number; label: string }) {
-  return (
-    <div className="rounded-lg bg-surface/60 border border-border py-2">
-      <p className="text-lg font-semibold tabular-nums">{n}</p>
-      <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</p>
-    </div>
   );
 }
