@@ -9,38 +9,154 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TeamsRouteImport } from './routes/teams'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as RoadmapRouteImport } from './routes/roadmap'
+import { Route as RisksRouteImport } from './routes/risks'
+import { Route as LaunchesRouteImport } from './routes/launches'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LaunchesIdRouteImport } from './routes/launches.$id'
 
+const TeamsRoute = TeamsRouteImport.update({
+  id: '/teams',
+  path: '/teams',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RoadmapRoute = RoadmapRouteImport.update({
+  id: '/roadmap',
+  path: '/roadmap',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RisksRoute = RisksRouteImport.update({
+  id: '/risks',
+  path: '/risks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LaunchesRoute = LaunchesRouteImport.update({
+  id: '/launches',
+  path: '/launches',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LaunchesIdRoute = LaunchesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => LaunchesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/launches': typeof LaunchesRouteWithChildren
+  '/risks': typeof RisksRoute
+  '/roadmap': typeof RoadmapRoute
+  '/settings': typeof SettingsRoute
+  '/teams': typeof TeamsRoute
+  '/launches/$id': typeof LaunchesIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/launches': typeof LaunchesRouteWithChildren
+  '/risks': typeof RisksRoute
+  '/roadmap': typeof RoadmapRoute
+  '/settings': typeof SettingsRoute
+  '/teams': typeof TeamsRoute
+  '/launches/$id': typeof LaunchesIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/launches': typeof LaunchesRouteWithChildren
+  '/risks': typeof RisksRoute
+  '/roadmap': typeof RoadmapRoute
+  '/settings': typeof SettingsRoute
+  '/teams': typeof TeamsRoute
+  '/launches/$id': typeof LaunchesIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/launches'
+    | '/risks'
+    | '/roadmap'
+    | '/settings'
+    | '/teams'
+    | '/launches/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/launches'
+    | '/risks'
+    | '/roadmap'
+    | '/settings'
+    | '/teams'
+    | '/launches/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/launches'
+    | '/risks'
+    | '/roadmap'
+    | '/settings'
+    | '/teams'
+    | '/launches/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LaunchesRoute: typeof LaunchesRouteWithChildren
+  RisksRoute: typeof RisksRoute
+  RoadmapRoute: typeof RoadmapRoute
+  SettingsRoute: typeof SettingsRoute
+  TeamsRoute: typeof TeamsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/teams': {
+      id: '/teams'
+      path: '/teams'
+      fullPath: '/teams'
+      preLoaderRoute: typeof TeamsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/roadmap': {
+      id: '/roadmap'
+      path: '/roadmap'
+      fullPath: '/roadmap'
+      preLoaderRoute: typeof RoadmapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/risks': {
+      id: '/risks'
+      path: '/risks'
+      fullPath: '/risks'
+      preLoaderRoute: typeof RisksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/launches': {
+      id: '/launches'
+      path: '/launches'
+      fullPath: '/launches'
+      preLoaderRoute: typeof LaunchesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +164,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/launches/$id': {
+      id: '/launches/$id'
+      path: '/$id'
+      fullPath: '/launches/$id'
+      preLoaderRoute: typeof LaunchesIdRouteImport
+      parentRoute: typeof LaunchesRoute
+    }
   }
 }
 
+interface LaunchesRouteChildren {
+  LaunchesIdRoute: typeof LaunchesIdRoute
+}
+
+const LaunchesRouteChildren: LaunchesRouteChildren = {
+  LaunchesIdRoute: LaunchesIdRoute,
+}
+
+const LaunchesRouteWithChildren = LaunchesRoute._addFileChildren(
+  LaunchesRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LaunchesRoute: LaunchesRouteWithChildren,
+  RisksRoute: RisksRoute,
+  RoadmapRoute: RoadmapRoute,
+  SettingsRoute: SettingsRoute,
+  TeamsRoute: TeamsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
