@@ -1,3 +1,5 @@
+export type Role = "executive" | "product_manager" | "marketing" | "sales" | "engineering" | "viewer";
+
 export type TeamKey = "marketing" | "sales" | "dev" | "product" | "exec";
 export type LaunchStatus = "planning" | "in_progress" | "at_risk" | "blocked" | "launched";
 export type Priority = "low" | "medium" | "high" | "critical";
@@ -49,6 +51,92 @@ export type Launch = {
   activities: Activity[];
   risks: Risk[];
   updates: { at: string; author: string; text: string }[];
+};
+
+export type User = {
+  id: string;
+  name: string;
+  role: Role;
+  team?: TeamKey;
+  avatar?: string;
+};
+
+export const permissions: Record<Role, {
+  canCreateLaunch: boolean;
+  canApproveMilestones: boolean;
+  canDefineScope: boolean;
+  canManageTeamTasks: TeamKey[];
+  canViewAll: boolean;
+}> = {
+  executive: {
+    canCreateLaunch: true,
+    canApproveMilestones: true,
+    canDefineScope: true,
+    canManageTeamTasks: ["marketing", "sales", "dev", "product", "exec"],
+    canViewAll: true,
+  },
+  product_manager: {
+    canCreateLaunch: true,
+    canApproveMilestones: false,
+    canDefineScope: true,
+    canManageTeamTasks: ["marketing", "sales", "dev", "product", "exec"],
+    canViewAll: true,
+  },
+  marketing: {
+    canCreateLaunch: false,
+    canApproveMilestones: false,
+    canDefineScope: false,
+    canManageTeamTasks: ["marketing"],
+    canViewAll: true,
+  },
+  sales: {
+    canCreateLaunch: false,
+    canApproveMilestones: false,
+    canDefineScope: false,
+    canManageTeamTasks: ["sales"],
+    canViewAll: true,
+  },
+  engineering: {
+    canCreateLaunch: false,
+    canApproveMilestones: false,
+    canDefineScope: false,
+    canManageTeamTasks: ["dev"],
+    canViewAll: true,
+  },
+  viewer: {
+    canCreateLaunch: false,
+    canApproveMilestones: false,
+    canDefineScope: false,
+    canManageTeamTasks: [],
+    canViewAll: true,
+  },
+};
+
+export const rolesMeta: Record<Role, { label: string; description: string }> = {
+  executive: {
+    label: "Diretoria",
+    description: "Vê tudo, cria lançamentos, aprova marcos críticos, foca em dashboards e KPIs.",
+  },
+  product_manager: {
+    label: "Gerente de Produto",
+    description: "Dono do lançamento, define escopo, datas, responsáveis e dependências.",
+  },
+  marketing: {
+    label: "Marketing",
+    description: "Gerencia tarefas de campanha, conteúdo, mídia, lançamento de comunicação.",
+  },
+  sales: {
+    label: "Vendas",
+    description: "Gerencia treinamento de time, materiais comerciais, pipeline pré-lançamento.",
+  },
+  engineering: {
+    label: "Desenvolvimento",
+    description: "Gerencia entregáveis técnicos, sprints, releases.",
+  },
+  viewer: {
+    label: "Membro Geral",
+    description: "Visualiza e contribui nas tarefas que lhe forem atribuídas.",
+  },
 };
 
 export const launches: Launch[] = [
