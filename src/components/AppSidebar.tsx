@@ -52,7 +52,7 @@ export function AppSidebar() {
             {user?.email ? user.email.substring(0, 2).toUpperCase() : '??'}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium truncate">{user?.email?.split('@')[0] || 'Usuário'}</p>
+            <p className="text-xs font-medium truncate">{user?.email ? user.email.split('@')[0] : 'Usuário'}</p>
             <p className="text-[10px] text-muted-foreground truncate">{user?.email || 'Desconectado'}</p>
           </div>
         </div>

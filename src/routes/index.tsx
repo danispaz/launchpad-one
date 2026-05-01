@@ -213,7 +213,7 @@ function Overview() {
                         <p className="text-xs text-slate-600 leading-normal">
                           <span className="font-bold text-slate-800">{item.profiles?.nome || 'Usuário'}</span> {item.acao || ''} em <span className="font-bold text-slate-800 underline decoration-slate-200 decoration-2 underline-offset-2">{item.launches?.nome || 'Lançamento'}</span>
                         </p>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-tight">{new Date(item.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-tight">{item.created_at ? new Date(item.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--'}</p>
                       </div>
                     </div>
                   ))}
