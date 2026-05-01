@@ -12,6 +12,7 @@ const items = [
 ];
 
 export function AppSidebar() {
+  const { user } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isActive = (url: string) => (url === "/" ? pathname === "/" : pathname.startsWith(url));
 
@@ -48,11 +49,11 @@ export function AppSidebar() {
       <div className="p-4 border-t border-sidebar-border">
         <div className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-sidebar-accent/60 cursor-pointer transition-colors">
           <div className="h-6 w-6 rounded-full bg-surface-elevated flex items-center justify-center text-[10px] font-bold">
-            MR
+            {user?.email ? user.email.substring(0, 2).toUpperCase() : '??'}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium truncate">Marina Reis</p>
-            <p className="text-[10px] text-muted-foreground truncate">Plano Pro</p>
+            <p className="text-xs font-medium truncate">{user?.email?.split('@')[0] || 'Usuário'}</p>
+            <p className="text-[10px] text-muted-foreground truncate">{user?.email || 'Desconectado'}</p>
           </div>
         </div>
       </div>
