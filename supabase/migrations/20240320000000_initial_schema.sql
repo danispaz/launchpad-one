@@ -120,21 +120,69 @@ ALTER TABLE milestones ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activity_log ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
+    -- PROFILES
     CREATE POLICY \"Public profiles are viewable by everyone.\" ON profiles FOR SELECT USING (true);
     CREATE POLICY \"Users can update own profile.\" ON profiles FOR UPDATE USING (auth.uid() = id);
-    CREATE POLICY \"Launches are viewable by everyone.\" ON launches FOR SELECT USING (true);
-    CREATE POLICY \"Executive/Product can manage launches.\" ON launches FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND (role = 'executive' OR role = 'product')));
-    CREATE POLICY \"Phases viewable by everyone.\" ON phases FOR SELECT USING (true);
-    CREATE POLICY \"Executive/Product can manage phases.\" ON phases FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND (role = 'executive' OR role = 'product')));
-    CREATE POLICY \"Tasks viewable by everyone.\" ON tasks FOR SELECT USING (true);
-    CREATE POLICY \"Team members can update their tasks.\" ON tasks FOR UPDATE USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND (role IN ('executive', 'product') OR team = tasks.team)));
-    CREATE POLICY \"Comments viewable by everyone.\" ON comments FOR SELECT USING (true);
-    CREATE POLICY \"Authors can manage their comments.\" ON comments FOR ALL USING (auth.uid() = author_id);
-    CREATE POLICY \"Risks viewable by everyone.\" ON risks FOR SELECT USING (true);
-    CREATE POLICY \"Executive/Product/Owner can manage risks.\" ON risks FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND (role IN ('executive', 'product') OR profiles.id = risks.owner_id)));
-    CREATE POLICY \"Milestones viewable by everyone.\" ON milestones FOR SELECT USING (true);
-    CREATE POLICY \"Executive/Product can manage milestones.\" ON milestones FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND (role IN ('executive', 'product'))));
-    CREATE POLICY \"Activity log viewable by everyone.\" ON activity_log FOR SELECT USING (true);
+
+    -- LAUNCHES
+    CREATE POLICY \"Executive sees all launches\" ON launches FOR SELECT USING (
+      EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'executive')
+    );
+    CREATE POLICY \"Product sees and manages all launches\" ON launches FOR ALL USING (
+      EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'product')
+    );
+    CREATE POLICY \"Teams see relevant launches\" ON launches FOR SELECT USING (
+      EXISTS (
+        SELECT 1 FROM profiles p 
+        JOIN tasks t ON t.launch_id = launches.id 
+        WHERE p.id = auth.uid() AND (p.team = t.team OR p.role = 'viewer')
+      )
+    );
+
+    -- TASKS
+    CREATE POLICY \"Executive sees all tasks\" ON tasks FOR SELECT USING (
+      EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'executive')
+    );
+    CREATE POLICY \"Product manages all tasks\" ON tasks FOR ALL USING (
+      EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'product')
+    );
+    CREATE POLICY \"Teams see only their tasks\" ON tasks FOR SELECT USING (
+      EXISTS (
+        SELECT 1 FROM profiles 
+        WHERE id = auth.uid() 
+        AND (team = tasks.team OR role = 'viewer')
+      )
+    );
+    CREATE POLICY \"Teams update their tasks\" ON tasks FOR UPDATE USING (
+      EXISTS (
+        SELECT 1 FROM profiles 
+        WHERE id = auth.uid() 
+        AND team = tasks.team
+      )
+    );
+
+    -- PHASES
+    CREATE POLICY \"Executive sees all phases\" ON phases FOR SELECT USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'executive'));
+    CREATE POLICY \"Product manages all phases\" ON phases FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'product'));
+    
+    -- MILESTONES
+    CREATE POLICY \"Executive sees all milestones\" ON milestones FOR SELECT USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'executive'));
+    CREATE POLICY \"Product manages all milestones\" ON milestones FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'product'));
+
+    -- RISKS
+    CREATE POLICY \"Executive sees all risks\" ON risks FOR SELECT USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'executive'));
+    CREATE POLICY \"Product manages all risks\" ON risks FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'product'));
+    CREATE POLICY \"Teams see their risks\" ON risks FOR SELECT USING (EXISTS (SELECT 1 FROM profiles p JOIN tasks t ON t.launch_id = risks.launch_id WHERE p.id = auth.uid() AND p.team = t.team));
+
+    -- COMMENTS
+    CREATE POLICY \"Authors manage comments\" ON comments FOR ALL USING (auth.uid() = author_id);
+    CREATE POLICY \"Relevant teams see comments\" ON comments FOR SELECT USING (
+      EXISTS (SELECT 1 FROM profiles p JOIN tasks t ON t.id = comments.task_id WHERE p.id = auth.uid() AND (p.role IN ('executive', 'product') OR p.team = t.team))
+    );
+
+    -- ACTIVITY LOG
+    CREATE POLICY \"Viewable by everyone\" ON activity_log FOR SELECT USING (true);
+
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
