@@ -53,8 +53,9 @@ function Overview() {
   const filteredLaunches = useMemo(() => {
     if (!user) return launches;
     // Simple mock logic: PMs see all, others see based on team
-    if (user.email?.includes('pm') || user.email?.includes('exec')) return launches;
-    const userTeam = user.email?.split('@')[0].split('.')[1]; // mock extraction
+    const email = user.email || '';
+    if (email.includes('pm') || email.includes('exec')) return launches;
+    const userTeam = email.split('@')[0].split('.')[1]; // mock extraction
     return userTeam ? launches.filter(l => l.teams.includes(userTeam as any)) : launches;
   }, [user]);
 
@@ -87,7 +88,7 @@ function Overview() {
   return (
     <AppLayout>
       <TopBar 
-        title={`Dashboard — ${user?.email?.split('@')[0] || 'Usuário'}`} 
+        title={`Dashboard — ${user?.email ? user.email.split('@')[0] : 'Usuário'}`} 
         subtitle="Bem-vindo de volta ao LaunchHub" 
       />
       <div className="flex-1 px-8 py-10 max-w-[1600px] mx-auto w-full">
