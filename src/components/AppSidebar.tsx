@@ -1,4 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { useAuth } from "@/hooks/useAuth";
 import { LayoutDashboard, Rocket, Map, Users, AlertTriangle, Settings, ChevronRight } from "lucide-react";
 
 const items = [
