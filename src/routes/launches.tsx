@@ -1,12 +1,23 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
-import { StatusBadge, TeamChip, Avatar, PriorityDot } from "@/components/Badges";
-import { launches, type LaunchStatus } from "@/lib/mockData";
+import { StatusBadge, TeamChip, Avatar } from "@/components/Badges";
+import { launches, type LaunchStatus, type TeamKey, teams as teamsMeta } from "@/lib/mockData";
+import { Filter, X } from "lucide-react";
+
+type LaunchesSearch = {
+  status?: LaunchStatus | "all";
+  team?: TeamKey | "all";
+};
 
 export const Route = createFileRoute("/launches")({
   head: () => ({ meta: [{ title: "Lançamentos — LaunchHub" }] }),
+  validateSearch: (search: Record<string, unknown>): LaunchesSearch => {
+    return {
+      status: (search.status as LaunchStatus) || "all",
+      team: (search.team as TeamKey) || "all",
+    };
+  },
   component: LaunchesList,
 });
 
