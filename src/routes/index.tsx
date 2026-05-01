@@ -102,10 +102,10 @@ function Overview() {
                   >
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 uppercase tracking-wider">{l.nome.substring(0, 3).toUpperCase()}</span>
+                        <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 uppercase tracking-wider">{l.nome?.substring(0, 3).toUpperCase()}</span>
                         <StatusBadge status={l.status as any} />
                       </div>
-                      <Avatar initials={l.owner?.nome?.split(' ').map(n => n[0]).join('').substring(0, 2) || '??'} />
+                      <Avatar initials={l.owner?.nome ? l.owner.nome.split(' ').map(n => n[0]).join('').substring(0, 2) : '??'} />
                     </div>
                     <h4 className="font-bold text-slate-800 mb-6 group-hover:text-primary transition-colors text-base">{l.nome}</h4>
 
@@ -244,7 +244,8 @@ function Stat({ icon: Icon, label, value, color }: { icon: any; label: string; v
   );
 }
 
-function fmtDate(d: string) {
+function fmtDate(d: string | null | undefined) {
+  if (!d) return '--/--';
   return new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
 }
 
