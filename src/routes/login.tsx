@@ -19,13 +19,14 @@ function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const search = useSearch({ from: "/login" });
   const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     if (!authLoading && user) {
-      navigate({ to: "/" });
+      navigate({ to: (search as any).redirect || "/" });
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, (search as any).redirect]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +41,7 @@ function Login() {
       if (error) throw error;
       
       toast.success("Bem-vindo ao LaunchHub!");
-      navigate({ to: "/" });
+      navigate({ to: (search as any).redirect || "/" });
     } catch (error: any) {
       toast.error(error.message || "Erro ao entrar");
     } finally {
