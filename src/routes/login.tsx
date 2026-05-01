@@ -1,5 +1,5 @@
-import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { createFileRoute, useNavigate, useSearch, useRouter } from "@tanstack/react-router";
+import { useState, useEffect, useCallback } from "react";
 import { Zap, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
