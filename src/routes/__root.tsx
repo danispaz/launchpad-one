@@ -68,9 +68,13 @@ function RootComponent() {
 
   useEffect(() => {
     if (!loading && !user && location.pathname !== "/login") {
-      navigate({ to: "/login", search: { redirect: location.pathname } });
+      const fullPath = location.pathname + location.search;
+      navigate({ 
+        to: "/login", 
+        search: { redirect: fullPath } 
+      });
     }
-  }, [user, loading, navigate, location.pathname]);
+  }, [user, loading, navigate, location.pathname, location.search]);
 
   if (loading) {
     return (
