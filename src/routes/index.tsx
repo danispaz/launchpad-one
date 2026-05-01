@@ -102,10 +102,10 @@ function Overview() {
                   >
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 uppercase tracking-wider">{l.nome.substring(0, 3).toUpperCase()}</span>
+                        <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 uppercase tracking-wider">{l.nome?.substring(0, 3).toUpperCase()}</span>
                         <StatusBadge status={l.status as any} />
                       </div>
-                      <Avatar initials={l.owner?.nome?.split(' ').map(n => n[0]).join('').substring(0, 2) || '??'} />
+                      <Avatar initials={l.owner?.nome ? l.owner.nome.split(' ').map(n => n[0]).join('').substring(0, 2) : '??'} />
                     </div>
                     <h4 className="font-bold text-slate-800 mb-6 group-hover:text-primary transition-colors text-base">{l.nome}</h4>
 
@@ -151,7 +151,7 @@ function Overview() {
                           l.status === 'em_risco' ? 'bg-amber-400' : l.status === 'atrasado' ? 'bg-rose-400' : 'bg-primary'
                         }`}
                         style={{ 
-                          width: `${l.progresso}%`, 
+                          width: `${l.progresso ?? 0}%`, 
                           marginLeft: `${i * 10}%`,
                           opacity: 0.8
                         }}
@@ -213,7 +213,7 @@ function Overview() {
                         <p className="text-xs text-slate-600 leading-normal">
                           <span className="font-bold text-slate-800">{item.profiles?.nome || 'Usuário'}</span> {item.acao || ''} em <span className="font-bold text-slate-800 underline decoration-slate-200 decoration-2 underline-offset-2">{item.launches?.nome || 'Lançamento'}</span>
                         </p>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-tight">{new Date(item.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-tight">{item.created_at ? new Date(item.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--'}</p>
                       </div>
                     </div>
                   ))}
@@ -244,7 +244,8 @@ function Stat({ icon: Icon, label, value, color }: { icon: any; label: string; v
   );
 }
 
-function fmtDate(d: string) {
+function fmtDate(d: string | null | undefined) {
+  if (!d) return '--/--';
   return new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
 }
 
