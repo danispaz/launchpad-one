@@ -88,7 +88,7 @@ function Overview() {
   return (
     <AppLayout>
       <TopBar 
-        title={`Dashboard — ${user?.email?.split('@')[0] || 'Usuário'}`} 
+        title={`Dashboard — ${user?.email ? user.email.split('@')[0] : 'Usuário'}`} 
         subtitle="Bem-vindo de volta ao LaunchHub" 
       />
       <div className="flex-1 px-8 py-10 max-w-[1600px] mx-auto w-full">
