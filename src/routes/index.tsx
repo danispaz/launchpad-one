@@ -1,17 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
-import { StatusBadge, ProgressBar } from "@/components/Badges";
-import { launches } from "@/lib/mockData";
+import { StatusBadge, ProgressBar, Avatar } from "@/components/Badges";
+import { launches, teams as teamsMeta } from "@/lib/mockData";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   Rocket, 
   AlertTriangle, 
-  CheckCircle2, 
   Clock, 
   ArrowRight, 
   Calendar,
   Activity,
-  CheckSquare
+  CheckSquare,
+  ChevronRight,
+  ChevronLeft,
+  Filter
 } from "lucide-react";
 import { 
   BarChart, 
@@ -23,6 +26,7 @@ import {
   ResponsiveContainer,
   Cell
 } from "recharts";
+import { useState, useMemo } from "react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -43,26 +47,61 @@ const chartData = [
 ];
 
 function Overview() {
-  const active = launches.filter((l) => l.status !== "launched");
-  const atRisk = launches.filter((l) => l.status === "at_risk" || l.status === "blocked");
-  const overdueTasks = 3; // Mock
-  const nextMilestones = 2; // Mock
+  const { user } = useAuth();
+  
+  // KPI logic based on role
+  const filteredLaunches = useMemo(() => {
+    if (!user) return launches;
+    // Simple mock logic: PMs see all, others see based on team
+    if (user.email?.includes('pm') || user.email?.includes('exec')) return launches;
+    const userTeam = user.email?.split('@')[0].split('.')[1]; // mock extraction
+    return userTeam ? launches.filter(l => l.teams.includes(userTeam as any)) : launches;
+  }, [user]);
+
+  const active = filteredLaunches.filter((l) => l.status !== "launched");
+  const atRisk = filteredLaunches.filter((l) => l.status === "at_risk" || l.status === "blocked");
+  
+  const overdueTasksCount = useMemo(() => {
+    return filteredLaunches.reduce((acc, l) => {
+      const overdue = l.activities.filter(a => !a.done && new Date(a.due) < new Date());
+      return acc + overdue.length;
+    }, 0);
+  }, [filteredLaunches]);
+
+  const nextMilestonesCount = useMemo(() => {
+    return filteredLaunches.reduce((acc, l) => {
+      const upcoming = l.activities.filter(a => !a.done && new Date(a.due) >= new Date());
+      return acc + upcoming.length;
+    }, 0);
+  }, [filteredLaunches]);
+
+  const myTasks = useMemo(() => {
+    // Mock user tasks
+    return [
+      { id: '1', title: "Review de pricing v2", launch: "Aurora", urgency: "critical", due: "Hoje" },
+      { id: '2', title: "Aprovar wireframes", launch: "Pricing Page", urgency: "high", due: "Hoje" },
+      { id: '3', title: "Check-in com time dev", launch: "Mobile 2.0", urgency: "medium", due: "Amanhã" },
+    ];
+  }, []);
 
   return (
     <AppLayout>
-      <TopBar title="Dashboard" subtitle="Visão geral dos seus lançamentos" />
-      <div className="flex-1 px-8 py-10 max-w-[1400px] mx-auto w-full">
+      <TopBar 
+        title={`Dashboard — ${user?.email?.split('@')[0] || 'Usuário'}`} 
+        subtitle="Bem-vindo de volta ao LaunchHub" 
+      />
+      <div className="flex-1 px-8 py-10 max-w-[1600px] mx-auto w-full">
         
         {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           <Stat icon={Rocket} label="Lançamentos Ativos" value={active.length.toString()} color="text-blue-600" />
           <Stat icon={AlertTriangle} label="Em Risco / Bloqueados" value={atRisk.length.toString()} color="text-amber-600" />
-          <Stat icon={Clock} label="Tarefas Atrasadas" value={overdueTasks.toString()} color="text-rose-600" />
-          <Stat icon={Calendar} label="Próximos Marcos" value={nextMilestones.toString()} color="text-emerald-600" />
+          <Stat icon={Clock} label="Tarefas Atrasadas" value={overdueTasksCount.toString()} color="text-rose-600" />
+          <Stat icon={Calendar} label="Próximos Marcos" value={nextMilestonesCount.toString()} color="text-emerald-600" />
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
-          <div className="xl:col-span-2 space-y-10">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
+          <div className="xl:col-span-8 space-y-10">
             {/* My Launches */}
             <section>
               <div className="flex items-center justify-between mb-6">
@@ -70,7 +109,7 @@ function Overview() {
                   <Rocket className="w-5 h-5 text-primary" />
                   Meus Lançamentos
                 </h3>
-                <Link to="/launches" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
+                <Link to="/launches" className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
                   Ver todos <ArrowRight className="h-3 w-3" />
                 </Link>
               </div>
@@ -80,22 +119,32 @@ function Overview() {
                     key={l.id}
                     to="/launches/$id"
                     params={{ id: l.id }}
-                    className="group block p-5 rounded-xl border border-border bg-white hover:border-primary/30 transition-all hover:shadow-md"
+                    className="group block p-5 rounded-xl border border-border bg-white hover:border-primary/30 transition-all hover:shadow-lg"
                   >
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wider">{l.code}</span>
-                      <StatusBadge status={l.status} />
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 uppercase tracking-wider">{l.code}</span>
+                        <StatusBadge status={l.status} />
+                      </div>
+                      <Avatar initials={l.owner.initials} />
                     </div>
-                    <h4 className="font-bold text-slate-800 mb-4 group-hover:text-primary transition-colors">{l.name}</h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-[11px] font-medium text-slate-500">
+                    <h4 className="font-bold text-slate-800 mb-6 group-hover:text-primary transition-colors text-base">{l.name}</h4>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase">
                         <span>Progresso</span>
                         <span>{l.progress}%</span>
                       </div>
                       <ProgressBar value={l.progress} />
-                      <div className="flex items-center gap-1.5 mt-3 text-[10px] text-slate-400 font-medium uppercase">
-                        <Calendar className="w-3 h-3" />
-                        Previsto: {fmtDate(l.targetDate)}
+                      <div className="flex items-center justify-between mt-4">
+                        <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold uppercase">
+                          <Calendar className="w-3.5 h-3.5" />
+                          {fmtDate(l.targetDate)}
+                        </div>
+                        <div className="flex -space-x-2">
+                          {l.teams.map(t => (
+                            <div key={t} className="w-5 h-5 rounded-full border-2 border-white" style={{ backgroundColor: teamsMeta[t].color }} />
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </Link>
@@ -103,62 +152,67 @@ function Overview() {
               </div>
             </section>
 
-            {/* Progress Chart */}
+            {/* Gantt Timeline Mockup */}
             <section className="p-6 rounded-2xl border border-border bg-white shadow-sm">
-              <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-                <Activity className="w-5 h-5 text-primary" />
-                Progresso dos Lançamentos
-              </h3>
-              <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis 
-                      dataKey="name" 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 500 }}
-                      dy={10}
-                    />
-                    <YAxis 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 500 }}
-                    />
-                    <Tooltip 
-                      cursor={{ fill: '#f8fafc' }}
-                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
-                    />
-                    <Bar dataKey="progress" radius={[4, 4, 0, 0]} barSize={40}>
-                      {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.progress === 100 ? '#10b981' : '#6366f1'} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-lg font-bold flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-primary" />
+                  Cronograma Geral (Gantt)
+                </h3>
+                <div className="flex items-center gap-2">
+                  <button className="p-1.5 hover:bg-slate-50 rounded-md border border-border"><ChevronLeft className="w-4 h-4 text-slate-400" /></button>
+                  <span className="text-xs font-bold text-slate-600 px-2 uppercase">Maio 2026</span>
+                  <button className="p-1.5 hover:bg-slate-50 rounded-md border border-border"><ChevronRight className="w-4 h-4 text-slate-400" /></button>
+                </div>
+              </div>
+              <div className="space-y-4">
+                {active.slice(0, 5).map((l, i) => (
+                  <div key={l.id} className="grid grid-cols-12 items-center gap-4">
+                    <div className="col-span-3 text-[11px] font-bold text-slate-600 truncate">{l.name}</div>
+                    <div className="col-span-9 h-6 bg-slate-50 rounded-full relative overflow-hidden">
+                      <div 
+                        className={`absolute h-full rounded-full transition-all duration-1000 ${
+                          l.status === 'at_risk' ? 'bg-amber-400' : l.status === 'blocked' ? 'bg-rose-400' : 'bg-primary'
+                        }`}
+                        style={{ 
+                          width: `${l.progress}%`, 
+                          marginLeft: `${i * 10}%`,
+                          opacity: 0.8
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             </section>
           </div>
 
-          <div className="space-y-10">
-            {/* My Tasks */}
+          <div className="xl:col-span-4 space-y-10">
+            {/* My Tasks Today */}
             <section>
               <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
                 <CheckSquare className="w-5 h-5 text-primary" />
                 Minhas Tarefas Hoje
               </h3>
               <div className="space-y-3">
-                {[
-                  { title: "Review de pricing v2", launch: "Aurora", urgency: "high" },
-                  { title: "Aprovar wireframes", launch: "Pricing Page", urgency: "medium" },
-                  { title: "Check-in com time dev", launch: "Mobile 2.0", urgency: "low" },
-                ].map((task, i) => (
-                  <div key={i} className="group p-4 rounded-xl border border-border bg-white hover:border-primary/30 transition-all cursor-pointer">
-                    <div className="flex items-start gap-3">
-                      <div className={`mt-1 h-4 w-4 rounded border-2 flex-shrink-0 transition-colors ${task.urgency === 'high' ? 'border-rose-400 group-hover:bg-rose-50' : 'border-slate-200 group-hover:border-primary'}`} />
-                      <div>
-                        <p className="text-sm font-semibold text-slate-800 leading-tight">{task.title}</p>
-                        <p className="mt-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">{task.launch}</p>
+                {myTasks.map((task) => (
+                  <div key={task.id} className="group p-4 rounded-xl border border-border bg-white hover:border-primary/30 transition-all cursor-pointer shadow-sm hover:shadow-md">
+                    <div className="flex items-start gap-4">
+                      <div className={`mt-1 h-5 w-5 rounded border-2 flex-shrink-0 transition-colors ${
+                        task.urgency === 'critical' ? 'border-rose-400 bg-rose-50' : 
+                        task.urgency === 'high' ? 'border-amber-400' : 'border-slate-200'
+                      }`} />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-sm font-bold text-slate-800 leading-tight">{task.title}</p>
+                          <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${
+                            task.urgency === 'critical' ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-500'
+                          }`}>{task.urgency}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-[10px] font-bold text-primary uppercase tracking-wider">{task.launch}</p>
+                          <span className="text-[10px] text-slate-400 font-medium">· {task.due}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -170,26 +224,29 @@ function Overview() {
             <section>
               <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
                 <Activity className="w-5 h-5 text-primary" />
-                Feed de Atividade
+                Atividade dos Times
               </h3>
-              <div className="space-y-6 relative before:absolute before:inset-y-0 before:left-[11px] before:w-[2px] before:bg-slate-100">
-                {[
-                  { user: "Marina R.", action: "atualizou o status de", target: "Aurora", time: "2h", type: "status" },
-                  { user: "João P.", action: "concluiu tarefa em", target: "HubSpot", time: "4h", type: "task" },
-                  { user: "Lia S.", action: "reportou um risco em", target: "Mobile 2.0", time: "1d", type: "risk" },
-                ].map((item, i) => (
-                  <div key={i} className="relative pl-8">
-                    <div className="absolute left-0 top-1 w-6 h-6 rounded-full bg-white border-2 border-slate-100 flex items-center justify-center z-10">
-                      <div className="w-2 h-2 rounded-full bg-primary" />
+              <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
+                <div className="space-y-8 relative before:absolute before:inset-y-0 before:left-[11px] before:w-[1px] before:bg-slate-200">
+                  {[
+                    { user: "Marina R.", action: "atualizou o status", target: "Aurora", time: "2h", team: "product" },
+                    { user: "João P.", action: "concluiu tarefa", target: "HubSpot", time: "4h", team: "dev" },
+                    { user: "Lia S.", action: "reportou um risco", target: "Mobile 2.0", time: "1d", team: "dev" },
+                    { user: "Beatriz L.", action: "adicionou marcos", target: "Pricing Page", time: "1d", team: "marketing" },
+                  ].map((item, i) => (
+                    <div key={i} className="relative pl-8">
+                      <div className="absolute left-0 top-0.5 w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center z-10 shadow-sm">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: teamsMeta[item.team as any].color }} />
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-600 leading-normal">
+                          <span className="font-bold text-slate-800">{item.user}</span> {item.action} em <span className="font-bold text-slate-800 underline decoration-slate-200 decoration-2 underline-offset-2">{item.target}</span>
+                        </p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-tight">{item.time} atrás</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs text-slate-600">
-                        <span className="font-bold text-slate-800">{item.user}</span> {item.action} <span className="font-bold text-slate-800">{item.target}</span>
-                      </p>
-                      <p className="text-[10px] text-slate-400 font-medium mt-0.5">{item.time} atrás</p>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </section>
           </div>
@@ -201,16 +258,16 @@ function Overview() {
 
 function Stat({ icon: Icon, label, value, color }: { icon: any; label: string; value: string; color: string }) {
   return (
-    <div className="p-6 rounded-2xl border border-border bg-white shadow-sm hover:shadow-md transition-shadow">
+    <div className="p-6 rounded-2xl border border-border bg-white shadow-sm hover:shadow-lg transition-all border-b-4 border-b-slate-50 group">
       <div className="flex items-center justify-between mb-4">
-        <div className={`p-2 rounded-lg bg-slate-50 ${color}`}>
+        <div className={`p-2.5 rounded-xl bg-slate-50 transition-colors group-hover:bg-slate-100 ${color}`}>
           <Icon className="h-5 w-5" />
         </div>
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Global</span>
+        <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest border border-slate-100 px-2 py-0.5 rounded">Filtro Ativo</span>
       </div>
       <div>
-        <p className="text-3xl font-black tracking-tight text-slate-800">{value}</p>
-        <p className="text-xs font-semibold text-slate-500 mt-1 uppercase tracking-wider">{label}</p>
+        <p className="text-4xl font-black tracking-tighter text-slate-800 leading-none">{value}</p>
+        <p className="text-[10px] font-bold text-slate-400 mt-2 uppercase tracking-widest">{label}</p>
       </div>
     </div>
   );
