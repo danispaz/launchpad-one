@@ -2,8 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
 import { StatusBadge, ProgressBar, Avatar } from "@/components/Badges";
-import { launches, teams as teamsMeta, type TeamKey } from "@/lib/mockData";
+import { teams as teamsMeta, type TeamKey } from "@/lib/mockData";
 import { useAuth } from "@/hooks/useAuth";
+import { useDashboardData } from "@/hooks/useDashboardData";
 import { 
   Rocket, 
   AlertTriangle, 
@@ -15,7 +16,7 @@ import {
   ChevronRight,
   ChevronLeft,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -28,46 +29,39 @@ export const Route = createFileRoute("/")({
 
 function Overview() {
   const { user } = useAuth();
+  const { launches: dbLaunches, tasks: dbTasks, activities: dbActivities, loading } = useDashboardData();
   
-  // KPI logic based on role
-  const filteredLaunches = useMemo(() => {
-    if (!user) return launches;
-    // Simple mock logic: PMs see all, others see based on team
-    const email = user.email || '';
-    if (email.includes('pm') || email.includes('exec')) return launches;
-    
-    // Improved mock extraction: name.team@domain.com
-    const parts = email.split('@')[0].split('.');
-    const userTeam = parts.length > 1 ? parts[1] : null; 
-    
-    return userTeam ? launches.filter(l => l.teams.includes(userTeam as TeamKey)) : launches;
-  }, [user]);
-
-  const active = filteredLaunches.filter((l) => l.status !== "launched");
-  const atRisk = filteredLaunches.filter((l) => l.status === "at_risk" || l.status === "blocked");
+  const active = dbLaunches.filter((l) => l.status !== "lançado" && l.status !== "cancelado");
+  const atRisk = dbLaunches.filter((l) => l.status === "em_risco" || l.status === "atrasado");
   
   const overdueTasksCount = useMemo(() => {
-    return filteredLaunches.reduce((acc, l) => {
-      const overdue = l.activities.filter(a => !a.done && new Date(a.due) < new Date());
-      return acc + overdue.length;
-    }, 0);
-  }, [filteredLaunches]);
+    return dbTasks.filter(t => t.status !== 'concluído' && t.data_entrega && new Date(t.data_entrega) < new Date()).length;
+  }, [dbTasks]);
 
   const nextMilestonesCount = useMemo(() => {
-    return filteredLaunches.reduce((acc, l) => {
-      const upcoming = l.activities.filter(a => !a.done && new Date(a.due) >= new Date());
-      return acc + upcoming.length;
-    }, 0);
-  }, [filteredLaunches]);
+    return dbTasks.filter(t => t.status !== 'concluído' && t.data_entrega && new Date(t.data_entrega) >= new Date()).length;
+  }, [dbTasks]);
 
   const myTasks = useMemo(() => {
-    // Mock user tasks
-    return [
-      { id: '1', title: "Review de pricing v2", launch: "Aurora", urgency: "critical", due: "Hoje" },
-      { id: '2', title: "Aprovar wireframes", launch: "Pricing Page", urgency: "high", due: "Hoje" },
-      { id: '3', title: "Check-in com time dev", launch: "Mobile 2.0", urgency: "medium", due: "Amanhã" },
-    ];
-  }, []);
+    return dbTasks.map(t => ({
+      id: t.id,
+      title: t.titulo,
+      launch: t.launch?.nome || 'Geral',
+      urgency: t.prioridade === 'crítica' ? 'critical' : t.prioridade === 'alta' ? 'high' : 'medium',
+      due: t.data_entrega ? new Date(t.data_entrega).toLocaleDateString('pt-BR') : 'Sem data'
+    }));
+  }, [dbTasks]);
+
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-[50vh]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
@@ -80,9 +74,9 @@ function Overview() {
         {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           <Stat icon={Rocket} label="Lançamentos Ativos" value={active.length.toString()} color="text-blue-600" />
-          <Stat icon={AlertTriangle} label="Em Risco / Bloqueados" value={atRisk.length.toString()} color="text-amber-600" />
-          <Stat icon={Clock} label="Tarefas Atrasadas" value={overdueTasksCount.toString()} color="text-rose-600" />
-          <Stat icon={Calendar} label="Próximos Marcos" value={nextMilestonesCount.toString()} color="text-emerald-600" />
+          <Stat icon={AlertTriangle} label="Em Risco / Atrasados" value={atRisk.length.toString()} color="text-amber-600" />
+          <Stat icon={Clock} label="Minhas Tarefas Atrasadas" value={overdueTasksCount.toString()} color="text-rose-600" />
+          <Stat icon={Calendar} label="Entregas Próximas" value={nextMilestonesCount.toString()} color="text-emerald-600" />
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
@@ -108,27 +102,23 @@ function Overview() {
                   >
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 uppercase tracking-wider">{l.code}</span>
-                        <StatusBadge status={l.status} />
+                        <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 uppercase tracking-wider">{l.nome.substring(0, 3).toUpperCase()}</span>
+                        <StatusBadge status={l.status as any} />
                       </div>
-                      <Avatar initials={l.owner.initials} />
+                      <Avatar initials={l.owner?.nome?.split(' ').map(n => n[0]).join('').substring(0, 2) || '??'} />
                     </div>
-                    <h4 className="font-bold text-slate-800 mb-6 group-hover:text-primary transition-colors text-base">{l.name}</h4>
+                    <h4 className="font-bold text-slate-800 mb-6 group-hover:text-primary transition-colors text-base">{l.nome}</h4>
+
                     <div className="space-y-3">
                       <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase">
                         <span>Progresso</span>
                         <span>{l.progress}%</span>
                       </div>
-                      <ProgressBar value={l.progress} />
+                      <ProgressBar value={l.progresso} />
                       <div className="flex items-center justify-between mt-4">
                         <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold uppercase">
                           <Calendar className="w-3.5 h-3.5" />
-                          {fmtDate(l.targetDate)}
-                        </div>
-                        <div className="flex -space-x-2">
-                          {l.teams.map(t => (
-                            <div key={t} className="w-5 h-5 rounded-full border-2 border-white" style={{ backgroundColor: teamsMeta[t].color }} />
-                          ))}
+                          {fmtDate(l.data_lancamento_prevista)}
                         </div>
                       </div>
                     </div>
@@ -136,6 +126,7 @@ function Overview() {
                 ))}
               </div>
             </section>
+
 
             {/* Gantt Timeline Mockup */}
             <section className="p-6 rounded-2xl border border-border bg-white shadow-sm">
@@ -153,14 +144,14 @@ function Overview() {
               <div className="space-y-4">
                 {active.slice(0, 5).map((l, i) => (
                   <div key={l.id} className="grid grid-cols-12 items-center gap-4">
-                    <div className="col-span-3 text-[11px] font-bold text-slate-600 truncate">{l.name}</div>
+                    <div className="col-span-3 text-[11px] font-bold text-slate-600 truncate">{l.nome}</div>
                     <div className="col-span-9 h-6 bg-slate-50 rounded-full relative overflow-hidden">
                       <div 
-                        className={`absolute h-full rounded-full transition-all duration-1000 ${
-                          l.status === 'at_risk' ? 'bg-amber-400' : l.status === 'blocked' ? 'bg-rose-400' : 'bg-primary'
+                         className={`absolute h-full rounded-full transition-all duration-1000 ${
+                          l.status === 'em_risco' ? 'bg-amber-400' : l.status === 'atrasado' ? 'bg-rose-400' : 'bg-primary'
                         }`}
                         style={{ 
-                          width: `${l.progress}%`, 
+                          width: `${l.progresso}%`, 
                           marginLeft: `${i * 10}%`,
                           opacity: 0.8
                         }}
@@ -213,21 +204,16 @@ function Overview() {
               </h3>
               <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
                 <div className="space-y-8 relative before:absolute before:inset-y-0 before:left-[11px] before:w-[1px] before:bg-slate-200">
-                  {[
-                    { user: "Marina R.", action: "atualizou o status", target: "Aurora", time: "2h", team: "product" as TeamKey },
-                    { user: "João P.", action: "concluiu tarefa", target: "HubSpot", time: "4h", team: "dev" as TeamKey },
-                    { user: "Lia S.", action: "reportou um risco", target: "Mobile 2.0", time: "1d", team: "dev" as TeamKey },
-                    { user: "Beatriz L.", action: "adicionou marcos", target: "Pricing Page", time: "1d", team: "marketing" as TeamKey },
-                  ].map((item, i) => (
+                  {dbActivities.map((item, i) => (
                     <div key={i} className="relative pl-8">
                       <div className="absolute left-0 top-0.5 w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center z-10 shadow-sm">
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: teamsMeta[item.team].color }} />
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: teamsMeta[(item.profiles?.team as TeamKey) || 'product']?.color || '#ccc' }} />
                       </div>
                       <div>
                         <p className="text-xs text-slate-600 leading-normal">
-                          <span className="font-bold text-slate-800">{item.user}</span> {item.action} em <span className="font-bold text-slate-800 underline decoration-slate-200 decoration-2 underline-offset-2">{item.target}</span>
+                          <span className="font-bold text-slate-800">{item.profiles?.nome || 'Usuário'}</span> {item.acao} em <span className="font-bold text-slate-800 underline decoration-slate-200 decoration-2 underline-offset-2">{item.launches?.nome || 'Lançamento'}</span>
                         </p>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-tight">{item.time} atrás</p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-tight">{new Date(item.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
                       </div>
                     </div>
                   ))}
