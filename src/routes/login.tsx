@@ -48,7 +48,7 @@ function Login() {
       if (error) throw error;
       
       toast.success("Bem-vindo ao LaunchHub!");
-      navigate({ to: (search as any).redirect || "/" });
+      handleRedirect();
     } catch (error: any) {
       toast.error(error.message || "Erro ao entrar");
     } finally {
