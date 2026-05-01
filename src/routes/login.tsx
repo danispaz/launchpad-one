@@ -1,7 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Zap, Mail } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/login")({
   component: Login,
@@ -9,20 +11,63 @@ export const Route = createFileRoute("/login")({
 
 function Login() {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
 
-  const handleLogin = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate({ to: "/" });
+    }
+  }, [user, authLoading, navigate]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
-    // Simulate login
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+      
       toast.success("Bem-vindo ao LaunchHub!");
       navigate({ to: "/" });
-    }, 1000);
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao entrar");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleMagicLink = async () => {
+    if (!email) {
+      toast.error("Digite seu e-mail para receber o link");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: window.location.origin,
+        },
+      });
+
+      if (error) throw error;
+      toast.success("Link mágico enviado para seu e-mail!");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao enviar link");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (authLoading) return null;
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#FBFBFA] relative overflow-hidden">
@@ -44,7 +89,7 @@ function Login() {
         <div className="bg-white p-8 rounded-2xl border border-border shadow-sm">
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70" htmlFor="email">
+              <label className="text-sm font-medium leading-none" htmlFor="email">
                 E-mail profissional
               </label>
               <input
@@ -52,21 +97,23 @@ function Login() {
                 type="email"
                 placeholder="nome@empresa.com"
                 required
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             
             <div className="space-y-2">
-              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70" htmlFor="password">
+              <label className="text-sm font-medium leading-none" htmlFor="password">
                 Senha
               </label>
               <input
                 id="password"
                 type="password"
                 required
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
 
@@ -91,8 +138,9 @@ function Login() {
 
             <button
               type="button"
-              className="mt-4 w-full flex items-center justify-center gap-2 h-10 px-4 py-2 border border-border rounded-md text-sm font-medium hover:bg-slate-50 transition-colors"
-              onClick={() => toast.info("Link mágico enviado!")}
+              disabled={loading}
+              className="mt-4 w-full flex items-center justify-center gap-2 h-10 px-4 py-2 border border-border rounded-md text-sm font-medium hover:bg-slate-50 transition-colors disabled:opacity-50"
+              onClick={handleMagicLink}
             >
               <Mail className="w-4 h-4" />
               Link Mágico
@@ -107,3 +155,4 @@ function Login() {
     </div>
   );
 }
+
