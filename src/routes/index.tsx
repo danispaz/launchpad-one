@@ -151,7 +151,7 @@ function Overview() {
                           l.status === 'em_risco' ? 'bg-amber-400' : l.status === 'atrasado' ? 'bg-rose-400' : 'bg-primary'
                         }`}
                         style={{ 
-                          width: `${l.progresso}%`, 
+                          width: `${l.progresso ?? 0}%`, 
                           marginLeft: `${i * 10}%`,
                           opacity: 0.8
                         }}
