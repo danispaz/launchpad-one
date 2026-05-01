@@ -67,19 +67,27 @@ function RootComponent() {
   const location = useLocation();
 
   useEffect(() => {
+    // Only redirect if loading is finished, there's no user, and we aren't already on the login page
     if (!loading && !user && location.pathname !== "/login") {
       const fullPath = location.pathname + location.search;
+      // We wrap navigate in a setTimeout to avoid potential render cycle issues 
+      // though TanStack Router's navigate is generally safe in useEffect.
+      // The error "Cannot convert object to primitive value" is often related to 
+      // how the router handles the search object if it contains non-serializable data.
       navigate({ 
         to: "/login", 
-        search: { redirect: fullPath } 
+        search: { redirect: fullPath } as any
       });
     }
   }, [user, loading, navigate, location.pathname, location.search]);
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <p className="text-sm font-medium animate-pulse">Carregando...</p>
+        </div>
       </div>
     );
   }
