@@ -151,7 +151,7 @@ function LaunchDetail() {
                         </div>
                         <div className="flex-1">
                           <p className="text-sm font-bold text-slate-800">{m.nome}</p>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase">{new Date(m.data_prevista).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase">{new Date(m.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
                         </div>
                         <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${m.status === 'concluido' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
                           {m.status === 'concluido' ? 'Concluído' : 'Pendente'}
