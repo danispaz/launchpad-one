@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { TeamName } from "@/lib/utils/formatters";
 import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
 import { StatusBadge, TeamChip, ProgressBar, Avatar, PriorityDot } from "@/components/Badges";
@@ -60,6 +61,8 @@ function LaunchDetail() {
       return acc;
     }, {} as Record<string, typeof tasks>);
   }, [tasks]);
+
+  console.log('DEBUG TASKS BY TEAM:', Object.keys(tasksByTeam).map(t => `${t}: ${tasksByTeam[t].length}`));
 
   if (loading) {
     return (
@@ -224,7 +227,7 @@ function LaunchDetail() {
                 >
                   <div className="flex items-center gap-3">
                     <TeamChip team={team as any} />
-                    <span className="text-sm font-bold text-slate-700">{teamTasks.length} tarefas</span>
+                    <span className="text-sm font-bold text-slate-700">{teamMap[team as TeamName] || team} · {teamTasks.length} tarefas</span>
                   </div>
                   {expandedTeams.includes(team) ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
                 </button>
