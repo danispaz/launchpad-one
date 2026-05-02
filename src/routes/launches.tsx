@@ -5,9 +5,6 @@ export const Route = createFileRoute("/launches")({
 });
 
 function LaunchesLayout() {
-  return (
-    <div className="contents">
-      <Outlet />
-    </div>
-  );
+  console.log('LAUNCHES LAYOUT MOUNTED');
+  return <Outlet />;
 }
