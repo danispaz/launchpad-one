@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
-import { rolesMeta } from "@/lib/mockData";
+import { rolesMeta } from "@/lib/permissions";
 import { Shield, Users, Bell, Zap, Settings as SettingsIcon } from "lucide-react";
 
 export const Route = createFileRoute("/settings")({

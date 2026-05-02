@@ -1,4 +1,4 @@
-import { statusMeta, teams, type LaunchStatus, type TeamKey, type Priority } from "@/lib/mockData";
+import { type LaunchStatus, type TeamName, type PriorityLevel, statusStyles, teamStyles } from "@/lib/utils/formatters";
 
 const toneStyles: Record<string, string> = {
   primary: "bg-surface-elevated text-foreground border-border",
@@ -9,17 +9,7 @@ const toneStyles: Record<string, string> = {
 };
 
 export function StatusBadge({ status }: { status: LaunchStatus }) {
-  const mapping: Record<string, LaunchStatus> = {
-    'planejamento': 'planning',
-    'em_andamento': 'in_progress',
-    'em_risco': 'at_risk',
-    'atrasado': 'blocked',
-    'lançado': 'launched',
-    'cancelado': 'blocked' // Defaulting cancelado to blocked style
-  };
-
-  const normalizedStatus = mapping[status] || status;
-  const meta = statusMeta[normalizedStatus as LaunchStatus] || statusMeta['planning'];
+  const meta = statusStyles[status] || statusStyles['planejamento'];
   
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium ${toneStyles[meta.tone] || toneStyles.info}`}>
@@ -29,23 +19,23 @@ export function StatusBadge({ status }: { status: LaunchStatus }) {
   );
 }
 
-export function TeamChip({ team }: { team: TeamKey }) {
-  const mapping: Record<string, TeamKey> = {
+export function TeamChip({ team }: { team: string }) {
+  const mapping: Record<string, TeamName> = {
     'marketing': 'marketing',
     'sales': 'sales',
     'vendas': 'sales',
-    'engineering': 'dev',
-    'dev': 'dev',
-    'desenvolvimento': 'dev',
+    'engineering': 'engineering',
+    'dev': 'engineering',
+    'desenvolvimento': 'engineering',
     'product': 'product',
     'produto': 'product',
-    'executive': 'exec',
-    'diretoria': 'exec',
-    'exec': 'exec'
+    'executive': 'executive',
+    'diretoria': 'executive',
+    'exec': 'executive'
   };
 
-  const normalizedTeam = mapping[team] || 'product';
-  const t = teams[normalizedTeam as TeamKey];
+  const normalizedTeam = mapping[team.toLowerCase()] || 'product';
+  const t = teamStyles[normalizedTeam];
   
   return (
     <span
@@ -59,27 +49,34 @@ export function TeamChip({ team }: { team: TeamKey }) {
   );
 }
 
-export function PriorityDot({ priority }: { priority: Priority }) {
-  const mapping: Record<string, Priority> = {
-    'baixa': 'low',
-    'média': 'medium',
-    'alta': 'high',
-    'crítica': 'critical'
+export function PriorityDot({ priority }: { priority: string }) {
+  const mapping: Record<string, PriorityLevel> = {
+    'baixa': 'baixa',
+    'low': 'baixa',
+    'média': 'media',
+    'médio': 'media',
+    'medium': 'media',
+    'media': 'media',
+    'alta': 'alta',
+    'high': 'alta',
+    'crítica': 'critica',
+    'critica': 'critica',
+    'critical': 'critica'
   };
 
-  const normalizedPriority = mapping[priority] || priority;
+  const normalizedPriority = mapping[priority.toLowerCase()] || 'media';
   
   const map = {
-    low: "bg-muted-foreground/30",
-    medium: "bg-info-foreground",
-    high: "bg-warning-foreground",
-    critical: "bg-destructive",
+    baixa: "bg-muted-foreground/30",
+    media: "bg-info-foreground",
+    alta: "bg-warning-foreground",
+    critica: "bg-destructive",
   } as const;
   
-  const labels = { low: "Baixa", medium: "Média", high: "Alta", critical: "Crítica" } as const;
+  const labels = { baixa: "Baixa", media: "Média", alta: "Alta", critica: "Crítica" } as const;
   
-  const currentClass = map[normalizedPriority as Priority] || map.medium;
-  const currentLabel = labels[normalizedPriority as Priority] || labels.medium;
+  const currentClass = map[normalizedPriority];
+  const currentLabel = labels[normalizedPriority];
 
   return (
     <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground" title={currentLabel}>

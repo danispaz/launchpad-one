@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
 import { StatusBadge, ProgressBar, Avatar } from "@/components/Badges";
-import { teams as teamsMeta, type TeamKey } from "@/lib/mockData";
+import { teamStyles, type TeamName } from "@/lib/utils/formatters";
 import { formatLaunchCode } from "@/lib/utils/formatters";
 import { useAuth } from "@/hooks/useAuth";
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -234,7 +234,7 @@ function Overview() {
                   {dbActivities.map((item, i) => (
                     <div key={i} className="relative pl-8">
                       <div className="absolute left-0 top-0.5 w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center z-10 shadow-sm">
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: teamsMeta[(item.profiles?.team as TeamKey) || 'product']?.color || '#ccc' }} />
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: teamStyles[(item.profiles?.team as string) || 'product']?.color || '#ccc' }} />
                       </div>
                       <div>
                         <p className="text-xs text-slate-600 leading-normal">
