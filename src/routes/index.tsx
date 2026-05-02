@@ -36,11 +36,17 @@ function Overview() {
   const atRisk = dbLaunches.filter((l) => l.status === "em_risco" || l.status === "atrasado");
   
   const overdueTasksCount = useMemo(() => {
-    return dbTasks.filter(t => t.status !== 'done' && t.data_entrega && new Date(t.data_entrega) < new Date()).length;
+    const now = new Date();
+    const count = dbTasks.filter(t => t.status !== 'done' && t.data_entrega && new Date(t.data_entrega) < now).length;
+    console.log('KPI Atrasadas:', count, 'Baseado em:', dbTasks.length, 'tarefas');
+    return count;
   }, [dbTasks]);
 
   const nextMilestonesCount = useMemo(() => {
-    return dbTasks.filter(t => t.status !== 'done' && t.data_entrega && new Date(t.data_entrega) >= new Date()).length;
+    const now = new Date();
+    const count = dbTasks.filter(t => t.status !== 'done' && t.data_entrega && new Date(t.data_entrega) >= now).length;
+    console.log('KPI Próximas:', count);
+    return count;
   }, [dbTasks]);
 
   const myTasks = useMemo(() => {
