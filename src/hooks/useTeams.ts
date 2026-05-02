@@ -45,8 +45,17 @@ export function useTeams() {
         const launchStats = launches.map(l => {
           const launchTasks = tasks.filter(t => t.launch_id === l.id);
           const totalTasks = launchTasks.length;
-          const doneTasks = launchTasks.filter(t => t.status === 'done').length;
+          const doneTasks = launchTasks.filter(t => t.status === 'concluída' || t.status === 'done').length;
           const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+          
+          console.log('TEAMS - Launch progress:', { 
+            launchId: l.id, 
+            nome: l.nome, 
+            total: totalTasks, 
+            done: doneTasks, 
+            progresso: progress 
+          });
+
           return { ...l, progress };
         });
 
