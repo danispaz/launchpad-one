@@ -197,7 +197,7 @@ function LaunchDetail() {
                     {(tasksByStatus as any)[statusKey].map((task: any) => (
                       <div key={task.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
                         <div className="flex items-center gap-2 mb-2">
-                          <TeamChip team={(task.assignee?.team as any) || 'product'} />
+                          <TeamChip team={(task.team as any) || 'product'} />
                         </div>
                         <p className="text-sm font-bold text-slate-800 leading-tight mb-3 group-hover:text-primary transition-colors">{task.titulo}</p>
                         <div className="flex items-center justify-between">
