@@ -16,6 +16,7 @@ import { Route as RisksRouteImport } from './routes/risks'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LaunchesRouteImport } from './routes/launches'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LaunchesIndexRouteImport } from './routes/launches.index'
 import { Route as LaunchesIdRouteImport } from './routes/launches.$id'
 
 const TeamsRoute = TeamsRouteImport.update({
@@ -53,6 +54,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LaunchesIndexRoute = LaunchesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LaunchesRoute,
+} as any)
 const LaunchesIdRoute = LaunchesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -68,16 +74,17 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/teams': typeof TeamsRoute
   '/launches/$id': typeof LaunchesIdRoute
+  '/launches/': typeof LaunchesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/launches': typeof LaunchesRouteWithChildren
   '/login': typeof LoginRoute
   '/risks': typeof RisksRoute
   '/roadmap': typeof RoadmapRoute
   '/settings': typeof SettingsRoute
   '/teams': typeof TeamsRoute
   '/launches/$id': typeof LaunchesIdRoute
+  '/launches': typeof LaunchesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -89,6 +96,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/teams': typeof TeamsRoute
   '/launches/$id': typeof LaunchesIdRoute
+  '/launches/': typeof LaunchesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,16 +109,17 @@ export interface FileRouteTypes {
     | '/settings'
     | '/teams'
     | '/launches/$id'
+    | '/launches/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/launches'
     | '/login'
     | '/risks'
     | '/roadmap'
     | '/settings'
     | '/teams'
     | '/launches/$id'
+    | '/launches'
   id:
     | '__root__'
     | '/'
@@ -121,6 +130,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/teams'
     | '/launches/$id'
+    | '/launches/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -184,6 +194,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/launches/': {
+      id: '/launches/'
+      path: '/'
+      fullPath: '/launches/'
+      preLoaderRoute: typeof LaunchesIndexRouteImport
+      parentRoute: typeof LaunchesRoute
+    }
     '/launches/$id': {
       id: '/launches/$id'
       path: '/$id'
@@ -196,10 +213,12 @@ declare module '@tanstack/react-router' {
 
 interface LaunchesRouteChildren {
   LaunchesIdRoute: typeof LaunchesIdRoute
+  LaunchesIndexRoute: typeof LaunchesIndexRoute
 }
 
 const LaunchesRouteChildren: LaunchesRouteChildren = {
   LaunchesIdRoute: LaunchesIdRoute,
+  LaunchesIndexRoute: LaunchesIndexRoute,
 }
 
 const LaunchesRouteWithChildren = LaunchesRoute._addFileChildren(
