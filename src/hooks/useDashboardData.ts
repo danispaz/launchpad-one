@@ -98,7 +98,7 @@ export function useDashboardData() {
       const processedLaunches: Launch[] = (launchesRaw || []).map((l: any) => {
         const launchTasks = tasksByLaunch[l.id] || [];
         const total = launchTasks.length;
-        const done = launchTasks.filter((t: any) => t.status === 'concluído').length;
+        const done = launchTasks.filter((t: any) => t.status === TASK_STATUS_DONE).length;
 
         const progresso = total > 0 ? Math.round((done / total) * 100) : 0;
         
