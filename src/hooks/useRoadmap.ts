@@ -51,7 +51,7 @@ export function useRoadmap() {
             acc[task.launch_id] = { total: 0, done: 0 };
           }
           acc[task.launch_id].total++;
-          if (task.status === 'concluído') {
+          if (task.status === TASK_STATUS_DONE) {
             acc[task.launch_id].done++;
           }
           return acc;
