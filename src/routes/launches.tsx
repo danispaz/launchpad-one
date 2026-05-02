@@ -2,7 +2,9 @@ import { createFileRoute, Link, useNavigate, useSearch, Outlet } from "@tanstack
 import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
 import { StatusBadge, TeamChip, Avatar } from "@/components/Badges";
-import { launches, type LaunchStatus, type TeamKey, teams as teamsMeta } from "@/lib/mockData";
+import { type LaunchStatus, teamMap, launchStatusMap, formatDate, formatLaunchCode, TeamName } from "@/lib/utils/formatters";
+import { useLaunches } from "@/hooks/useLaunches";
+
 import { Filter, X, Search } from "lucide-react";
 import { useEffect } from "react";
 
@@ -10,20 +12,22 @@ const STORAGE_KEY = "launchhub_launches_filters";
 
 type LaunchesSearch = {
   status?: LaunchStatus | "all";
-  team?: TeamKey | "all";
+  team?: TeamName | "all";
   q?: string;
 };
+
 
 export const Route = createFileRoute("/launches")({
   head: () => ({ meta: [{ title: "Lançamentos — LaunchHub" }] }),
   validateSearch: (search: Record<string, unknown>): LaunchesSearch => {
     return {
       status: (search.status as LaunchStatus) || "all",
-      team: (search.team as TeamKey) || "all",
+      team: (search.team as TeamName) || "all",
       q: (search.q as string) || "",
     };
   },
   loaderDeps: ({ search }) => search,
+
   loader: ({ deps }) => {
     // Save to localStorage if we have search params and are in the browser
     if (typeof window !== 'undefined' && Object.keys(deps).length > 0) {
@@ -43,18 +47,21 @@ function LaunchesLayout() {
 
 const statusFilters: { key: LaunchStatus | "all"; label: string }[] = [
   { key: "all", label: "Todos Status" },
-  { key: "in_progress", label: "Execução" },
-  { key: "planning", label: "Planejamento" },
-  { key: "at_risk", label: "Risco" },
-  { key: "blocked", label: "Bloqueado" },
-  { key: "launched", label: "Lançado" },
+  { key: "em_andamento", label: "Execução" },
+  { key: "planejamento", label: "Planejamento" },
+  { key: "em_risco", label: "Risco" },
+  { key: "atrasado", label: "Atrasado" },
+  { key: "concluido", label: "Concluído" },
 ];
 
-const teamKeys = Object.keys(teamsMeta) as TeamKey[];
+const teamKeys = Object.keys(teamMap) as TeamName[];
+
 
 export function LaunchesList() {
   const { status, team, q } = useSearch({ from: "/launches" });
   const navigate = useNavigate({ from: "/launches" });
+  const { launches, loading } = useLaunches();
+
 
   // Use useEffect only to initialize search if it's empty
   useEffect(() => {
@@ -78,26 +85,28 @@ export function LaunchesList() {
     }
   }, [status, team, q]);
 
-  const filteredList = launches.filter((l) => {
+  const filteredList = (launches || []).filter((l) => {
     const statusMatch = status === "all" || l.status === status;
-    const teamMatch = team === "all" || l.teams.includes(team as TeamKey);
+    const teamMatch = team === "all" || l.teams.includes(team as TeamName);
     
     const searchLower = (q || "").toLowerCase();
     const qMatch = !q || 
-      l.name.toLowerCase().includes(searchLower) || 
-      l.code.toLowerCase().includes(searchLower) || 
-      l.owner.name.toLowerCase().includes(searchLower);
+      l.nome.toLowerCase().includes(searchLower) || 
+      formatLaunchCode(l.id).toLowerCase().includes(searchLower) || 
+      l.owner?.nome.toLowerCase().includes(searchLower);
 
     return statusMatch && teamMatch && qMatch;
   });
+
 
   const setStatusFilter = (newStatus: LaunchStatus | "all") => {
     navigate({ search: (prev: LaunchesSearch) => ({ ...prev, status: newStatus }) });
   };
 
-  const setTeamFilter = (newTeam: TeamKey | "all") => {
+  const setTeamFilter = (newTeam: TeamName | "all") => {
     navigate({ search: (prev: LaunchesSearch) => ({ ...prev, team: newTeam }) });
   };
+
 
   const setQuery = (newQ: string) => {
     navigate({ search: (prev: LaunchesSearch) => ({ ...prev, q: newQ || undefined }) });
@@ -109,9 +118,21 @@ export function LaunchesList() {
 
   const hasFilters = status !== "all" || team !== "all" || !!q;
 
+  if (loading) {
+    return (
+      <AppLayout>
+        <TopBar title="Lançamentos" subtitle="Base de dados central" />
+        <div className="flex items-center justify-center h-[50vh]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <TopBar title="Lançamentos" subtitle="Base de dados central" />
+
       <div className="flex-1 px-8 py-10 max-w-[1200px] mx-auto w-full">
         <div className="flex flex-col gap-6 mb-8">
           <div className="flex flex-wrap items-center gap-4">
@@ -130,13 +151,14 @@ export function LaunchesList() {
               <select 
                 className="bg-white border border-border/50 rounded-lg px-3 py-2 text-[11px] font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary/20"
                 value={team}
-                onChange={(e) => setTeamFilter(e.target.value as TeamKey | "all")}
+                onChange={(e) => setTeamFilter(e.target.value as TeamName | "all")}
               >
                 <option value="all">Todos os Times</option>
                 {teamKeys.map(tk => (
-                  <option key={tk} value={tk}>{teamsMeta[tk].label}</option>
+                  <option key={tk} value={tk}>{teamMap[tk]}</option>
                 ))}
               </select>
+
 
               {hasFilters && (
                 <button 
@@ -182,27 +204,29 @@ export function LaunchesList() {
             <tbody className="divide-y divide-border/40">
               {filteredList.map((l) => (
                 <tr key={l.id} className="group hover:bg-slate-50/50 transition-colors">
-                  <td className="px-6 py-5 text-xs font-mono text-muted-foreground">{l.code}</td>
+                  <td className="px-6 py-5 text-xs font-mono text-muted-foreground">{formatLaunchCode(l.id)}</td>
                   <td className="px-6 py-5">
                     <Link to="/launches/$id" params={{ id: l.id }} className="text-sm font-semibold text-foreground hover:text-primary transition-colors">
-                      {l.name}
+                      {l.nome}
                     </Link>
                   </td>
-                  <td className="px-6 py-5"><StatusBadge status={l.status} /></td>
+                  <td className="px-6 py-5"><StatusBadge status={l.status as any} /></td>
+
                   <td className="px-6 py-5">
                     <div className="flex flex-wrap gap-1">
-                      {l.teams.slice(0, 3).map((t) => <TeamChip key={t} team={t} />)}
+                      {l.teams.slice(0, 3).map((t) => <TeamChip key={t} team={t as any} />)}
                       {l.teams.length > 3 && <span className="text-[10px] text-muted-foreground self-center ml-1">+{l.teams.length - 3}</span>}
                     </div>
                   </td>
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-2">
-                      <Avatar initials={l.owner.initials} />
-                      <span className="text-xs text-muted-foreground">{l.owner.name}</span>
+                      <Avatar initials={l.owner?.initials || '??'} />
+                      <span className="text-xs text-muted-foreground">{l.owner?.nome || 'N/A'}</span>
+
                     </div>
                   </td>
                   <td className="px-6 py-5 text-right">
-                    <span className="text-xs font-medium text-muted-foreground">{fmtDate(l.targetDate)}</span>
+                    <span className="text-xs font-medium text-muted-foreground">{formatDate(l.data_lancamento_prevista)}</span>
                   </td>
                 </tr>
               ))}
@@ -221,6 +245,3 @@ export function LaunchesList() {
   );
 }
 
-function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
-}
