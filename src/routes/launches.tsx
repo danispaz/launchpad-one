@@ -30,8 +30,16 @@ export const Route = createFileRoute("/launches")({
       localStorage.setItem(STORAGE_KEY, JSON.stringify(deps));
     }
   },
-  component: LaunchesList,
+  component: LaunchesLayout,
 });
+
+function LaunchesLayout() {
+  return (
+    <div className="contents">
+      <Outlet />
+    </div>
+  );
+}
 
 const statusFilters: { key: LaunchStatus | "all"; label: string }[] = [
   { key: "all", label: "Todos Status" },
@@ -44,7 +52,7 @@ const statusFilters: { key: LaunchStatus | "all"; label: string }[] = [
 
 const teamKeys = Object.keys(teamsMeta) as TeamKey[];
 
-function LaunchesList() {
+export function LaunchesList() {
   const { status, team, q } = useSearch({ from: "/launches" });
   const navigate = useNavigate({ from: "/launches" });
 
@@ -103,15 +111,8 @@ function LaunchesList() {
 
   return (
     <AppLayout>
-      <Outlet />
-    </AppLayout>
-  );
-}
-
-function LaunchesListPage() {
-  const { status, team, q } = useSearch({ from: "/launches" });
-  const navigate = useNavigate({ from: "/launches" });
-  // ... rest of the component logic
+      <TopBar title="Lançamentos" subtitle="Base de dados central" />
+      <div className="flex-1 px-8 py-10 max-w-[1200px] mx-auto w-full">
         <div className="flex flex-col gap-6 mb-8">
           <div className="flex flex-wrap items-center gap-4">
             <div className="relative flex-1 min-w-[300px]">
@@ -120,7 +121,7 @@ function LaunchesListPage() {
                 type="text"
                 placeholder="Buscar por nome, código ou responsável..."
                 className="w-full bg-white border border-border/50 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/20 transition-shadow"
-                value={q}
+                value={q || ''}
                 onChange={(e) => setQuery(e.target.value)}
               />
             </div>
