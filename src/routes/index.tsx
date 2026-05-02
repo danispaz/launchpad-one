@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
 import { StatusBadge, ProgressBar, Avatar } from "@/components/Badges";
-import { teams as teamsMeta, type TeamKey } from "@/lib/mockData";
+import { teamStyles, type TeamName } from "@/lib/utils/formatters";
 import { formatLaunchCode } from "@/lib/utils/formatters";
 import { useAuth } from "@/hooks/useAuth";
 import { useDashboardData } from "@/hooks/useDashboardData";
