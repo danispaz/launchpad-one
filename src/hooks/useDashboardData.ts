@@ -80,10 +80,15 @@ export function useDashboardData() {
 
         let progresso = 0;
         const total = taskStats?.length || 0;
-        const done = taskStats?.filter(t => t.status === 'done').length || 0;
+        const done = taskStats?.filter(t => t.status === 'concluído').length || 0;
         progresso = total > 0 ? Math.round((done / total) * 100) : 0;
         
-        console.log(`Progresso do lançamento ${l.nome}: ${done}/${total} tasks concluídas (${progresso}%)`);
+        console.log(`Debug Launch: ${l.nome}`, {
+          total_tasks: total,
+          concluidas: done,
+          progresso_calculado: progresso,
+          task_statuses: taskStats?.map(t => t.status)
+        });
 
         return {
           id: l.id,
