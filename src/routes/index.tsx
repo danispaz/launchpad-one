@@ -234,7 +234,7 @@ function Overview() {
                   {dbActivities.map((item, i) => (
                     <div key={i} className="relative pl-8">
                       <div className="absolute left-0 top-0.5 w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center z-10 shadow-sm">
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: teamsMeta[(item.profiles?.team as TeamKey) || 'product']?.color || '#ccc' }} />
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: teamStyles[(item.profiles?.team as string) || 'product']?.color || '#ccc' }} />
                       </div>
                       <div>
                         <p className="text-xs text-slate-600 leading-normal">
