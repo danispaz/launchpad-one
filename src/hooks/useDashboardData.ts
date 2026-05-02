@@ -113,43 +113,50 @@ export function useDashboardData() {
         };
       });
 
-      // 2. Fetch Tasks for current user
+      // 2. Fetch Tasks for current user — versão simplificada
       const { data: userData } = await supabase.auth.getUser();
       const user = userData?.user;
       let tasksData: Task[] = [];
       
       if (user) {
-        const { data: userTasksRaw, error: tError } = await supabase
-          .from('tasks')
-          .select(`
-            id,
-            titulo,
-            status,
-            data_entrega,
-            prioridade,
-            phases!inner(
-              id,
-              launch_id,
-              launches(nome)
-            )
-          `)
-          .eq('assignee_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(10);
+        console.log('Buscando tarefas para user.id:', user.id);
 
-        if (tError) throw tError;
-        
-        tasksData = (userTasksRaw || []).map((t: any) => ({
+        // Query simples, sem join inner
+        const { data: rawTasks, error: tError } = await supabase
+          .from('tasks')
+          .select('id, titulo, status, data_entrega, prioridade, launch_id, phase_id')
+          .eq('assignee_id', user.id)
+          .order('data_entrega', { ascending: true, nullsFirst: false })
+          .limit(20);
+
+        console.log('User tasks raw:', rawTasks);
+        if (tError) {
+          console.error('User tasks error:', tError);
+          throw tError;
+        }
+
+        // Busca os nomes dos launches separadamente
+        const launchIds = [...new Set((rawTasks || []).map(t => t.launch_id).filter(Boolean))];
+        const { data: launchNames, error: lNamesError } = await supabase
+          .from('launches')
+          .select('id, nome')
+          .in('id', launchIds);
+
+        if (lNamesError) console.error('Error fetching launch names for tasks:', lNamesError);
+
+        const launchMap = Object.fromEntries((launchNames || []).map(l => [l.id, l.nome]));
+
+        tasksData = (rawTasks || []).map(t => ({
           id: t.id,
           titulo: t.titulo,
           status: t.status,
-          prioridade: t.prioridade || 'media', 
+          prioridade: (t.prioridade as PriorityLevel) || 'média', 
           data_entrega: t.data_entrega,
-          launch_id: t.phases.launch_id,
-          launch: { nome: t.phases.launches.nome }
+          launch_id: t.launch_id,
+          launch: { nome: launchMap[t.launch_id] || 'Sem lançamento' }
         }));
 
-        console.log('Minhas tarefas carregadas:', tasksData.length);
+        console.log('Minhas tarefas processadas:', tasksData.length);
       }
 
       // 3. Activity Feed from tasks
