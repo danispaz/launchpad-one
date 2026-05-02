@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useSearch, Outlet } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
 import { StatusBadge, TeamChip, Avatar } from "@/components/Badges";
@@ -103,8 +103,15 @@ function LaunchesList() {
 
   return (
     <AppLayout>
-      <TopBar title="Lançamentos" subtitle="Base de dados central" />
-      <div className="flex-1 px-8 py-10 max-w-[1200px] mx-auto w-full">
+      <Outlet />
+    </AppLayout>
+  );
+}
+
+function LaunchesListPage() {
+  const { status, team, q } = useSearch({ from: "/launches" });
+  const navigate = useNavigate({ from: "/launches" });
+  // ... rest of the component logic
         <div className="flex flex-col gap-6 mb-8">
           <div className="flex flex-wrap items-center gap-4">
             <div className="relative flex-1 min-w-[300px]">

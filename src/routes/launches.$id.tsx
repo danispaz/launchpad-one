@@ -31,7 +31,9 @@ export const Route = createFileRoute("/launches/$id")({
 });
 
 function LaunchDetail() {
-  const { id } = Route.useParams();
+  const params = Route.useParams();
+  const { id } = params;
+  console.log('LAUNCH DETAIL PAGE MOUNTED', { id });
   const { launch, phases, tasks, milestones, risks, loading, error } = useLaunchDetail(id);
   const [expandedTeams, setExpandedTeams] = useState<string[]>([]);
 
