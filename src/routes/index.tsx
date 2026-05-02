@@ -3,6 +3,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
 import { StatusBadge, ProgressBar, Avatar } from "@/components/Badges";
 import { teams as teamsMeta, type TeamKey } from "@/lib/mockData";
+import { formatLaunchCode } from "@/lib/utils/formatters";
 import { useAuth } from "@/hooks/useAuth";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { 
@@ -31,15 +32,15 @@ function Overview() {
   const { user } = useAuth();
   const { launches: dbLaunches, tasks: dbTasks, activities: dbActivities, loading } = useDashboardData();
   
-  const active = dbLaunches.filter((l) => l.status !== "lançado" && l.status !== "cancelado");
+  const active = dbLaunches.filter((l) => l.status !== "concluido" && l.status !== "atrasado"); // Simplificando filtro para o que existe no enum
   const atRisk = dbLaunches.filter((l) => l.status === "em_risco" || l.status === "atrasado");
   
   const overdueTasksCount = useMemo(() => {
-    return dbTasks.filter(t => t.status !== 'concluído' && t.data_entrega && new Date(t.data_entrega) < new Date()).length;
+    return dbTasks.filter(t => t.status !== 'done' && t.data_entrega && new Date(t.data_entrega) < new Date()).length;
   }, [dbTasks]);
 
   const nextMilestonesCount = useMemo(() => {
-    return dbTasks.filter(t => t.status !== 'concluído' && t.data_entrega && new Date(t.data_entrega) >= new Date()).length;
+    return dbTasks.filter(t => t.status !== 'done' && t.data_entrega && new Date(t.data_entrega) >= new Date()).length;
   }, [dbTasks]);
 
   const myTasks = useMemo(() => {
@@ -47,7 +48,7 @@ function Overview() {
       id: t.id,
       title: t.titulo,
       launch: t.launch?.nome || 'Geral',
-      urgency: t.prioridade === 'crítica' ? 'critical' : t.prioridade === 'alta' ? 'high' : 'medium',
+      urgency: t.prioridade === 'critica' ? 'critical' : t.prioridade === 'alta' ? 'high' : 'medium',
       due: t.data_entrega ? new Date(t.data_entrega).toLocaleDateString('pt-BR') : 'Sem data'
     }));
   }, [dbTasks]);
@@ -103,11 +104,11 @@ function Overview() {
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 uppercase tracking-wider">
-                          {l.nome?.substring(0, 3).toUpperCase() || 'LCH'}
+                          {formatLaunchCode(l.id)}
                         </span>
                         <StatusBadge status={(l.status as any) || 'planejamento'} />
                       </div>
-                      <Avatar initials={l.owner?.nome ? l.owner.nome.split(' ').map(n => n[0]).join('').substring(0, 2) : '??'} />
+                      <Avatar initials={l.owner?.full_name ? l.owner.full_name.split(' ').map((n: string) => n[0]).join('').substring(0, 2) : '??'} />
                     </div>
                     <h4 className="font-bold text-slate-800 mb-6 group-hover:text-primary transition-colors text-base">{l.nome || 'Lançamento sem nome'}</h4>
 
@@ -213,7 +214,7 @@ function Overview() {
                       </div>
                       <div>
                         <p className="text-xs text-slate-600 leading-normal">
-                          <span className="font-bold text-slate-800">{item.profiles?.nome || 'Usuário'}</span> {item.acao || ''} em <span className="font-bold text-slate-800 underline decoration-slate-200 decoration-2 underline-offset-2">{item.launches?.nome || 'Lançamento'}</span>
+                          <span className="font-bold text-slate-800">{item.profiles?.full_name || 'Usuário'}</span> {item.acao || ''} <span className="font-bold text-slate-800 underline decoration-slate-200 decoration-2 underline-offset-2">{item.launches?.nome || 'Lançamento'}</span>
                         </p>
                         <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-tight">{item.created_at ? new Date(item.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--'}</p>
                       </div>
