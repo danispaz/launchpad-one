@@ -3,7 +3,7 @@ import { TeamName } from "@/lib/utils/formatters";
 import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
 import { StatusBadge, TeamChip, ProgressBar, Avatar, PriorityDot } from "@/components/Badges";
-import { formatLaunchCode, teamMap, taskStatusMap, priorityMap } from "@/lib/utils/formatters";
+import { formatLaunchCode, teamMap, taskStatusMap, priorityMap, TASK_STATUS_DONE, TASK_STATUS_IN_PROGRESS, TASK_STATUS_TODO, TASK_STATUS_BLOCKED } from "@/lib/utils/formatters";
 import { useLaunchDetail } from "@/hooks/useLaunchDetail";
 import { 
   ChevronLeft, 
@@ -46,10 +46,10 @@ function LaunchDetail() {
 
   const tasksByStatus = useMemo(() => {
     return {
-      todo: tasks.filter(t => t.status === 'a_fazer'),
-      in_progress: tasks.filter(t => t.status === 'em_andamento'),
-      blocked: tasks.filter(t => t.status === 'bloqueado'),
-      done: tasks.filter(t => t.status === 'concluído')
+      todo: tasks.filter(t => t.status === TASK_STATUS_TODO),
+      in_progress: tasks.filter(t => t.status === TASK_STATUS_IN_PROGRESS),
+      blocked: tasks.filter(t => t.status === TASK_STATUS_BLOCKED),
+      done: tasks.filter(t => t.status === TASK_STATUS_DONE)
     };
   }, [tasks]);
 
@@ -121,7 +121,7 @@ function LaunchDetail() {
             <Meta icon={Avatar} label="Responsável" value={launch.owner?.nome || 'Não atribuído'} />
           </div>
           <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-            <Meta icon={ListTodo} label="Tarefas" value={`${tasks.filter(t => t.status === 'concluído').length}/${tasks.length}`} />
+            <Meta icon={ListTodo} label="Tarefas" value={`${tasks.filter(t => t.status === TASK_STATUS_DONE).length}/${tasks.length}`} />
           </div>
         </div>
 
@@ -237,9 +237,9 @@ function LaunchDetail() {
                     <div className="space-y-3 mt-4">
                       {teamTasks.map(task => (
                         <div key={task.id} className="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-xl transition-colors group">
-                          {task.status === 'concluído' ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <Circle className="h-4 w-4 text-slate-300" />}
+                          {task.status === TASK_STATUS_DONE ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <Circle className="h-4 w-4 text-slate-300" />}
                           <div className="flex-1">
-                            <p className={`text-sm ${task.status === 'concluído' ? "line-through text-slate-400" : "font-bold text-slate-700"}`}>{task.titulo}</p>
+                            <p className={`text-sm ${task.status === TASK_STATUS_DONE ? "line-through text-slate-400" : "font-bold text-slate-700"}`}>{task.titulo}</p>
                             <p className="text-[10px] text-slate-400 font-bold uppercase">{task.assignee?.nome || 'Sem responsável'} · {task.data_entrega ? new Date(task.data_entrega).toLocaleDateString('pt-BR') : 'Sem data'}</p>
                           </div>
                           <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-500`}>

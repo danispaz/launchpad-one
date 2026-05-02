@@ -1,7 +1,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { LaunchStatus, PriorityLevel, TaskStatus, TeamName } from '@/lib/utils/formatters';
+import { LaunchStatus, PriorityLevel, TaskStatus, TeamName, TASK_STATUS_DONE } from '@/lib/utils/formatters';
 
 export type Profile = {
   id: string;
@@ -142,7 +142,7 @@ export function useLaunchDetail(launchId: string) {
 
       // 6. Anexa profiles e calcula progresso
       const totalTasks = tasksRaw?.length || 0;
-      const doneTasks = tasksRaw?.filter(t => t.status === 'concluído').length || 0;
+      const doneTasks = tasksRaw?.filter(t => t.status === TASK_STATUS_DONE).length || 0;
       const progresso = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
 
       const processedLaunch: LaunchDetail = {

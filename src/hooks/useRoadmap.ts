@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { LaunchStatus } from '@/lib/utils/formatters';
+import { LaunchStatus, TASK_STATUS_DONE } from '@/lib/utils/formatters';
 
 export interface RoadmapItem {
   id: string;
@@ -51,7 +51,7 @@ export function useRoadmap() {
             acc[task.launch_id] = { total: 0, done: 0 };
           }
           acc[task.launch_id].total++;
-          if (task.status === 'concluído') {
+          if (task.status === TASK_STATUS_DONE) {
             acc[task.launch_id].done++;
           }
           return acc;

@@ -1,7 +1,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { LaunchStatus, PriorityLevel, TaskStatus, TeamName } from '@/lib/utils/formatters';
+import { LaunchStatus, PriorityLevel, TaskStatus, TeamName, TASK_STATUS_DONE, TASK_STATUS_IN_PROGRESS, TASK_STATUS_BLOCKED } from '@/lib/utils/formatters';
 
 export type Profile = {
   id: string;
@@ -98,7 +98,7 @@ export function useDashboardData() {
       const processedLaunches: Launch[] = (launchesRaw || []).map((l: any) => {
         const launchTasks = tasksByLaunch[l.id] || [];
         const total = launchTasks.length;
-        const done = launchTasks.filter((t: any) => t.status === 'concluído').length;
+        const done = launchTasks.filter((t: any) => t.status === TASK_STATUS_DONE).length;
 
         const progresso = total > 0 ? Math.round((done / total) * 100) : 0;
         
@@ -158,9 +158,9 @@ export function useDashboardData() {
         tasksData = (rawTasks || []).map(t => {
           // Mapeia status do banco ('concluído', 'todo', etc) para o Enum TaskStatus ('done', 'todo', etc)
           let status: TaskStatus = 'todo';
-          if (t.status === 'concluído' || t.status === 'done') status = 'done';
-          else if (t.status === 'em_andamento' || t.status === 'in_progress') status = 'in_progress';
-          else if (t.status === 'bloqueado' || t.status === 'blocked') status = 'blocked';
+          if (t.status === TASK_STATUS_DONE || t.status === 'done') status = 'done';
+          else if (t.status === TASK_STATUS_IN_PROGRESS || t.status === 'in_progress') status = 'in_progress';
+          else if (t.status === TASK_STATUS_BLOCKED || t.status === 'blocked') status = 'blocked';
 
           return {
             id: t.id,
@@ -204,7 +204,7 @@ export function useDashboardData() {
 
       const transformedActivities: ActivityLog[] = (activitiesRaw || []).map((a: any) => ({
         id: a.id,
-        acao: a.status === 'concluído' ? 'concluiu a tarefa' : 'está trabalhando em',
+        acao: a.status === TASK_STATUS_DONE ? 'concluiu a tarefa' : (a.status === TASK_STATUS_IN_PROGRESS ? 'começou a trabalhar em' : 'criou a tarefa'),
         entidade: a.titulo,
         created_at: a.created_at,
         profiles: actProfileMap[a.assignee_id],
