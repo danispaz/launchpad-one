@@ -1,6 +1,10 @@
 
 import { Database } from "@/integrations/supabase/types";
 
+// Se o arquivo for realmente read-only e não conseguirmos importar, 
+// definirei os enums manualmente para não travar o desenvolvimento.
+// Mas tentarei o import primeiro.
+
 type Enums = Database["public"]["Enums"];
 
 /**
