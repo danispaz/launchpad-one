@@ -22,11 +22,12 @@ export const Route = createFileRoute("/launches")({
   validateSearch: (search: Record<string, unknown>): LaunchesSearch => {
     return {
       status: (search.status as LaunchStatus) || "all",
-      team: (search.team as TeamKey) || "all",
+      team: (search.team as TeamName) || "all",
       q: (search.q as string) || "",
     };
   },
   loaderDeps: ({ search }) => search,
+
   loader: ({ deps }) => {
     // Save to localStorage if we have search params and are in the browser
     if (typeof window !== 'undefined' && Object.keys(deps).length > 0) {
