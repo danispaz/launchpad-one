@@ -5,7 +5,7 @@ import { LaunchStatus, PriorityLevel, TaskStatus, TeamName } from '@/lib/utils/f
 
 export type Profile = {
   id: string;
-  full_name: string | null;
+  nome: string | null;
   avatar_url: string | null;
   role: string | null;
   team: TeamName | null;
@@ -70,24 +70,20 @@ export function useDashboardData() {
       if (lError) throw lError;
 
       const processedLaunches: Launch[] = await Promise.all((launchesRaw || []).map(async (l: any) => {
-        const { data: phases } = await supabase
-          .from('phases')
-          .select('id')
-          .eq('launch_id', l.id);
-        
-        const phaseIds = phases?.map(p => p.id) || [];
-        
-        let progresso = 0;
-        if (phaseIds.length > 0) {
-          const { data: taskCounts } = await supabase
-            .from('tasks')
-            .select('status')
-            .in('phase_id', phaseIds);
+        // Query otimizada: contar tarefas diretamente pelo launch_id (via join com phases)
+        const { data: taskStats, error: sError } = await supabase
+          .from('tasks')
+          .select('status, phases!inner(launch_id)')
+          .eq('phases.launch_id', l.id);
 
-          const total = taskCounts?.length || 0;
-          const done = taskCounts?.filter(t => t.status === 'done').length || 0;
-          progresso = total > 0 ? Math.round((done / total) * 100) : 0;
-        }
+        if (sError) console.error('Erro ao buscar stats de tasks para launch', l.id, sError);
+
+        let progresso = 0;
+        const total = taskStats?.length || 0;
+        const done = taskStats?.filter(t => t.status === 'done').length || 0;
+        progresso = total > 0 ? Math.round((done / total) * 100) : 0;
+        
+        console.log(`Progresso do lançamento ${l.nome}: ${done}/${total} tasks concluídas (${progresso}%)`);
 
         return {
           id: l.id,
@@ -114,6 +110,8 @@ export function useDashboardData() {
             id,
             titulo,
             status,
+            data_entrega,
+            prioridade,
             phases!inner(
               id,
               launch_id,
@@ -130,11 +128,13 @@ export function useDashboardData() {
           id: t.id,
           titulo: t.titulo,
           status: t.status,
-          prioridade: 'media', 
-          data_entrega: null,
+          prioridade: t.prioridade || 'media', 
+          data_entrega: t.data_entrega,
           launch_id: t.phases.launch_id,
           launch: { nome: t.phases.launches.nome }
         }));
+
+        console.log('Minhas tarefas carregadas:', tasksData.length);
       }
 
       // 3. Activity Feed from tasks

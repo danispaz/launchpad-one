@@ -108,7 +108,7 @@ function Overview() {
                         </span>
                         <StatusBadge status={(l.status as any) || 'planejamento'} />
                       </div>
-                      <Avatar initials={l.owner?.full_name ? l.owner.full_name.split(' ').map((n: string) => n[0]).join('').substring(0, 2) : '??'} />
+                      <Avatar initials={l.owner?.nome ? l.owner.nome.split(' ').map((n: string) => n[0]).join('').substring(0, 2) : '??'} />
                     </div>
                     <h4 className="font-bold text-slate-800 mb-6 group-hover:text-primary transition-colors text-base">{l.nome || 'Lançamento sem nome'}</h4>
 
@@ -214,7 +214,7 @@ function Overview() {
                       </div>
                       <div>
                         <p className="text-xs text-slate-600 leading-normal">
-                          <span className="font-bold text-slate-800">{item.profiles?.full_name || 'Usuário'}</span> {item.acao || ''} <span className="font-bold text-slate-800 underline decoration-slate-200 decoration-2 underline-offset-2">{item.launches?.nome || 'Lançamento'}</span>
+                          <span className="font-bold text-slate-800">{item.profiles?.nome || 'Usuário'}</span> {item.acao || ''} <span className="font-bold text-slate-800 underline decoration-slate-200 decoration-2 underline-offset-2">{item.launches?.nome || 'Lançamento'}</span>
                         </p>
                         <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-tight">{item.created_at ? new Date(item.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--'}</p>
                       </div>
