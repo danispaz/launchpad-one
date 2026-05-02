@@ -237,7 +237,7 @@ function LaunchDetail() {
                     <div className="space-y-3 mt-4">
                       {teamTasks.map(task => (
                         <div key={task.id} className="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-xl transition-colors group">
-                          {task.status === 'concluído' ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <Circle className="h-4 w-4 text-slate-300" />}
+                          {task.status === TASK_STATUS_DONE ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <Circle className="h-4 w-4 text-slate-300" />}
                           <div className="flex-1">
                             <p className={`text-sm ${task.status === 'concluído' ? "line-through text-slate-400" : "font-bold text-slate-700"}`}>{task.titulo}</p>
                             <p className="text-[10px] text-slate-400 font-bold uppercase">{task.assignee?.nome || 'Sem responsável'} · {task.data_entrega ? new Date(task.data_entrega).toLocaleDateString('pt-BR') : 'Sem data'}</p>
