@@ -18,6 +18,7 @@ export type Task = {
   status: TaskStatus | string;
   prioridade: PriorityLevel;
   data_entrega: string | null;
+  team: TeamName | null;
   launch_id: string;
   phase_id: string | null;
   assignee_id: string | null;
@@ -34,7 +35,7 @@ export type Phase = {
 export type Milestone = {
   id: string;
   nome: string;
-  data_prevista: string;
+  data: string;
   status: 'concluido' | 'pendente';
   launch_id: string;
 };

@@ -55,7 +55,8 @@ function LaunchDetail() {
 
   const tasksByTeam = useMemo(() => {
     return tasks.reduce((acc, task) => {
-      const team = task.assignee?.team || 'outros';
+      // Usar o campo team da própria tarefa, com fallback para 'outros'
+      const team = (task.team as string) || 'outros';
       if (!acc[team]) acc[team] = [];
       acc[team].push(task);
       return acc;
@@ -150,7 +151,7 @@ function LaunchDetail() {
                         </div>
                         <div className="flex-1">
                           <p className="text-sm font-bold text-slate-800">{m.nome}</p>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase">{new Date(m.data_prevista).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase">{new Date(m.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
                         </div>
                         <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${m.status === 'concluido' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
                           {m.status === 'concluido' ? 'Concluído' : 'Pendente'}
@@ -196,7 +197,7 @@ function LaunchDetail() {
                     {(tasksByStatus as any)[statusKey].map((task: any) => (
                       <div key={task.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
                         <div className="flex items-center gap-2 mb-2">
-                          <TeamChip team={(task.assignee?.team as any) || 'product'} />
+                          <TeamChip team={(task.team as any) || 'product'} />
                         </div>
                         <p className="text-sm font-bold text-slate-800 leading-tight mb-3 group-hover:text-primary transition-colors">{task.titulo}</p>
                         <div className="flex items-center justify-between">
