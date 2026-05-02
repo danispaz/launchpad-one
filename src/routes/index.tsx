@@ -3,6 +3,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
 import { StatusBadge, ProgressBar, Avatar } from "@/components/Badges";
 import { teams as teamsMeta, type TeamKey } from "@/lib/mockData";
+import { formatLaunchCode } from "@/lib/utils/formatters";
 import { useAuth } from "@/hooks/useAuth";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { 
@@ -103,7 +104,7 @@ function Overview() {
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 uppercase tracking-wider">
-                          {l.id.substring(0, 3).toUpperCase() || 'LCH'}
+                          {formatLaunchCode(l.id)}
                         </span>
                         <StatusBadge status={(l.status as any) || 'planejamento'} />
                       </div>
