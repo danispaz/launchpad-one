@@ -49,7 +49,7 @@ function LaunchDetail() {
       todo: tasks.filter(t => t.status === 'a_fazer'),
       in_progress: tasks.filter(t => t.status === 'em_andamento'),
       blocked: tasks.filter(t => t.status === 'bloqueado'),
-      done: tasks.filter(t => t.status === 'concluído')
+      done: tasks.filter(t => t.status === TASK_STATUS_DONE)
     };
   }, [tasks]);
 
