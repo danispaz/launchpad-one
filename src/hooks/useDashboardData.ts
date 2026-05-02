@@ -39,6 +39,7 @@ export type Task = {
 export type ActivityLog = {
   id: string;
   acao: string;
+  entidade: string;
   created_at: string;
   profiles?: Profile;
   launches?: {
@@ -58,10 +59,8 @@ export function useDashboardData() {
       setLoading(true);
       setError(null);
 
-      // 1. Fetch Launches with progress calculation
-      // Note: In a real app, progress might be a column or a view.
-      // Here we fetch launches and then fetch task completion for each.
-      const { data: launchesData, error: lError } = await supabase
+      // 1. Fetch Launches
+      const { data: launchesRaw, error: lError } = await supabase
         .from('launches')
         .select(`
           *,
@@ -70,8 +69,7 @@ export function useDashboardData() {
 
       if (lError) throw lError;
 
-      // Calculate progress for each launch
-      const processedLaunches = await Promise.all((launchesData || []).map(async (l) => {
+      const processedLaunches: Launch[] = await Promise.all((launchesRaw || []).map(async (l: any) => {
         const { data: phases } = await supabase
           .from('phases')
           .select('id')
@@ -79,32 +77,43 @@ export function useDashboardData() {
         
         const phaseIds = phases?.map(p => p.id) || [];
         
-        if (phaseIds.length === 0) return { ...l, progresso: 0 };
+        let progresso = 0;
+        if (phaseIds.length > 0) {
+          const { data: taskCounts } = await supabase
+            .from('tasks')
+            .select('status')
+            .in('phase_id', phaseIds);
 
-        const { data: taskCounts } = await supabase
-          .from('tasks')
-          .select('status')
-          .in('phase_id', phaseIds);
+          const total = taskCounts?.length || 0;
+          const done = taskCounts?.filter(t => t.status === 'done').length || 0;
+          progresso = total > 0 ? Math.round((done / total) * 100) : 0;
+        }
 
-        const total = taskCounts?.length || 0;
-        const done = taskCounts?.filter(t => t.status === 'done').length || 0;
-        const progresso = total > 0 ? Math.round((done / total) * 100) : 0;
-
-        return { ...l, progresso };
+        return {
+          id: l.id,
+          nome: l.nome,
+          status: l.status,
+          prioridade: l.prioridade,
+          data_lancamento_prevista: l.data_lancamento_prevista,
+          owner_id: l.owner_id,
+          descricao: l.descricao,
+          progresso,
+          owner: l.owner
+        };
       }));
 
       // 2. Fetch Tasks for current user
-      const { data: { user } } = await supabase.auth.getUser();
-      let tasksData = [];
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData?.user;
+      let tasksData: Task[] = [];
+      
       if (user) {
-        const { data: userTasks, error: tError } = await supabase
+        const { data: userTasksRaw, error: tError } = await supabase
           .from('tasks')
           .select(`
             id,
             titulo,
             status,
-            phase_id,
-            assignee_id,
             phases!inner(
               id,
               launch_id,
@@ -117,20 +126,19 @@ export function useDashboardData() {
 
         if (tError) throw tError;
         
-        // Transform task structure to match UI expectations
-        tasksData = (userTasks || []).map(t => ({
+        tasksData = (userTasksRaw || []).map((t: any) => ({
           id: t.id,
           titulo: t.titulo,
           status: t.status,
-          prioridade: 'media', // Defaulting since it's missing in my task query or schema
-          data_entrega: null,   // This field is not in our simplified schema, adding as null
+          prioridade: 'media', 
+          data_entrega: null,
           launch_id: t.phases.launch_id,
           launch: { nome: t.phases.launches.nome }
         }));
       }
 
-      // 3. Fetch Activity Feed (from activity_log if it exists, fallback to tasks)
-      const { data: activitiesData, error: aError } = await supabase
+      // 3. Activity Feed from tasks
+      const { data: activitiesRaw, error: aError } = await supabase
         .from('tasks')
         .select(`
           id,
@@ -145,7 +153,9 @@ export function useDashboardData() {
         .order('created_at', { ascending: false })
         .limit(10);
 
-      const transformedActivities = (activitiesData || []).map(a => ({
+      if (aError) throw aError;
+
+      const transformedActivities: ActivityLog[] = (activitiesRaw || []).map((a: any) => ({
         id: a.id,
         acao: a.status === 'done' ? 'concluiu a tarefa' : 'está trabalhando em',
         entidade: a.titulo,
@@ -168,14 +178,14 @@ export function useDashboardData() {
   useEffect(() => {
     fetchData();
 
-    const launchesSub = supabase
+    const channel = supabase
       .channel('dashboard-changes')
-      .on('postgres_changes', { event: '*', table: 'launches' }, fetchData)
-      .on('postgres_changes', { event: '*', table: 'tasks' }, fetchData)
+      .on('postgres_changes' as any, { event: '*', table: 'launches' }, fetchData)
+      .on('postgres_changes' as any, { event: '*', table: 'tasks' }, fetchData)
       .subscribe();
 
     return () => {
-      supabase.removeChannel(launchesSub);
+      supabase.removeChannel(channel);
     };
   }, [fetchData]);
 
