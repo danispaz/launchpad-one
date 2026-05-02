@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { LaunchStatus } from '@/lib/utils/formatters';
+import { LaunchStatus, TASK_STATUS_DONE } from '@/lib/utils/formatters';
 
 export interface RoadmapItem {
   id: string;
