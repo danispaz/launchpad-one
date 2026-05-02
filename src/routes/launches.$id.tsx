@@ -46,9 +46,9 @@ function LaunchDetail() {
 
   const tasksByStatus = useMemo(() => {
     return {
-      todo: tasks.filter(t => t.status === 'a_fazer'),
-      in_progress: tasks.filter(t => t.status === 'em_andamento'),
-      blocked: tasks.filter(t => t.status === 'bloqueado'),
+      todo: tasks.filter(t => t.status === TASK_STATUS_TODO),
+      in_progress: tasks.filter(t => t.status === TASK_STATUS_IN_PROGRESS),
+      blocked: tasks.filter(t => t.status === TASK_STATUS_BLOCKED),
       done: tasks.filter(t => t.status === TASK_STATUS_DONE)
     };
   }, [tasks]);
