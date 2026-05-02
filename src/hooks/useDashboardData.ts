@@ -80,7 +80,7 @@ export function useDashboardData() {
 
         let progresso = 0;
         const total = taskStats?.length || 0;
-        const done = taskStats?.filter(t => t.status === 'concluído').length || 0;
+        const done = taskStats?.filter(t => t.status === 'concluído' || t.status === 'done').length || 0;
         progresso = total > 0 ? Math.round((done / total) * 100) : 0;
         
         console.log(`Debug Launch: ${l.nome}`, {
@@ -89,6 +89,9 @@ export function useDashboardData() {
           progresso_calculado: progresso,
           task_statuses: taskStats?.map(t => t.status)
         });
+        
+        // Adicionando um log extra simples para garantir visibilidade
+        console.log("PROG_RES:" + l.nome + ":" + progresso + "%");
 
         return {
           id: l.id,
