@@ -121,7 +121,7 @@ function LaunchDetail() {
             <Meta icon={Avatar} label="Responsável" value={launch.owner?.nome || 'Não atribuído'} />
           </div>
           <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-            <Meta icon={ListTodo} label="Tarefas" value={`${tasks.filter(t => t.status === 'concluído').length}/${tasks.length}`} />
+            <Meta icon={ListTodo} label="Tarefas" value={`${tasks.filter(t => t.status === TASK_STATUS_DONE).length}/${tasks.length}`} />
           </div>
         </div>
 
