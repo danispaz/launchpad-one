@@ -62,14 +62,23 @@ export function useDashboardData() {
       // 1. Fetch Launches and their tasks separately for robustness
       const { data: launchesRaw, error: lError } = await supabase
         .from('launches')
-        .select(`
-          *,
-          owner:profiles!launches_owner_id_fkey(*)
-        `);
+        .select('*')
+        .order('data_lancamento_prevista', { ascending: true });
 
       if (lError) throw lError;
 
       const launchIds = (launchesRaw || []).map(l => l.id);
+      const ownerIds = [...new Set((launchesRaw || []).map(l => l.owner_id).filter(Boolean))];
+
+      const { data: profiles, error: pError } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', ownerIds);
+
+      if (pError) throw pError;
+
+      const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p]));
+
       
       // Fetch all tasks for these launches to calculate progress
       const { data: tasksRaw, error: tasksError } = await supabase
@@ -109,7 +118,7 @@ export function useDashboardData() {
           owner_id: l.owner_id,
           descricao: l.descricao,
           progresso,
-          owner: l.owner
+          owner: profileMap[l.owner_id]
         };
       });
 
@@ -175,24 +184,33 @@ export function useDashboardData() {
           titulo,
           created_at,
           status,
-          profiles:assignee_id(*),
-          phases!inner(
-            launches(nome)
-          )
+          assignee_id,
+          launch_id
         `)
         .order('created_at', { ascending: false })
         .limit(10);
 
       if (aError) throw aError;
 
+      // Buscar perfis e launches para as atividades
+      const activityAssigneeIds = [...new Set((activitiesRaw || []).map(a => a.assignee_id).filter(Boolean))];
+      const activityLaunchIds = [...new Set((activitiesRaw || []).map(a => a.launch_id).filter(Boolean))];
+
+      const { data: actProfiles } = await supabase.from('profiles').select('*').in('id', activityAssigneeIds);
+      const { data: actLaunches } = await supabase.from('launches').select('id, nome').in('id', activityLaunchIds);
+
+      const actProfileMap = Object.fromEntries((actProfiles || []).map(p => [p.id, p]));
+      const actLaunchMap = Object.fromEntries((actLaunches || []).map(l => [l.id, l]));
+
       const transformedActivities: ActivityLog[] = (activitiesRaw || []).map((a: any) => ({
         id: a.id,
         acao: a.status === 'concluído' ? 'concluiu a tarefa' : 'está trabalhando em',
         entidade: a.titulo,
         created_at: a.created_at,
-        profiles: a.profiles,
-        launches: a.phases.launches
+        profiles: actProfileMap[a.assignee_id],
+        launches: actLaunchMap[a.launch_id]
       }));
+
 
       setLaunches(processedLaunches);
       setTasks(tasksData);
