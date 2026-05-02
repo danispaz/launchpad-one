@@ -204,7 +204,7 @@ export function useDashboardData() {
 
       const transformedActivities: ActivityLog[] = (activitiesRaw || []).map((a: any) => ({
         id: a.id,
-        acao: a.status === TASK_STATUS_DONE ? 'concluiu a tarefa' : 'está trabalhando em',
+        acao: a.status === TASK_STATUS_DONE ? 'concluiu a tarefa' : (a.status === TASK_STATUS_IN_PROGRESS ? 'começou a trabalhar em' : 'criou a tarefa'),
         entidade: a.titulo,
         created_at: a.created_at,
         profiles: actProfileMap[a.assignee_id],
