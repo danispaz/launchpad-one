@@ -59,28 +59,37 @@ export function useDashboardData() {
       setLoading(true);
       setError(null);
 
-      // 1. Fetch Launches
+      // 1. Fetch Launches and their tasks separately for robustness
       const { data: launchesRaw, error: lError } = await supabase
         .from('launches')
         .select(`
           *,
-          owner:profiles(*),
-          phases(
-            id,
-            tasks(status)
-          )
+          owner:profiles!launches_owner_id_fkey(*)
         `);
-
-      console.log('RAW LAUNCHES RESPONSE:', JSON.stringify(launchesRaw, null, 2));
-      console.log('RAW ERROR:', lError);
 
       if (lError) throw lError;
 
+      const launchIds = (launchesRaw || []).map(l => l.id);
+      
+      // Fetch all tasks for these launches to calculate progress
+      const { data: tasksRaw, error: tasksError } = await supabase
+        .from('tasks')
+        .select('launch_id, status')
+        .in('launch_id', launchIds);
+
+      if (tasksError) throw tasksError;
+
+      // Group tasks by launch_id
+      const tasksByLaunch = (tasksRaw || []).reduce((acc: any, t: any) => {
+        if (!acc[t.launch_id]) acc[t.launch_id] = [];
+        acc[t.launch_id].push(t);
+        return acc;
+      }, {});
+
       const processedLaunches: Launch[] = (launchesRaw || []).map((l: any) => {
-        // Flatten tasks from all phases
-        const allTasks = l.phases?.flatMap((p: any) => p.tasks || []) || [];
-        const total = allTasks.length;
-        const done = allTasks.filter((t: any) => t.status === 'concluído' || t.status === 'done').length;
+        const launchTasks = tasksByLaunch[l.id] || [];
+        const total = launchTasks.length;
+        const done = launchTasks.filter((t: any) => t.status === 'concluído').length;
 
         const progresso = total > 0 ? Math.round((done / total) * 100) : 0;
         
@@ -88,10 +97,8 @@ export function useDashboardData() {
           total_tasks: total,
           concluidas: done,
           progresso_calculado: progresso,
-          task_statuses: allTasks.map((t: any) => t.status)
+          task_statuses: launchTasks.map((t: any) => t.status)
         });
-        
-        console.log("PROG_RES:" + l.nome + ":" + progresso + "%");
 
         return {
           id: l.id,
