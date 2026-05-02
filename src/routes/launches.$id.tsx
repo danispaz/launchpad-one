@@ -55,7 +55,8 @@ function LaunchDetail() {
 
   const tasksByTeam = useMemo(() => {
     return tasks.reduce((acc, task) => {
-      const team = task.assignee?.team || 'outros';
+      // Usar o campo team da própria tarefa, com fallback para 'outros'
+      const team = (task.team as string) || 'outros';
       if (!acc[team]) acc[team] = [];
       acc[team].push(task);
       return acc;
