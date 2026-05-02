@@ -159,8 +159,8 @@ export function useDashboardData() {
           // Mapeia status do banco ('concluído', 'todo', etc) para o Enum TaskStatus ('done', 'todo', etc)
           let status: TaskStatus = 'todo';
           if (t.status === TASK_STATUS_DONE || t.status === 'done') status = 'done';
-          else if (t.status === 'em_andamento' || t.status === 'in_progress') status = 'in_progress';
-          else if (t.status === 'bloqueado' || t.status === 'blocked') status = 'blocked';
+          else if (t.status === TASK_STATUS_IN_PROGRESS || t.status === 'in_progress') status = 'in_progress';
+          else if (t.status === TASK_STATUS_BLOCKED || t.status === 'blocked') status = 'blocked';
 
           return {
             id: t.id,
