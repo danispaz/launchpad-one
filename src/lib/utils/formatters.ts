@@ -1,16 +1,34 @@
 
-import { Database } from "@/integrations/supabase/types";
+/**
+ * Definições manuais dos Enums do banco para evitar erros de importação
+ * enquanto o arquivo de tipos do Supabase não é gerado ou sincronizado.
+ */
 
-// Se o arquivo for realmente read-only e não conseguirmos importar, 
-// definirei os enums manualmente para não travar o desenvolvimento.
-// Mas tentarei o import primeiro.
+export type TeamName =
+  | "marketing"
+  | "engineering"
+  | "product"
+  | "design"
+  | "sales"
+  | "customer_success"
+  | "executive"
+  | "growth";
 
-type Enums = Database["public"]["Enums"];
+export type LaunchStatus =
+  | "planejamento"
+  | "em_andamento"
+  | "concluido"
+  | "em_risco"
+  | "atrasado";
+
+export type PriorityLevel = "baixa" | "media" | "alta" | "critica";
+
+export type TaskStatus = "todo" | "in_progress" | "blocked" | "done";
 
 /**
  * Mapeamento de Times (Database -> UI)
  */
-export const teamMap: Record<Enums["team_name"], string> = {
+export const teamMap: Record<TeamName, string> = {
   marketing: "Marketing",
   engineering: "Desenvolvimento",
   product: "Produto",
@@ -24,7 +42,7 @@ export const teamMap: Record<Enums["team_name"], string> = {
 /**
  * Mapeamento de Status de Lançamento (Database -> UI)
  */
-export const launchStatusMap: Record<Enums["launch_status"], string> = {
+export const launchStatusMap: Record<LaunchStatus, string> = {
   planejamento: "Planejamento",
   em_andamento: "Em Andamento",
   concluido: "Concluído",
@@ -35,7 +53,7 @@ export const launchStatusMap: Record<Enums["launch_status"], string> = {
 /**
  * Mapeamento de Prioridade (Database -> UI)
  */
-export const priorityMap: Record<Enums["priority_level"], string> = {
+export const priorityMap: Record<PriorityLevel, string> = {
   baixa: "Baixa",
   media: "Média",
   alta: "Alta",
@@ -45,7 +63,7 @@ export const priorityMap: Record<Enums["priority_level"], string> = {
 /**
  * Mapeamento de Status de Tarefa (Database -> UI)
  */
-export const taskStatusMap: Record<Enums["task_status"], string> = {
+export const taskStatusMap: Record<TaskStatus, string> = {
   todo: "A fazer",
   in_progress: "Em andamento",
   blocked: "Bloqueado",
