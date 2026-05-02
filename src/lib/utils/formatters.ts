@@ -1,3 +1,4 @@
+export const TASK_STATUS_DONE = 'concluído' as const;
 
 /**
  * Definições manuais dos Enums do banco para evitar erros de importação
