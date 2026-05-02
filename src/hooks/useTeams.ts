@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { TASK_STATUS_DONE } from '@/lib/utils/formatters';
 
 export interface TeamStats {
   id: string;
