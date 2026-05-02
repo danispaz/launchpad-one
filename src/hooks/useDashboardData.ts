@@ -79,19 +79,15 @@ export function useDashboardData() {
         const total = allTasks.length;
         const done = allTasks.filter((t: any) => t.status === 'concluído' || t.status === 'done').length;
 
-        let progresso = 0;
-        const total = taskStats?.length || 0;
-        const done = taskStats?.filter(t => t.status === 'concluído' || t.status === 'done').length || 0;
-        progresso = total > 0 ? Math.round((done / total) * 100) : 0;
+        const progresso = total > 0 ? Math.round((done / total) * 100) : 0;
         
         console.log(`Debug Launch: ${l.nome}`, {
           total_tasks: total,
           concluidas: done,
           progresso_calculado: progresso,
-          task_statuses: taskStats?.map(t => t.status)
+          task_statuses: allTasks.map((t: any) => t.status)
         });
         
-        // Adicionando um log extra simples para garantir visibilidade
         console.log("PROG_RES:" + l.nome + ":" + progresso + "%");
 
         return {
@@ -105,7 +101,7 @@ export function useDashboardData() {
           progresso,
           owner: l.owner
         };
-      }));
+      });
 
       // 2. Fetch Tasks for current user
       const { data: userData } = await supabase.auth.getUser();
