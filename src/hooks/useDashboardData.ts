@@ -71,6 +71,9 @@ export function useDashboardData() {
           )
         `);
 
+      console.log('RAW LAUNCHES RESPONSE:', JSON.stringify(launchesRaw, null, 2));
+      console.log('RAW ERROR:', lError);
+
       if (lError) throw lError;
 
       const processedLaunches: Launch[] = (launchesRaw || []).map((l: any) => {
