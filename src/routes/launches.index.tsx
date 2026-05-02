@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-r
 import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
 import { StatusBadge, TeamChip, Avatar } from "@/components/Badges";
-import { type LaunchStatus, teamMap, formatDate, formatLaunchCode, TeamName } from "@/lib/utils/formatters";
+import { type LaunchStatus, teamMap, formatDate, formatLaunchCode, TeamName, TASK_STATUS_DONE } from "@/lib/utils/formatters";
 import { useLaunches } from "@/hooks/useLaunches";
 import { Search, X } from "lucide-react";
 import { useEffect } from "react";
