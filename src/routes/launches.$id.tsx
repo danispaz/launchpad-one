@@ -96,7 +96,7 @@ function LaunchDetail() {
             <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 uppercase tracking-wider">
               {formatLaunchCode(launch.id)}
             </span>
-            <StatusBadge status={launch.status} />
+            <StatusBadge status={launch.status as any} />
             <PriorityDot priority={launch.prioridade as any} />
           </div>
           <h2 className="text-4xl font-black tracking-tight text-slate-800 mb-4">{launch.nome}</h2>
