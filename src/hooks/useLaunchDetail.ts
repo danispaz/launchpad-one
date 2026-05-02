@@ -142,7 +142,7 @@ export function useLaunchDetail(launchId: string) {
 
       // 6. Anexa profiles e calcula progresso
       const totalTasks = tasksRaw?.length || 0;
-      const doneTasks = tasksRaw?.filter(t => t.status === 'concluído').length || 0;
+      const doneTasks = tasksRaw?.filter(t => t.status === TASK_STATUS_DONE).length || 0;
       const progresso = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
 
       const processedLaunch: LaunchDetail = {
