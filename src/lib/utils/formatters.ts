@@ -1,4 +1,7 @@
 export const TASK_STATUS_DONE = 'concluído' as const;
+export const TASK_STATUS_IN_PROGRESS = 'em_andamento' as const;
+export const TASK_STATUS_TODO = 'a_fazer' as const;
+export const TASK_STATUS_BLOCKED = 'bloqueado' as const;
 
 /**
  * Definições manuais dos Enums do banco para evitar erros de importação
