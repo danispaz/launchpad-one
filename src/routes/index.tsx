@@ -67,10 +67,6 @@ function Overview() {
     return count;
   }, [dbTasks]);
 
-    console.log('KPI Próximas:', count);
-    return count;
-  }, [dbTasks]);
-
   const myTasks = useMemo(() => {
     return dbTasks.map(t => ({
       id: t.id,
