@@ -37,11 +37,10 @@ function Overview() {
   
   const overdueTasksCount = useMemo(() => {
     const now = new Date();
-    // Normalizamos para o início do dia para evitar problemas com horas
     now.setHours(0, 0, 0, 0);
     
     const count = dbTasks.filter(t => {
-      if (t.status === 'concluído') return false;
+      if (t.status === 'done') return false;
       if (!t.data_entrega) return false;
       
       const dueDate = new Date(t.data_entrega);
@@ -57,12 +56,16 @@ function Overview() {
     now.setHours(0, 0, 0, 0);
     
     const count = dbTasks.filter(t => {
-      if (t.status === 'concluído') return false;
+      if (t.status === 'done') return false;
       if (!t.data_entrega) return false;
       
       const dueDate = new Date(t.data_entrega);
       return dueDate >= now;
     }).length;
+
+    console.log('KPI Próximas:', count);
+    return count;
+  }, [dbTasks]);
 
     console.log('KPI Próximas:', count);
     return count;
