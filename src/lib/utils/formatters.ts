@@ -29,6 +29,26 @@ export type PriorityLevel = "baixa" | "media" | "alta" | "critica";
 
 export type TaskStatus = "todo" | "in_progress" | "blocked" | "done";
 
+// Cores e configurações visuais
+export const teamStyles: Record<string, { label: string; color: string }> = {
+  marketing: { label: "Marketing", color: "#ec4899" },
+  engineering: { label: "Desenvolvimento", color: "#3b82f6" },
+  product: { label: "Produto", color: "#a855f7" },
+  design: { label: "Design", color: "#f43f5e" },
+  sales: { label: "Vendas", color: "#22c55e" },
+  customer_success: { label: "CS", color: "#06b6d4" },
+  executive: { label: "Diretoria", color: "#eab308" },
+  growth: { label: "Growth", color: "#f97316" },
+};
+
+export const statusStyles: Record<string, { label: string; tone: "primary" | "success" | "warning" | "destructive" | "info" }> = {
+  planejamento: { label: "Planejamento", tone: "info" },
+  em_andamento: { label: "Execução", tone: "primary" },
+  em_risco: { label: "Em Risco", tone: "warning" },
+  atrasado: { label: "Atrasado", tone: "destructive" },
+  concluido: { label: "Concluído", tone: "success" },
+};
+
 /**
  * Mapeamento de Times (Database -> UI)
  */
