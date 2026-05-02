@@ -3,7 +3,7 @@ import { TeamName } from "@/lib/utils/formatters";
 import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
 import { StatusBadge, TeamChip, ProgressBar, Avatar, PriorityDot } from "@/components/Badges";
-import { formatLaunchCode, teamMap, taskStatusMap, priorityMap } from "@/lib/utils/formatters";
+import { formatLaunchCode, teamMap, taskStatusMap, priorityMap, TASK_STATUS_DONE } from "@/lib/utils/formatters";
 import { useLaunchDetail } from "@/hooks/useLaunchDetail";
 import { 
   ChevronLeft, 
