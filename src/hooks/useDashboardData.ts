@@ -1,7 +1,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { LaunchStatus, PriorityLevel, TaskStatus, TeamName, TASK_STATUS_DONE } from '@/lib/utils/formatters';
+import { LaunchStatus, PriorityLevel, TaskStatus, TeamName, TASK_STATUS_DONE, TASK_STATUS_IN_PROGRESS, TASK_STATUS_BLOCKED } from '@/lib/utils/formatters';
 
 export type Profile = {
   id: string;
