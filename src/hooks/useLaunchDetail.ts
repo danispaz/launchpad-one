@@ -104,6 +104,7 @@ export function useLaunchDetail(launchId: string) {
         .eq('launch_id', launchId)
         .order('ordem');
       
+      console.log('RAW PHASES:', phasesRaw);
       if (phError) throw phError;
 
       const { data: milestonesRaw, error: mError } = await supabase
@@ -111,6 +112,7 @@ export function useLaunchDetail(launchId: string) {
         .select('*')
         .eq('launch_id', launchId);
       
+      console.log('RAW MILESTONES:', milestonesRaw);
       if (mError) throw mError;
 
       const { data: risksRaw, error: rError } = await supabase
@@ -118,6 +120,7 @@ export function useLaunchDetail(launchId: string) {
         .select('*')
         .eq('launch_id', launchId);
       
+      console.log('RAW RISKS:', risksRaw);
       if (rError) throw rError;
 
       // 4. Coleta todos os profile_ids únicos
