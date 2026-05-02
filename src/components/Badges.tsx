@@ -1,4 +1,4 @@
-import { statusMeta, teams, type LaunchStatus, type TeamKey, type Priority } from "@/lib/mockData";
+import { type LaunchStatus, type TeamName, type PriorityLevel, statusStyles, teamStyles } from "@/lib/utils/formatters";
 
 const toneStyles: Record<string, string> = {
   primary: "bg-surface-elevated text-foreground border-border",
