@@ -64,19 +64,20 @@ export function useDashboardData() {
         .from('launches')
         .select(`
           *,
-          owner:profiles(*)
+          owner:profiles(*),
+          phases(
+            id,
+            tasks(status)
+          )
         `);
 
       if (lError) throw lError;
 
-      const processedLaunches: Launch[] = await Promise.all((launchesRaw || []).map(async (l: any) => {
-        // Query otimizada: contar tarefas diretamente pelo launch_id (via join com phases)
-        const { data: taskStats, error: sError } = await supabase
-          .from('tasks')
-          .select('status, phases!inner(launch_id)')
-          .eq('phases.launch_id', l.id);
-
-        if (sError) console.error('Erro ao buscar stats de tasks para launch', l.id, sError);
+      const processedLaunches: Launch[] = (launchesRaw || []).map((l: any) => {
+        // Flatten tasks from all phases
+        const allTasks = l.phases?.flatMap((p: any) => p.tasks || []) || [];
+        const total = allTasks.length;
+        const done = allTasks.filter((t: any) => t.status === 'concluído' || t.status === 'done').length;
 
         let progresso = 0;
         const total = taskStats?.length || 0;
