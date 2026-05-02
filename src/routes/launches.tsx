@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useSearch, Outlet } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
 import { StatusBadge, TeamChip, Avatar } from "@/components/Badges";
@@ -30,8 +30,16 @@ export const Route = createFileRoute("/launches")({
       localStorage.setItem(STORAGE_KEY, JSON.stringify(deps));
     }
   },
-  component: LaunchesList,
+  component: LaunchesLayout,
 });
+
+function LaunchesLayout() {
+  return (
+    <div className="contents">
+      <Outlet />
+    </div>
+  );
+}
 
 const statusFilters: { key: LaunchStatus | "all"; label: string }[] = [
   { key: "all", label: "Todos Status" },
@@ -44,7 +52,7 @@ const statusFilters: { key: LaunchStatus | "all"; label: string }[] = [
 
 const teamKeys = Object.keys(teamsMeta) as TeamKey[];
 
-function LaunchesList() {
+export function LaunchesList() {
   const { status, team, q } = useSearch({ from: "/launches" });
   const navigate = useNavigate({ from: "/launches" });
 
@@ -113,7 +121,7 @@ function LaunchesList() {
                 type="text"
                 placeholder="Buscar por nome, código ou responsável..."
                 className="w-full bg-white border border-border/50 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/20 transition-shadow"
-                value={q}
+                value={q || ''}
                 onChange={(e) => setQuery(e.target.value)}
               />
             </div>
