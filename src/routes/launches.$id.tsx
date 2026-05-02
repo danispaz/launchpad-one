@@ -237,7 +237,7 @@ function LaunchDetail() {
                             <p className="text-[10px] text-slate-400 font-bold uppercase">{task.assignee?.nome || 'Sem responsável'} · {task.data_entrega ? new Date(task.data_entrega).toLocaleDateString('pt-BR') : 'Sem data'}</p>
                           </div>
                           <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-500`}>
-                            {taskStatusMap[task.status as any] || task.status}
+                            {(taskStatusMap as any)[task.status] || task.status}
                           </span>
                         </div>
                       ))}
