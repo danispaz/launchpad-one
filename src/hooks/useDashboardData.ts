@@ -146,15 +146,23 @@ export function useDashboardData() {
 
         const launchMap = Object.fromEntries((launchNames || []).map(l => [l.id, l.nome]));
 
-        tasksData = (rawTasks || []).map(t => ({
-          id: t.id,
-          titulo: t.titulo,
-          status: t.status,
-          prioridade: (t.prioridade as PriorityLevel) || 'média', 
-          data_entrega: t.data_entrega,
-          launch_id: t.launch_id,
-          launch: { nome: launchMap[t.launch_id] || 'Sem lançamento' }
-        }));
+        tasksData = (rawTasks || []).map(t => {
+          // Mapeia status do banco ('concluído', 'todo', etc) para o Enum TaskStatus ('done', 'todo', etc)
+          let status: TaskStatus = 'todo';
+          if (t.status === 'concluído' || t.status === 'done') status = 'done';
+          else if (t.status === 'em_andamento' || t.status === 'in_progress') status = 'in_progress';
+          else if (t.status === 'bloqueado' || t.status === 'blocked') status = 'blocked';
+
+          return {
+            id: t.id,
+            titulo: t.titulo,
+            status,
+            prioridade: (t.prioridade as PriorityLevel) || 'media', 
+            data_entrega: t.data_entrega,
+            launch_id: t.launch_id,
+            launch: { nome: launchMap[t.launch_id] || 'Sem lançamento' }
+          };
+        });
 
         console.log('Minhas tarefas processadas:', tasksData.length);
       }

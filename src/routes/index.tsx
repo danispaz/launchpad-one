@@ -37,14 +37,32 @@ function Overview() {
   
   const overdueTasksCount = useMemo(() => {
     const now = new Date();
-    const count = dbTasks.filter(t => t.status !== 'done' && t.data_entrega && new Date(t.data_entrega) < now).length;
+    now.setHours(0, 0, 0, 0);
+    
+    const count = dbTasks.filter(t => {
+      if (t.status === 'done') return false;
+      if (!t.data_entrega) return false;
+      
+      const dueDate = new Date(t.data_entrega);
+      return dueDate < now;
+    }).length;
+
     console.log('KPI Atrasadas:', count, 'Baseado em:', dbTasks.length, 'tarefas');
     return count;
   }, [dbTasks]);
 
   const nextMilestonesCount = useMemo(() => {
     const now = new Date();
-    const count = dbTasks.filter(t => t.status !== 'done' && t.data_entrega && new Date(t.data_entrega) >= now).length;
+    now.setHours(0, 0, 0, 0);
+    
+    const count = dbTasks.filter(t => {
+      if (t.status === 'done') return false;
+      if (!t.data_entrega) return false;
+      
+      const dueDate = new Date(t.data_entrega);
+      return dueDate >= now;
+    }).length;
+
     console.log('KPI Próximas:', count);
     return count;
   }, [dbTasks]);
