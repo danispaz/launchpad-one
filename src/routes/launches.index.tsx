@@ -5,7 +5,8 @@ import { StatusBadge, TeamChip, Avatar } from "@/components/Badges";
 import { type LaunchStatus, teamMap, formatDate, formatLaunchCode, TeamName, TASK_STATUS_DONE } from "@/lib/utils/formatters";
 import { useLaunches } from "@/hooks/useLaunches";
 import { Search, X } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { NewLaunchDialog } from "@/components/launches/NewLaunchDialog";
 
 const STORAGE_KEY = "launchhub_launches_filters";
 
@@ -45,6 +46,7 @@ export const Route = createFileRoute("/launches/")({
 
 function LaunchesList() {
   console.log('LAUNCHES LIST PAGE MOUNTED');
+  const [isNewLaunchOpen, setIsNewLaunchOpen] = useState(false);
   const { status, team, q } = useSearch({ from: "/launches/" });
   const navigate = useNavigate({ from: "/launches/" });
   const { launches, loading } = useLaunches();
@@ -113,7 +115,18 @@ function LaunchesList() {
 
   return (
     <AppLayout>
-      <TopBar title="Lançamentos" subtitle="Base de dados central" />
+      <TopBar 
+        title="Lançamentos" 
+        subtitle="Base de dados central"
+        actions={
+          <button 
+            onClick={() => setIsNewLaunchOpen(true)}
+            className="h-8 px-3 rounded bg-foreground text-background text-xs font-medium hover:opacity-90 transition-opacity"
+          >
+            + Novo Lançamento
+          </button>
+        }
+      />
 
       <div className="flex-1 px-8 py-10 max-w-[1200px] mx-auto w-full">
         <div className="flex flex-col gap-6 mb-8">
@@ -221,6 +234,10 @@ function LaunchesList() {
           </table>
         </div>
       </div>
+      <NewLaunchDialog 
+        open={isNewLaunchOpen} 
+        onOpenChange={setIsNewLaunchOpen} 
+      />
     </AppLayout>
   );
 }
