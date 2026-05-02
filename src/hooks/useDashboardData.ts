@@ -64,26 +64,31 @@ export function useDashboardData() {
         .from('launches')
         .select(`
           *,
-          owner:profiles(*)
+          owner:profiles(*),
+          phases(
+            id,
+            tasks(status)
+          )
         `);
 
       if (lError) throw lError;
 
-      const processedLaunches: Launch[] = await Promise.all((launchesRaw || []).map(async (l: any) => {
-        // Query otimizada: contar tarefas diretamente pelo launch_id (via join com phases)
-        const { data: taskStats, error: sError } = await supabase
-          .from('tasks')
-          .select('status, phases!inner(launch_id)')
-          .eq('phases.launch_id', l.id);
+      const processedLaunches: Launch[] = (launchesRaw || []).map((l: any) => {
+        // Flatten tasks from all phases
+        const allTasks = l.phases?.flatMap((p: any) => p.tasks || []) || [];
+        const total = allTasks.length;
+        const done = allTasks.filter((t: any) => t.status === 'concluído' || t.status === 'done').length;
 
-        if (sError) console.error('Erro ao buscar stats de tasks para launch', l.id, sError);
-
-        let progresso = 0;
-        const total = taskStats?.length || 0;
-        const done = taskStats?.filter(t => t.status === 'done').length || 0;
-        progresso = total > 0 ? Math.round((done / total) * 100) : 0;
+        const progresso = total > 0 ? Math.round((done / total) * 100) : 0;
         
-        console.log(`Progresso do lançamento ${l.nome}: ${done}/${total} tasks concluídas (${progresso}%)`);
+        console.log(`Debug Launch: ${l.nome}`, {
+          total_tasks: total,
+          concluidas: done,
+          progresso_calculado: progresso,
+          task_statuses: allTasks.map((t: any) => t.status)
+        });
+        
+        console.log("PROG_RES:" + l.nome + ":" + progresso + "%");
 
         return {
           id: l.id,
@@ -96,7 +101,7 @@ export function useDashboardData() {
           progresso,
           owner: l.owner
         };
-      }));
+      });
 
       // 2. Fetch Tasks for current user
       const { data: userData } = await supabase.auth.getUser();
@@ -157,7 +162,7 @@ export function useDashboardData() {
 
       const transformedActivities: ActivityLog[] = (activitiesRaw || []).map((a: any) => ({
         id: a.id,
-        acao: a.status === 'done' ? 'concluiu a tarefa' : 'está trabalhando em',
+        acao: a.status === 'concluído' ? 'concluiu a tarefa' : 'está trabalhando em',
         entidade: a.titulo,
         created_at: a.created_at,
         profiles: a.profiles,
