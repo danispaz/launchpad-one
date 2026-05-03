@@ -1,9 +1,11 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { newLaunchSchema, type NewLaunchInput } from "@/lib/schemas/launch-schema";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfilesForOwner } from "@/hooks/useProfilesForOwner";
+import { useNavigate } from "@tanstack/react-router";
+import { supabase } from "@/lib/supabase";
 import {
   Dialog,
   DialogContent,
@@ -39,6 +41,8 @@ interface NewLaunchDialogProps {
 export function NewLaunchDialog({ open, onOpenChange }: NewLaunchDialogProps) {
   const { user } = useAuth();
   const { profiles, loading: loadingProfiles } = useProfilesForOwner();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
 
   const form = useForm<NewLaunchInput>({
     resolver: zodResolver(newLaunchSchema),
@@ -59,8 +63,58 @@ export function NewLaunchDialog({ open, onOpenChange }: NewLaunchDialogProps) {
     }
   }, [user, form]);
 
-  const onSubmit = (data: NewLaunchInput) => {
+  const onSubmit = async (data: NewLaunchInput) => {
     console.log("[RAW newLaunch submit]", data);
+    setIsSubmitting(true);
+
+    try {
+      // Normaliza descrição vazia para null (mais limpo no banco)
+      const payload = {
+        nome: data.nome,
+        descricao: data.descricao && data.descricao.trim() !== "" 
+          ? data.descricao 
+          : null,
+        produto: data.produto,
+        data_inicio: data.data_inicio,
+        data_lancamento_prevista: data.data_lancamento_prevista,
+        prioridade: data.prioridade,
+        owner_id: data.owner_id,
+      };
+
+      console.log("[RAW newLaunch payload]", payload);
+
+      const { data: insertedLaunch, error } = await supabase
+        .from("launches")
+        .insert(payload)
+        .select("id")
+        .single();
+
+      console.log("[RAW newLaunch response]", { insertedLaunch, error });
+
+      if (error) {
+        throw error;
+      }
+
+      if (!insertedLaunch?.id) {
+        throw new Error("Lançamento criado mas ID não foi retornado");
+      }
+
+      // Reset do form para próxima abertura limpa
+      form.reset();
+      
+      // Fecha o modal
+      onOpenChange(false);
+
+      // Redireciona para tela de detalhe do lançamento criado
+      navigate({ to: "/launches/$id", params: { id: insertedLaunch.id } });
+
+    } catch (err: any) {
+      console.error("[ERROR newLaunch insert]", err);
+      // TODO Fase 5: substituir alert por toast
+      alert("Erro ao criar lançamento: " + (err?.message || "Erro desconhecido"));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -212,10 +266,13 @@ export function NewLaunchDialog({ open, onOpenChange }: NewLaunchDialogProps) {
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
               >
                 Cancelar
               </Button>
-              <Button type="submit">Salvar</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Salvando..." : "Salvar"}
+              </Button>
             </DialogFooter>
           </form>
         </Form>
