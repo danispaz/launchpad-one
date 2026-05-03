@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
 import { newLaunchSchema, type NewLaunchInput } from "@/lib/schemas/launch-schema";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfilesForOwner } from "@/hooks/useProfilesForOwner";
@@ -107,11 +108,13 @@ export function NewLaunchDialog({ open, onOpenChange }: NewLaunchDialogProps) {
 
       // Redireciona para tela de detalhe do lançamento criado
       navigate({ to: "/launches/$id", params: { id: insertedLaunch.id } });
+      toast.success("Lançamento criado com sucesso!");
 
     } catch (err: any) {
       console.error("[ERROR newLaunch insert]", err);
-      // TODO Fase 5: substituir alert por toast
-      alert("Erro ao criar lançamento: " + (err?.message || "Erro desconhecido"));
+      toast.error("Erro ao criar lançamento", {
+        description: err?.message || "Erro desconhecido. Tente novamente.",
+      });
     } finally {
       setIsSubmitting(false);
     }
