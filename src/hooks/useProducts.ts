@@ -1,13 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
+import {
+  newProductSchema,
+  updateProductSchema,
+  type NewProductInput,
+  type UpdateProductInput,
+  type ProductCategory,
+  type ProductLifecycleStage,
+  type ProductHealthStatus,
+} from "@/lib/schemas/product-schema";
+import { toast } from "sonner";
 
 export interface Product {
   id: string;
   nome: string;
   descricao: string | null;
-  categoria: "saas" | "mobile" | "api" | "marketplace" | "servico" | "hardware" | "outros";
-  estagio_atual: "descoberta" | "mvp" | "lancamento" | "tracao" | "escala" | "otimizacao" | "sunset";
-  status_saude: "critico" | "atencao" | "saudavel";
+  categoria: ProductCategory;
+  estagio_atual: ProductLifecycleStage;
+  status_saude: ProductHealthStatus;
   score_saude: number;
   owner_id: string | null;
   created_at: string;
@@ -21,64 +31,140 @@ export function useProducts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchProducts() {
-      try {
-        setLoading(true);
-        setError(null);
+  const fetchProducts = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        const { data: productsData, error: productsError } = await supabase
-          .from("products")
-          .select("*")
-          .order("created_at", { ascending: false });
+      const { data: productsData, error: productsError } = await supabase
+        .from("products")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-        if (productsError) throw productsError;
+      if (productsError) throw productsError;
 
-        console.log("[RAW useProducts]", productsData);
+      console.log("[RAW useProducts]", productsData);
 
-        const ownerIds = ((productsData ?? []) as Product[])
-          .map((p: Product) => p.owner_id)
-          .filter((id): id is string => Boolean(id));
+      const ownerIds = ((productsData ?? []) as Product[])
+        .map((p: Product) => p.owner_id)
+        .filter((id): id is string => Boolean(id));
 
-        let profileMap = new Map<string, { nome: string; email: string }>();
+      const profileMap = new Map<string, { nome: string; email: string }>();
 
-        if (ownerIds.length > 0) {
-          const { data: profilesData, error: profilesError } = await supabase
-            .from("profiles")
-            .select("id, nome, email")
-            .in("id", ownerIds);
+      if (ownerIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, nome, email")
+          .in("id", ownerIds);
 
-          if (profilesError) throw profilesError;
+        if (profilesError) throw profilesError;
 
-          console.log("[RAW useProducts profiles]", profilesData);
+        console.log("[RAW useProducts profiles]", profilesData);
 
-          ((profilesData ?? []) as { id: string; nome: string; email: string }[]).forEach((p) => {
-            profileMap.set(p.id, { nome: p.nome, email: p.email });
-          });
-        }
-
-        const enriched: Product[] = ((productsData ?? []) as Product[]).map((p: Product) => {
-          const owner = p.owner_id ? profileMap.get(p.owner_id) : undefined;
-          return {
-            ...p,
-            owner_nome: owner?.nome,
-            owner_email: owner?.email,
-          };
+        ((profilesData ?? []) as { id: string; nome: string; email: string }[]).forEach((p) => {
+          profileMap.set(p.id, { nome: p.nome, email: p.email });
         });
-
-        setProducts(enriched);
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Erro ao carregar produtos";
-        console.error("[ERROR useProducts]", err);
-        setError(message);
-      } finally {
-        setLoading(false);
       }
-    }
 
-    fetchProducts();
+      const enriched: Product[] = ((productsData ?? []) as Product[]).map((p: Product) => {
+        const owner = p.owner_id ? profileMap.get(p.owner_id) : undefined;
+        return {
+          ...p,
+          owner_nome: owner?.nome,
+          owner_email: owner?.email,
+        };
+      });
+
+      setProducts(enriched);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Erro ao carregar produtos";
+      console.error("[ERROR useProducts]", err);
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  return { products, loading, error };
+  const createProduct = useCallback(async (input: NewProductInput) => {
+    try {
+      const parsed = newProductSchema.parse(input);
+      const { data, error } = await supabase
+        .from("products")
+        .insert(parsed)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log("[RAW useProducts createProduct]", data);
+      toast.success("Produto criado com sucesso");
+      await fetchProducts();
+    } catch (err) {
+      console.error("[ERROR useProducts createProduct]", err);
+      toast.error("Erro ao criar produto", {
+        description: err instanceof Error ? err.message : "Tente novamente",
+      });
+      throw err;
+    }
+  }, [fetchProducts]);
+
+  const updateProduct = useCallback(async (id: string, input: UpdateProductInput) => {
+    try {
+      const parsed = updateProductSchema.parse(input);
+      const { data, error } = await supabase
+        .from("products")
+        .update(parsed)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log("[RAW useProducts updateProduct]", data);
+      toast.success("Produto atualizado");
+      await fetchProducts();
+    } catch (err) {
+      console.error("[ERROR useProducts updateProduct]", err);
+      toast.error("Erro ao atualizar produto", {
+        description: err instanceof Error ? err.message : "Tente novamente",
+      });
+      throw err;
+    }
+  }, [fetchProducts]);
+
+  const deleteProduct = useCallback(async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("products")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      console.log("[RAW useProducts deleteProduct]", id);
+      toast.success("Produto excluído");
+      await fetchProducts();
+    } catch (err) {
+      console.error("[ERROR useProducts deleteProduct]", err);
+      toast.error("Erro ao excluir produto", {
+        description: err instanceof Error ? err.message : "Você pode não ter permissão para esta ação",
+      });
+      throw err;
+    }
+  }, [fetchProducts]);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
+  return {
+    products,
+    loading,
+    error,
+    refetch: fetchProducts,
+    createProduct,
+    updateProduct,
+    deleteProduct,
+  };
 }
