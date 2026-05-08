@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 
 export interface Product {
   id: string;
@@ -36,8 +36,8 @@ export function useProducts() {
 
         console.log("[RAW useProducts]", productsData);
 
-        const ownerIds = (productsData ?? [])
-          .map((p) => p.owner_id)
+        const ownerIds = ((productsData ?? []) as Product[])
+          .map((p: Product) => p.owner_id)
           .filter((id): id is string => Boolean(id));
 
         let profileMap = new Map<string, { nome: string; email: string }>();
@@ -52,12 +52,12 @@ export function useProducts() {
 
           console.log("[RAW useProducts profiles]", profilesData);
 
-          (profilesData ?? []).forEach((p) => {
+          ((profilesData ?? []) as { id: string; nome: string; email: string }[]).forEach((p) => {
             profileMap.set(p.id, { nome: p.nome, email: p.email });
           });
         }
 
-        const enriched: Product[] = (productsData ?? []).map((p) => {
+        const enriched: Product[] = ((productsData ?? []) as Product[]).map((p: Product) => {
           const owner = p.owner_id ? profileMap.get(p.owner_id) : undefined;
           return {
             ...p,
