@@ -1,9 +1,10 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
-import { LayoutDashboard, Rocket, Map, Users, AlertTriangle, Settings, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Rocket, Map, Users, AlertTriangle, Settings, ChevronRight, Package } from "lucide-react";
 
 const items = [
   { title: "Visão geral", url: "/", icon: LayoutDashboard, emoji: "📊" },
+  { title: "Produtos", url: "/products", icon: Package, emoji: "📦" },
   { title: "Lançamentos", url: "/launches", icon: Rocket, emoji: "🚀" },
   { title: "Roadmap", url: "/roadmap", icon: Map, emoji: "🗓️" },
   { title: "Times", url: "/teams", icon: Users, emoji: "👥" },
