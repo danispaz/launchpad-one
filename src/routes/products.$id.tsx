@@ -6,8 +6,9 @@ import { useProductDetail } from "@/hooks/useProductDetail";
 import {
   CATEGORY_LABELS,
   LIFECYCLE_LABELS,
+  LIFECYCLE_ICONS,
 } from "@/lib/schemas/product-schema";
-import { ChevronLeft, Package, Activity, Heart, User, Tag } from "lucide-react";
+import { ChevronLeft, Package, Heart, User, Tag } from "lucide-react";
 
 export const Route = createFileRoute("/products/$id")({
   head: () => ({
@@ -55,6 +56,8 @@ function ProductDetail() {
     ? product.owner_nome.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase()
     : "??";
 
+  const StageIcon = LIFECYCLE_ICONS[product.estagio_atual];
+
   return (
     <AppLayout>
       <TopBar title={product.nome} subtitle="Detalhes do produto" />
@@ -68,7 +71,8 @@ function ProductDetail() {
             <span className="inline-flex items-center px-2 py-1 rounded-md bg-surface text-[10px] font-medium text-muted-foreground border border-border/50">
               {CATEGORY_LABELS[product.categoria]}
             </span>
-            <span className="inline-flex items-center px-2 py-1 rounded-md bg-surface text-[10px] font-medium text-foreground border border-border/50">
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-surface text-[10px] font-medium text-foreground border border-border/50">
+              <StageIcon className="w-3 h-3" />
               {LIFECYCLE_LABELS[product.estagio_atual]}
             </span>
             <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-surface text-[10px] font-medium text-muted-foreground border border-border/50">
@@ -82,7 +86,7 @@ function ProductDetail() {
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
           <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-            <Meta icon={Activity} label="Estágio" value={LIFECYCLE_LABELS[product.estagio_atual]} />
+            <Meta icon={StageIcon} label="Estágio" value={LIFECYCLE_LABELS[product.estagio_atual]} />
           </div>
           <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
             <Meta icon={Heart} label="Saúde" value={`${product.score_saude}/100`} />
