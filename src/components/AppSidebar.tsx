@@ -3,13 +3,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { LayoutDashboard, Rocket, Map, Users, AlertTriangle, Settings, ChevronRight, Package } from "lucide-react";
 
 const items = [
-  { title: "Visão geral", url: "/", icon: LayoutDashboard, emoji: "📊" },
-  { title: "Produtos", url: "/products", icon: Package, emoji: "📦" },
-  { title: "Lançamentos", url: "/launches", icon: Rocket, emoji: "🚀" },
-  { title: "Roadmap", url: "/roadmap", icon: Map, emoji: "🗓️" },
-  { title: "Times", url: "/teams", icon: Users, emoji: "👥" },
-  { title: "Riscos", url: "/risks", icon: AlertTriangle, emoji: "⚠️" },
-  { title: "Configurações", url: "/settings", icon: Settings, emoji: "⚙️" },
+  { title: "Visão geral", url: "/", icon: LayoutDashboard },
+  { title: "Produtos", url: "/products", icon: Package },
+  { title: "Lançamentos", url: "/launches", icon: Rocket },
+  { title: "Roadmap", url: "/roadmap", icon: Map },
+  { title: "Times", url: "/teams", icon: Users },
+  { title: "Riscos", url: "/risks", icon: AlertTriangle },
+  { title: "Configurações", url: "/settings", icon: Settings },
 ];
 
 export function AppSidebar() {
@@ -39,7 +39,7 @@ export function AppSidebar() {
                   : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60"
               }`}
             >
-              <span className="w-4 flex justify-center text-xs">{item.emoji}</span>
+              <item.icon className="w-4 h-4 shrink-0" />
               <span className="flex-1">{item.title}</span>
               {active && <ChevronRight className="h-3 w-3 opacity-50" />}
             </Link>
