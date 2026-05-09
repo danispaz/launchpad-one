@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
 import { Avatar } from "@/components/Badges";
@@ -131,7 +131,11 @@ function ProductCard({ product }: { product: Product }) {
     : "??";
 
   return (
-    <div className="bg-white border border-border rounded-xl shadow-sm p-5 flex flex-col gap-4 hover:shadow-md transition-shadow">
+    <Link
+      to="/products/$id"
+      params={{ id: product.id }}
+      className="bg-white border border-border rounded-xl shadow-sm p-5 flex flex-col gap-4 hover:shadow-md transition-shadow cursor-pointer"
+    >
       <div>
         <h3 className="text-base font-semibold text-foreground mb-1">{product.nome}</h3>
         {product.descricao && (
@@ -162,6 +166,6 @@ function ProductCard({ product }: { product: Product }) {
           </div>
         )}
       </div>
-    </div>
+    </Link>
   );
 }
