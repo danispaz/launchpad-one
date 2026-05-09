@@ -9,6 +9,7 @@ import {
   PRODUCT_LIFECYCLE_STAGES,
   CATEGORY_LABELS,
   LIFECYCLE_LABELS,
+  LIFECYCLE_ICONS,
 } from "@/lib/schemas/product-schema";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfilesForOwner } from "@/hooks/useProfilesForOwner";
@@ -174,11 +175,17 @@ export function NewProductDialog({ open, onOpenChange, createProduct }: NewProdu
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {PRODUCT_LIFECYCLE_STAGES.map((stage) => (
-                          <SelectItem key={stage} value={stage}>
-                            {LIFECYCLE_LABELS[stage]}
-                          </SelectItem>
-                        ))}
+                        {PRODUCT_LIFECYCLE_STAGES.map((stage) => {
+                          const Icon = LIFECYCLE_ICONS[stage];
+                          return (
+                            <SelectItem key={stage} value={stage}>
+                              <div className="flex items-center gap-2">
+                                <Icon className="w-4 h-4" />
+                                {LIFECYCLE_LABELS[stage]}
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                     <FormMessage />
