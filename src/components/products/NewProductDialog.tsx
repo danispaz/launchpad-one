@@ -12,7 +12,7 @@ import {
 } from "@/lib/schemas/product-schema";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfilesForOwner } from "@/hooks/useProfilesForOwner";
-import { useProducts } from "@/hooks/useProducts";
+
 import {
   Dialog,
   DialogContent,
@@ -43,12 +43,12 @@ import { Button } from "@/components/ui/button";
 interface NewProductDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  createProduct: (input: NewProductInput) => Promise<void>;
 }
 
-export function NewProductDialog({ open, onOpenChange }: NewProductDialogProps) {
+export function NewProductDialog({ open, onOpenChange, createProduct }: NewProductDialogProps) {
   const { user } = useAuth();
   const { profiles, loading: loadingProfiles } = useProfilesForOwner();
-  const { createProduct } = useProducts();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm({
