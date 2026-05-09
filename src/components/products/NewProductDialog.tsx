@@ -68,7 +68,7 @@ export function NewProductDialog({ open, onOpenChange }: NewProductDialogProps) 
     }
   }, [user, form]);
 
-  const onSubmit = async (data: NewProductInput) => {
+  const onSubmit = async (data: any) => {
     console.log("[RAW newProduct submit]", data);
     setIsSubmitting(true);
 
