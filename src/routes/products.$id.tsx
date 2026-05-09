@@ -3,12 +3,13 @@ import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
 import { Avatar } from "@/components/Badges";
 import { useProductDetail } from "@/hooks/useProductDetail";
+import { BriefingDisplay } from "@/components/products/BriefingDisplay";
 import {
   CATEGORY_LABELS,
   LIFECYCLE_LABELS,
   LIFECYCLE_ICONS,
 } from "@/lib/schemas/product-schema";
-import { ChevronLeft, Package, Heart, User, Tag } from "lucide-react";
+import { ChevronLeft, Heart, User, Tag } from "lucide-react";
 
 export const Route = createFileRoute("/products/$id")({
   head: () => ({
@@ -110,15 +111,7 @@ function ProductDetail() {
           </div>
         </div>
 
-        <div className="bg-white p-12 rounded-2xl border border-dashed border-slate-200 text-center">
-          <div className="h-12 w-12 rounded-full bg-surface flex items-center justify-center mx-auto mb-4">
-            <Package className="h-6 w-6 text-muted-foreground" />
-          </div>
-          <h3 className="text-base font-semibold text-foreground mb-2">Mais detalhes em breve</h3>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            Briefing estratégico, lançamentos relacionados, métricas e histórico do ciclo de vida serão construídos nas próximas fases.
-          </p>
-        </div>
+        <BriefingDisplay productId={product.id} />
       </div>
     </AppLayout>
   );
