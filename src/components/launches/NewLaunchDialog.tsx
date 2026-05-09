@@ -168,19 +168,63 @@ export function NewLaunchDialog({ open, onOpenChange, defaultProductId }: NewLau
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="produto"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Produto</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Produto associado" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="product_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Produto</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={loadingProducts}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={loadingProducts ? "Carregando..." : "Selecione o produto"} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {products.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="tipo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o tipo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {LAUNCH_TYPES.map((t) => {
+                          const Icon = LAUNCH_TYPE_ICONS[t];
+                          return (
+                            <SelectItem key={t} value={t}>
+                              <div className="flex items-center gap-2">
+                                <Icon className="w-4 h-4" />
+                                {LAUNCH_TYPE_LABELS[t]}
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}
