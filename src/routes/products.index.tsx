@@ -7,6 +7,7 @@ import { useProducts, type Product } from "@/hooks/useProducts";
 import {
   CATEGORY_LABELS,
   LIFECYCLE_LABELS,
+  LIFECYCLE_ICONS,
 } from "@/lib/schemas/product-schema";
 import { Package } from "lucide-react";
 import { NewProductDialog } from "@/components/products/NewProductDialog";
@@ -130,6 +131,8 @@ function ProductCard({ product }: { product: Product }) {
         .toUpperCase()
     : "??";
 
+  const StageIcon = LIFECYCLE_ICONS[product.estagio_atual];
+
   return (
     <Link
       to="/products/$id"
@@ -147,7 +150,8 @@ function ProductCard({ product }: { product: Product }) {
         <span className="inline-flex items-center px-2 py-1 rounded-md bg-surface text-[10px] font-medium text-muted-foreground border border-border/50">
           {CATEGORY_LABELS[product.categoria]}
         </span>
-        <span className="inline-flex items-center px-2 py-1 rounded-md bg-surface text-[10px] font-medium text-foreground border border-border/50">
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-surface text-[10px] font-medium text-foreground border border-border/50">
+          <StageIcon className="w-3 h-3" />
           {LIFECYCLE_LABELS[product.estagio_atual]}
         </span>
       </div>
