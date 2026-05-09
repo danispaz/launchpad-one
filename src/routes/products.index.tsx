@@ -16,7 +16,7 @@ export const Route = createFileRoute("/products/")({
 });
 
 function ProductsList() {
-  const { products, loading, error } = useProducts();
+  const { products, loading, error, createProduct } = useProducts();
   const [isNewProductOpen, setIsNewProductOpen] = useState(false);
 
   const handleNewProduct = () => {
@@ -82,7 +82,7 @@ function ProductsList() {
             </button>
           </div>
         </div>
-        <NewProductDialog open={isNewProductOpen} onOpenChange={setIsNewProductOpen} />
+        <NewProductDialog open={isNewProductOpen} onOpenChange={setIsNewProductOpen} createProduct={createProduct} />
       </AppLayout>
     );
   }
@@ -108,7 +108,7 @@ function ProductsList() {
           ))}
         </div>
       </div>
-      <NewProductDialog open={isNewProductOpen} onOpenChange={setIsNewProductOpen} />
+      <NewProductDialog open={isNewProductOpen} onOpenChange={setIsNewProductOpen} createProduct={createProduct} />
     </AppLayout>
   );
 }
