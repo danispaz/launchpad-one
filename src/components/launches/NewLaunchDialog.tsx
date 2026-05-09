@@ -2,9 +2,16 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { newLaunchSchema, type NewLaunchInput } from "@/lib/schemas/launch-schema";
+import {
+  newLaunchSchema,
+  type NewLaunchInput,
+  LAUNCH_TYPES,
+  LAUNCH_TYPE_LABELS,
+  LAUNCH_TYPE_ICONS,
+} from "@/lib/schemas/launch-schema";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfilesForOwner } from "@/hooks/useProfilesForOwner";
+import { useProducts } from "@/hooks/useProducts";
 import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/lib/supabase";
 import {
@@ -37,11 +44,13 @@ import { Button } from "@/components/ui/button";
 interface NewLaunchDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  defaultProductId?: string;
 }
 
-export function NewLaunchDialog({ open, onOpenChange }: NewLaunchDialogProps) {
+export function NewLaunchDialog({ open, onOpenChange, defaultProductId }: NewLaunchDialogProps) {
   const { user } = useAuth();
   const { profiles, loading: loadingProfiles } = useProfilesForOwner();
+  const { products, loading: loadingProducts } = useProducts();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
@@ -51,6 +60,8 @@ export function NewLaunchDialog({ open, onOpenChange }: NewLaunchDialogProps) {
       nome: "",
       descricao: "",
       produto: "",
+      product_id: "",
+      tipo: "release",
       data_inicio: "",
       data_lancamento_prevista: "",
       prioridade: "média",
@@ -64,18 +75,29 @@ export function NewLaunchDialog({ open, onOpenChange }: NewLaunchDialogProps) {
     }
   }, [user, form]);
 
+  useEffect(() => {
+    if (defaultProductId && !form.getValues("product_id")) {
+      form.setValue("product_id", defaultProductId);
+    }
+  }, [defaultProductId, form]);
+
   const onSubmit = async (data: NewLaunchInput) => {
     console.log("[RAW newLaunch submit]", data);
     setIsSubmitting(true);
 
     try {
-      // Normaliza descrição vazia para null (mais limpo no banco)
+      // Pega o nome do produto selecionado pra preencher campo "produto" (deprecated, retrocompat)
+      const selectedProduct = products.find((p) => p.id === data.product_id);
+      const produtoNome = selectedProduct?.nome || "";
+
       const payload = {
         nome: data.nome,
         descricao: data.descricao && data.descricao.trim() !== "" 
           ? data.descricao 
           : null,
-        produto: data.produto,
+        produto: produtoNome,
+        product_id: data.product_id,
+        tipo: data.tipo,
         data_inicio: data.data_inicio,
         data_lancamento_prevista: data.data_lancamento_prevista,
         prioridade: data.prioridade,
