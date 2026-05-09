@@ -53,7 +53,7 @@ export const newLaunchSchema = z
       .enum(LAUNCH_TYPES, {
         errorMap: () => ({ message: "Tipo de lançamento inválido" }),
       })
-      .default("release"),
+      }),
     data_inicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de início inválida (formato YYYY-MM-DD)"),
     data_lancamento_prevista: z
       .string()
