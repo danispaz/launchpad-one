@@ -61,7 +61,7 @@ export function NewLaunchDialog({ open, onOpenChange, defaultProductId }: NewLau
       descricao: "",
       produto: "",
       product_id: "",
-      tipo: "release",
+      tipo: "release" as LaunchType,
       data_inicio: "",
       data_lancamento_prevista: "",
       prioridade: "média",
