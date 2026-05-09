@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
@@ -8,7 +9,7 @@ import {
   LIFECYCLE_LABELS,
 } from "@/lib/schemas/product-schema";
 import { Package } from "lucide-react";
-import { toast } from "sonner";
+import { NewProductDialog } from "@/components/products/NewProductDialog";
 
 export const Route = createFileRoute("/products/")({
   component: ProductsList,
@@ -16,9 +17,10 @@ export const Route = createFileRoute("/products/")({
 
 function ProductsList() {
   const { products, loading, error } = useProducts();
+  const [isNewProductOpen, setIsNewProductOpen] = useState(false);
 
   const handleNewProduct = () => {
-    toast.info("Em breve — disponível na próxima fase");
+    setIsNewProductOpen(true);
   };
 
   if (loading) {
@@ -80,6 +82,7 @@ function ProductsList() {
             </button>
           </div>
         </div>
+        <NewProductDialog open={isNewProductOpen} onOpenChange={setIsNewProductOpen} />
       </AppLayout>
     );
   }
@@ -105,6 +108,7 @@ function ProductsList() {
           ))}
         </div>
       </div>
+      <NewProductDialog open={isNewProductOpen} onOpenChange={setIsNewProductOpen} />
     </AppLayout>
   );
 }
