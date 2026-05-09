@@ -82,6 +82,7 @@ function ProductsList() {
             </button>
           </div>
         </div>
+        <NewProductDialog open={isNewProductOpen} onOpenChange={setIsNewProductOpen} />
       </AppLayout>
     );
   }
