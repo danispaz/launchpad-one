@@ -8,6 +8,7 @@ import {
   LAUNCH_TYPES,
   LAUNCH_TYPE_LABELS,
   LAUNCH_TYPE_ICONS,
+  type LaunchType,
 } from "@/lib/schemas/launch-schema";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfilesForOwner } from "@/hooks/useProfilesForOwner";
