@@ -51,8 +51,8 @@ export function NewProductDialog({ open, onOpenChange }: NewProductDialogProps) 
   const { createProduct } = useProducts();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<NewProductInput>({
-    resolver: zodResolver(newProductSchema),
+  const form = useForm({
+    resolver: zodResolver(newProductSchema) as never,
     defaultValues: {
       nome: "",
       descricao: "",
