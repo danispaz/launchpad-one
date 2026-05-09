@@ -18,6 +18,7 @@ import { Route as LaunchesRouteImport } from './routes/launches'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProductsIndexRouteImport } from './routes/products.index'
 import { Route as LaunchesIndexRouteImport } from './routes/launches.index'
+import { Route as ProductsIdRouteImport } from './routes/products.$id'
 import { Route as LaunchesIdRouteImport } from './routes/launches.$id'
 
 const TeamsRoute = TeamsRouteImport.update({
@@ -65,6 +66,11 @@ const LaunchesIndexRoute = LaunchesIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LaunchesRoute,
 } as any)
+const ProductsIdRoute = ProductsIdRouteImport.update({
+  id: '/products/$id',
+  path: '/products/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LaunchesIdRoute = LaunchesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/teams': typeof TeamsRoute
   '/launches/$id': typeof LaunchesIdRoute
+  '/products/$id': typeof ProductsIdRoute
   '/launches/': typeof LaunchesIndexRoute
   '/products/': typeof ProductsIndexRoute
 }
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/teams': typeof TeamsRoute
   '/launches/$id': typeof LaunchesIdRoute
+  '/products/$id': typeof ProductsIdRoute
   '/launches': typeof LaunchesIndexRoute
   '/products': typeof ProductsIndexRoute
 }
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/teams': typeof TeamsRoute
   '/launches/$id': typeof LaunchesIdRoute
+  '/products/$id': typeof ProductsIdRoute
   '/launches/': typeof LaunchesIndexRoute
   '/products/': typeof ProductsIndexRoute
 }
@@ -118,6 +127,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/teams'
     | '/launches/$id'
+    | '/products/$id'
     | '/launches/'
     | '/products/'
   fileRoutesByTo: FileRoutesByTo
@@ -129,6 +139,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/teams'
     | '/launches/$id'
+    | '/products/$id'
     | '/launches'
     | '/products'
   id:
@@ -141,6 +152,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/teams'
     | '/launches/$id'
+    | '/products/$id'
     | '/launches/'
     | '/products/'
   fileRoutesById: FileRoutesById
@@ -153,6 +165,7 @@ export interface RootRouteChildren {
   RoadmapRoute: typeof RoadmapRoute
   SettingsRoute: typeof SettingsRoute
   TeamsRoute: typeof TeamsRoute
+  ProductsIdRoute: typeof ProductsIdRoute
   ProductsIndexRoute: typeof ProductsIndexRoute
 }
 
@@ -221,6 +234,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LaunchesIndexRouteImport
       parentRoute: typeof LaunchesRoute
     }
+    '/products/$id': {
+      id: '/products/$id'
+      path: '/products/$id'
+      fullPath: '/products/$id'
+      preLoaderRoute: typeof ProductsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/launches/$id': {
       id: '/launches/$id'
       path: '/$id'
@@ -253,6 +273,7 @@ const rootRouteChildren: RootRouteChildren = {
   RoadmapRoute: RoadmapRoute,
   SettingsRoute: SettingsRoute,
   TeamsRoute: TeamsRoute,
+  ProductsIdRoute: ProductsIdRoute,
   ProductsIndexRoute: ProductsIndexRoute,
 }
 export const routeTree = rootRouteImport
