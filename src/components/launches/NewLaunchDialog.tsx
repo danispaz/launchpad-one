@@ -307,7 +307,7 @@ export function NewLaunchDialog({ open, onOpenChange, defaultProductId }: NewLau
                       <SelectContent>
                         {profiles.map((profile) => (
                           <SelectItem key={profile.id} value={profile.id}>
-                            {profile.full_name || profile.username || "Sem nome"}
+                            {profile.nome || "Sem nome"}
                           </SelectItem>
                         ))}
                       </SelectContent>
