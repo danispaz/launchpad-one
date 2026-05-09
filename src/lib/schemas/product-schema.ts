@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { Search, FlaskConical, Rocket, TrendingUp, Sprout, Sliders, Sunset } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 export const PRODUCT_CATEGORIES = [
   "saas",
@@ -72,19 +74,29 @@ export const CATEGORY_LABELS: Record<ProductCategory, string> = {
 };
 
 export const LIFECYCLE_LABELS: Record<ProductLifecycleStage, string> = {
-  descoberta: "🔍 Descoberta",
-  mvp: "🧪 MVP",
-  lancamento: "🚀 Lançamento",
-  tracao: "📈 Tração",
-  escala: "🌱 Escala",
-  otimizacao: "⚙️ Otimização",
-  sunset: "🌅 Sunset",
+  descoberta: "Descoberta",
+  mvp: "MVP",
+  lancamento: "Lançamento",
+  tracao: "Tração",
+  escala: "Escala",
+  otimizacao: "Otimização",
+  sunset: "Sunset",
+};
+
+export const LIFECYCLE_ICONS: Record<ProductLifecycleStage, LucideIcon> = {
+  descoberta: Search,
+  mvp: FlaskConical,
+  lancamento: Rocket,
+  tracao: TrendingUp,
+  escala: Sprout,
+  otimizacao: Sliders,
+  sunset: Sunset,
 };
 
 export const HEALTH_STATUS_LABELS: Record<ProductHealthStatus, string> = {
-  critico: "🔴 Crítico",
-  atencao: "🟡 Atenção",
-  saudavel: "🟢 Saudável",
+  critico: "Crítico",
+  atencao: "Atenção",
+  saudavel: "Saudável",
 };
 
 export function getHealthColor(score: number): ProductHealthStatus {
