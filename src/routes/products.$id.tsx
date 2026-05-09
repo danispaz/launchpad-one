@@ -129,4 +129,5 @@ function Meta({ icon: Icon, label, value }: { icon: any; label: string; value: s
       </div>
       <p className="text-sm font-black text-slate-700">{value}</p>
     </div>
+  );
 }
