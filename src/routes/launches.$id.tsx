@@ -25,7 +25,6 @@ import { TaskFormDialog } from "@/components/launches/TaskFormDialog";
 import { KanbanBoard } from "@/components/launches/KanbanBoard";
 import { useTaskMutations } from "@/hooks/useTaskMutations";
 import type { TaskStatusEnum } from "@/lib/schemas/task-schema";
-
 export const Route = createFileRoute("/launches/$id")({
   head: () => ({
     meta: [
@@ -63,6 +62,9 @@ function LaunchDetail() {
   const handleStatusChange = async (taskId: string, newStatus: TaskStatusEnum) => {
     await updateTaskStatus(taskId, newStatus);
   };
+
+// Removendo duplicatas injetadas erroneamente
+
 
   const toggleTeam = (team: string) => {
     setExpandedTeams(prev => 
@@ -217,8 +219,8 @@ function LaunchDetail() {
           </TabsContent>
 
           <TabsContent value="activities">
-            <KanbanBoard 
-              tasks={tasks} 
+            <KanbanBoard
+              tasks={tasks as any}
               onTaskClick={handleTaskClick}
               onStatusChange={handleStatusChange}
               onRefresh={refresh}
