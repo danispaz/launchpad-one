@@ -61,7 +61,7 @@ export function LifecycleTransitionDialog({
       product_id: productId,
       estagio_anterior: estagioAtual,
       motivo: "",
-    } as never,
+    },
   });
 
   useEffect(() => {
