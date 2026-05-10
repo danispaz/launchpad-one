@@ -21,10 +21,11 @@ interface KanbanBoardProps {
 }
 
 const COLUMN_COLORS: Record<TaskStatusEnum, string> = {
-  a_fazer: "bg-slate-100",
-  em_andamento: "bg-blue-50",
+  todo: "bg-slate-100",
+  em_progresso: "bg-blue-50",
+  em_revisão: "bg-amber-50",
   bloqueado: "bg-rose-50",
-  concluido: "bg-emerald-50",
+  concluído: "bg-emerald-50",
 };
 
 function Column({ status, label, color, count, children }: { status: TaskStatusEnum; label: string; color: string; count: number; children: ReactNode }) {
@@ -61,10 +62,11 @@ function Card({ task, onClick }: { task: KanbanTask; onClick: () => void }) {
 export function KanbanBoard({ tasks, onTaskClick, onStatusChange, onRefresh }: KanbanBoardProps) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
   const tasksByStatus: Record<TaskStatusEnum, KanbanTask[]> = {
-    a_fazer: tasks.filter((t) => t.status === "a_fazer"),
-    em_andamento: tasks.filter((t) => t.status === "em_andamento"),
+    todo: tasks.filter((t) => t.status === "todo"),
+    em_progresso: tasks.filter((t) => t.status === "em_progresso"),
+    em_revisão: tasks.filter((t) => t.status === "em_revisão"),
     bloqueado: tasks.filter((t) => t.status === "bloqueado"),
-    concluido: tasks.filter((t) => t.status === "concluido"),
+    concluído: tasks.filter((t) => t.status === "concluído"),
   };
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
