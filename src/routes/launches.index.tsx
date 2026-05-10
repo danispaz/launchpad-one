@@ -189,6 +189,7 @@ function LaunchesList() {
               <tr className="border-b border-border bg-slate-50/50 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
                 <th className="px-6 py-4 text-left">Cód.</th>
                 <th className="px-6 py-4 text-left">Nome</th>
+                <th className="px-6 py-4 text-left">Produto</th>
                 <th className="px-6 py-4 text-left">Status</th>
                 <th className="px-6 py-4 text-left">Times</th>
                 <th className="px-6 py-4 text-left">Owner</th>
@@ -203,6 +204,15 @@ function LaunchesList() {
                     <Link to="/launches/$id" params={{ id: l.id }} className="text-sm font-semibold text-foreground hover:text-primary transition-colors">
                       {l.nome}
                     </Link>
+                  </td>
+                  <td className="px-6 py-5">
+                    {l.product_id ? (
+                      <Link to="/products/$id" params={{ id: l.product_id }} className="text-xs text-muted-foreground hover:text-primary transition-colors">
+                        {l.produto || "—"}
+                      </Link>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">{l.produto || "—"}</span>
+                    )}
                   </td>
                   <td className="px-6 py-5"><StatusBadge status={l.status as any} /></td>
 
@@ -225,7 +235,7 @@ function LaunchesList() {
               ))}
               {filteredList.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-sm text-muted-foreground italic">
+                  <td colSpan={7} className="px-6 py-12 text-center text-sm text-muted-foreground italic">
                     Nenhum lançamento encontrado com esses filtros.
                   </td>
                 </tr>
