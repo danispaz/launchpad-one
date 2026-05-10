@@ -6,6 +6,8 @@ export interface LaunchListItem {
   id: string;
   nome: string;
   descricao: string | null;
+  produto: string | null;
+  product_id: string | null;
   status: LaunchStatus;
   progresso: number;
   data_lancamento_prevista: string | null;
