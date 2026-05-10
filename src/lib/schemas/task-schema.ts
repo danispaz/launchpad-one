@@ -21,6 +21,18 @@ export const TASK_PRIORITY_LABELS: Record<TaskPriorityEnum, string> = {
   crítica: "Crítica",
 };
 
+export const TASK_TEAMS = ["marketing", "sales", "engineering", "product", "executive"] as const;
+export type TaskTeamEnum = typeof TASK_TEAMS[number];
+
+export const TASK_TEAM_LABELS: Record<TaskTeamEnum, string> = {
+  marketing: "Marketing",
+  sales: "Vendas",
+  engineering: "Desenvolvimento",
+  product: "Produto",
+  executive: "Diretoria",
+};
+
+
 const emptyToUndefined = (val: unknown) => (val === "" ? undefined : val);
 
 export const newTaskSchema = z.object({

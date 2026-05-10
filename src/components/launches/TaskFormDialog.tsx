@@ -7,12 +7,13 @@ import {
   TASK_STATUSES,
   TASK_STATUS_LABELS,
   TASK_PRIORITIES,
-   TASK_PRIORITY_LABELS,
+  TASK_PRIORITY_LABELS,
+  TASK_TEAMS,
+  TASK_TEAM_LABELS,
   type NewTaskInput,
 } from "@/lib/schemas/task-schema";
 import { useTaskMutations } from "@/hooks/useTaskMutations";
 import { useProfilesForOwner } from "@/hooks/useProfilesForOwner";
-import { teamMap, type TeamName } from "@/lib/utils/formatters";
 import {
   Dialog,
   DialogContent,
@@ -146,7 +147,7 @@ export function TaskFormDialog({
     }
   };
 
-  const teamKeys = Object.keys(teamMap) as TeamName[];
+  
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -259,9 +260,9 @@ export function TaskFormDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {teamKeys.map((tk) => (
+                        {TASK_TEAMS.map((tk) => (
                           <SelectItem key={tk} value={tk}>
-                            {teamMap[tk]}
+                            {TASK_TEAM_LABELS[tk]}
                           </SelectItem>
                         ))}
                       </SelectContent>
