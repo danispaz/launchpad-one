@@ -25,6 +25,9 @@ import { TaskFormDialog } from "@/components/launches/TaskFormDialog";
 import { KanbanBoard } from "@/components/launches/KanbanBoard";
 import { useTaskMutations } from "@/hooks/useTaskMutations";
 import type { TaskStatusEnum } from "@/lib/schemas/task-schema";
+import { KanbanBoard } from "@/components/launches/KanbanBoard";
+import { useTaskMutations } from "@/hooks/useTaskMutations";
+import type { TaskStatusEnum } from "@/lib/schemas/task-schema";
 
 export const Route = createFileRoute("/launches/$id")({
   head: () => ({
@@ -51,6 +54,17 @@ function LaunchDetail() {
 
   const handleTaskSuccess = () => {
     refresh();
+  };
+
+  const { updateTaskStatus } = useTaskMutations();
+
+  const handleTaskClick = (task: any) => {
+    setTaskToEdit(task);
+    setIsTaskDialogOpen(true);
+  };
+
+  const handleStatusChange = async (taskId: string, newStatus: TaskStatusEnum) => {
+    await updateTaskStatus(taskId, newStatus);
   };
 
   const { updateTaskStatus } = useTaskMutations();
@@ -217,8 +231,8 @@ function LaunchDetail() {
           </TabsContent>
 
           <TabsContent value="activities">
-            <KanbanBoard 
-              tasks={tasks} 
+            <KanbanBoard
+              tasks={tasks as any}
               onTaskClick={handleTaskClick}
               onStatusChange={handleStatusChange}
               onRefresh={refresh}

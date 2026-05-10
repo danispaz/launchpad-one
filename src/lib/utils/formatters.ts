@@ -1,7 +1,8 @@
 export const TASK_STATUS_DONE = 'concluído' as const;
-export const TASK_STATUS_IN_PROGRESS = 'em_andamento' as const;
-export const TASK_STATUS_TODO = 'a_fazer' as const;
+export const TASK_STATUS_IN_PROGRESS = 'em_progresso' as const;
+export const TASK_STATUS_TODO = 'todo' as const;
 export const TASK_STATUS_BLOCKED = 'bloqueado' as const;
+export const TASK_STATUS_IN_REVIEW = 'em_revisão' as const;
 
 /**
  * Definições manuais dos Enums do banco para evitar erros de importação
@@ -87,11 +88,12 @@ export const priorityMap: Record<PriorityLevel, string> = {
 /**
  * Mapeamento de Status de Tarefa (Database -> UI)
  */
-export const taskStatusMap: Record<TaskStatus, string> = {
-  todo: "A fazer",
-  in_progress: "Em andamento",
-  blocked: "Bloqueado",
-  done: "Concluído",
+export const taskStatusMap: Record<string, string> = {
+  todo: "A Fazer",
+  em_progresso: "Em Progress",
+  em_revisão: "Em Revisão",
+  concluído: "Concluído",
+  bloqueado: "Bloqueado",
 };
 
 /**
