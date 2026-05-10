@@ -80,8 +80,8 @@ export function TaskFormDialog({
 
   const isEdit = !!taskToEdit;
 
-  const form = useForm<NewTaskInput>({
-    resolver: zodResolver(newTaskSchema),
+  const form = useForm({
+    resolver: zodResolver(newTaskSchema) as any,
     defaultValues: {
       launch_id: launchId,
       titulo: "",
