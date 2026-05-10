@@ -221,6 +221,7 @@ function LaunchDetail() {
               tasks={tasks} 
               onTaskClick={handleTaskClick}
               onStatusChange={handleStatusChange}
+              onRefresh={refresh}
             />
           </TabsContent>
 
