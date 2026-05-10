@@ -4,7 +4,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
 import { StatusBadge, TeamChip, ProgressBar, Avatar, PriorityDot } from "@/components/Badges";
 import { formatLaunchCode, teamMap, taskStatusMap, priorityMap, TASK_STATUS_DONE, TASK_STATUS_IN_PROGRESS, TASK_STATUS_TODO, TASK_STATUS_BLOCKED } from "@/lib/utils/formatters";
-import { useLaunchDetail } from "@/hooks/useLaunchDetail";
+import { useLaunchDetail, type Task } from "@/hooks/useLaunchDetail";
 import { 
   ChevronLeft, 
   Calendar, 
@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TaskFormDialog } from "@/components/launches/TaskFormDialog";
 
 export const Route = createFileRoute("/launches/$id")({
   head: () => ({
@@ -35,8 +36,19 @@ function LaunchDetail() {
   const params = Route.useParams();
   const { id } = params;
   console.log('LAUNCH DETAIL PAGE MOUNTED', { id });
-  const { launch, phases, tasks, milestones, risks, loading, error } = useLaunchDetail(id);
+  const { launch, phases, tasks, milestones, risks, loading, error, refresh } = useLaunchDetail(id);
   const [expandedTeams, setExpandedTeams] = useState<string[]>([]);
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+
+  const handleOpenNewTask = () => {
+    setTaskToEdit(null);
+    setIsTaskDialogOpen(true);
+  };
+
+  const handleTaskSuccess = () => {
+    refresh();
+  };
 
   const toggleTeam = (team: string) => {
     setExpandedTeams(prev => 
@@ -90,7 +102,18 @@ function LaunchDetail() {
 
   return (
     <AppLayout>
-      <TopBar title={launch.nome} subtitle={formatLaunchCode(launch.id)} />
+      <TopBar 
+        title={launch.nome} 
+        subtitle={formatLaunchCode(launch.id)}
+        actions={
+          <button 
+            onClick={handleOpenNewTask}
+            className="h-8 px-3 rounded bg-foreground text-background text-xs font-medium hover:opacity-90 transition-opacity"
+          >
+            + Nova tarefa
+          </button>
+        }
+      />
       
       <div className="flex-1 px-8 py-10 max-w-[1200px] mx-auto w-full">
         <Link to="/launches" className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-primary mb-8 font-bold uppercase tracking-wider transition-colors">
@@ -292,6 +315,15 @@ function LaunchDetail() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <TaskFormDialog
+        open={isTaskDialogOpen}
+        onOpenChange={setIsTaskDialogOpen}
+        launchId={launch.id}
+        phases={phases}
+        taskToEdit={taskToEdit}
+        onSuccess={handleTaskSuccess}
+      />
     </AppLayout>
   );
 }
