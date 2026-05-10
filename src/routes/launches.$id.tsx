@@ -22,12 +22,8 @@ import {
 import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskFormDialog } from "@/components/launches/TaskFormDialog";
-import { KanbanBoard } from "@/components/launches/KanbanBoard";
-import { useTaskMutations } from "@/hooks/useTaskMutations";
-import type { TaskStatusEnum } from "@/lib/schemas/task-schema";
-import { KanbanBoard } from "@/components/launches/KanbanBoard";
-import { useTaskMutations } from "@/hooks/useTaskMutations";
-import type { TaskStatusEnum } from "@/lib/schemas/task-schema";
+// Removendo duplicatas injetadas erroneamente
+
 
 export const Route = createFileRoute("/launches/$id")({
   head: () => ({
@@ -67,16 +63,8 @@ function LaunchDetail() {
     await updateTaskStatus(taskId, newStatus);
   };
 
-  const { updateTaskStatus } = useTaskMutations();
+// Removendo duplicatas injetadas erroneamente
 
-  const handleTaskClick = (task: any) => {
-    setTaskToEdit(task);
-    setIsTaskDialogOpen(true);
-  };
-
-  const handleStatusChange = async (taskId: string, newStatus: TaskStatusEnum) => {
-    await updateTaskStatus(taskId, newStatus);
-  };
 
   const toggleTeam = (team: string) => {
     setExpandedTeams(prev => 
