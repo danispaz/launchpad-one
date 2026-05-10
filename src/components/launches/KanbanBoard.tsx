@@ -84,7 +84,7 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange, onRefresh }: K
   };
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 overflow-x-auto pb-4">
+      <div className="flex gap-6 overflow-x-auto pb-4">
         {TASK_STATUSES.map((status) => (
           <Column key={status} status={status} label={TASK_STATUS_LABELS[status]} color={COLUMN_COLORS[status]} count={tasksByStatus[status].length}>
             {tasksByStatus[status].map((task) => <Card key={task.id} task={task} onClick={() => onTaskClick(task)} />)}
