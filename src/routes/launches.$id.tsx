@@ -22,6 +22,9 @@ import {
 import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskFormDialog } from "@/components/launches/TaskFormDialog";
+import { KanbanBoard } from "@/components/launches/KanbanBoard";
+import { useTaskMutations } from "@/hooks/useTaskMutations";
+import type { TaskStatusEnum } from "@/lib/schemas/task-schema";
 
 export const Route = createFileRoute("/launches/$id")({
   head: () => ({
@@ -48,6 +51,17 @@ function LaunchDetail() {
 
   const handleTaskSuccess = () => {
     refresh();
+  };
+
+  const { updateTaskStatus } = useTaskMutations();
+
+  const handleTaskClick = (task: any) => {
+    setTaskToEdit(task);
+    setIsTaskDialogOpen(true);
+  };
+
+  const handleStatusChange = async (taskId: string, newStatus: TaskStatusEnum) => {
+    await updateTaskStatus(taskId, newStatus);
   };
 
   const toggleTeam = (team: string) => {
@@ -203,43 +217,12 @@ function LaunchDetail() {
           </TabsContent>
 
           <TabsContent value="activities">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 overflow-x-auto pb-4">
-              {Object.entries({
-                todo: { label: 'A Fazer', color: 'bg-slate-100' },
-                in_progress: { label: 'Em Andamento', color: 'bg-blue-50' },
-                blocked: { label: 'Bloqueado', color: 'bg-rose-50' },
-                done: { label: 'Concluído', color: 'bg-emerald-50' }
-              }).map(([statusKey, meta]) => (
-                <div key={status} className="min-w-[280px]">
-                  <div className="flex items-center justify-between mb-4 px-2">
-                    <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-500">
-                      {meta.label} · {(tasksByStatus as any)[statusKey].length}
-                    </h4>
-                  </div>
-                  <div className={`space-y-3 p-3 rounded-2xl border border-slate-100 min-h-[400px] ${meta.color}/30`}>
-                    {(tasksByStatus as any)[statusKey].map((task: any) => (
-                      <div key={task.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
-                        <div className="flex items-center gap-2 mb-2">
-                          <TeamChip team={(task.team as any) || 'product'} />
-                        </div>
-                        <p className="text-sm font-bold text-slate-800 leading-tight mb-3 group-hover:text-primary transition-colors">{task.titulo}</p>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold uppercase">
-                            <Calendar className="w-3 h-3" />
-                            {task.data_entrega ? new Date(task.data_entrega).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : 'S/D'}
-                          </div>
-                          <div className="flex -space-x-1">
-                            <div className="h-5 w-5 rounded-full bg-slate-100 border border-white flex items-center justify-center text-[8px] font-bold text-slate-500" title={task.assignee?.nome || 'N/A'}>
-                              {task.assignee?.nome?.split(' ').map((n: string) => n[0]).join('').substring(0, 2) || '??'}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <KanbanBoard 
+              tasks={tasks} 
+              onTaskClick={handleTaskClick}
+              onStatusChange={handleStatusChange}
+              onRefresh={refresh}
+            />
           </TabsContent>
 
           <TabsContent value="by_team" className="space-y-4">
