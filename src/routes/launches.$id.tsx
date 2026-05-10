@@ -22,9 +22,9 @@ import {
 import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskFormDialog } from "@/components/launches/TaskFormDialog";
-// Removendo duplicatas injetadas erroneamente
-
-
+import { KanbanBoard } from "@/components/launches/KanbanBoard";
+import { useTaskMutations } from "@/hooks/useTaskMutations";
+import type { TaskStatusEnum } from "@/lib/schemas/task-schema";
 export const Route = createFileRoute("/launches/$id")({
   head: () => ({
     meta: [
