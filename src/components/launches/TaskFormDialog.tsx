@@ -7,7 +7,8 @@ import {
   TASK_STATUSES,
   TASK_STATUS_LABELS,
   TASK_PRIORITIES,
-  TASK_PRIORITY_LABELS,
+   TASK_PRIORITY_LABELS,
+  type NewTaskInput,
 } from "@/lib/schemas/task-schema";
 import { useTaskMutations } from "@/hooks/useTaskMutations";
 import { useProfilesForOwner } from "@/hooks/useProfilesForOwner";
@@ -80,7 +81,7 @@ export function TaskFormDialog({
   const isEdit = !!taskToEdit;
 
   const form = useForm({
-    resolver: zodResolver(newTaskSchema) as never,
+    resolver: zodResolver(newTaskSchema) as any,
     defaultValues: {
       launch_id: launchId,
       titulo: "",
@@ -92,7 +93,7 @@ export function TaskFormDialog({
       phase_id: "",
       data_inicio: "",
       data_entrega: "",
-    } as never,
+    },
   });
 
   useEffect(() => {

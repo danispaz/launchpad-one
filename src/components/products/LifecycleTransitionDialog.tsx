@@ -56,12 +56,13 @@ export function LifecycleTransitionDialog({
   const { transition, submitting } = useLifecycleTransition();
 
   const form = useForm({
-    resolver: zodResolver(lifecycleTransitionSchema) as never,
+    resolver: zodResolver(lifecycleTransitionSchema) as any,
     defaultValues: {
       product_id: productId,
       estagio_anterior: estagioAtual,
+      estagio_novo: "" as any,
       motivo: "",
-    } as never,
+    },
   });
 
   useEffect(() => {
