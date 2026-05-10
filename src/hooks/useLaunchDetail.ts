@@ -186,5 +186,5 @@ export function useLaunchDetail(launchId: string) {
     fetchData();
   }, [fetchData]);
 
-  return { launch, phases, tasks, milestones, risks, loading, error, refresh: () => fetchData(true) };
+  return { launch, phases, tasks, milestones, risks, loading, error, refresh: fetchData };
 }
