@@ -1,16 +1,17 @@
 import { z } from "zod";
 
-export const TASK_STATUSES = ["a_fazer", "em_andamento", "bloqueado", "concluido"] as const;
+export const TASK_STATUSES = ["todo", "em_progresso", "em_revisão", "concluído", "bloqueado"] as const;
 export type TaskStatusEnum = typeof TASK_STATUSES[number];
 
 export const TASK_PRIORITIES = ["baixa", "média", "alta", "crítica"] as const;
 export type TaskPriorityEnum = typeof TASK_PRIORITIES[number];
 
 export const TASK_STATUS_LABELS: Record<TaskStatusEnum, string> = {
-  a_fazer: "A Fazer",
-  em_andamento: "Em Andamento",
+  todo: "A Fazer",
+  em_progresso: "Em Progresso",
+  em_revisão: "Em Revisão",
+  concluído: "Concluído",
   bloqueado: "Bloqueado",
-  concluido: "Concluído",
 };
 
 export const TASK_PRIORITY_LABELS: Record<TaskPriorityEnum, string> = {
@@ -20,7 +21,6 @@ export const TASK_PRIORITY_LABELS: Record<TaskPriorityEnum, string> = {
   crítica: "Crítica",
 };
 
-// Helper: converte string vazia em undefined antes da validação
 const emptyToUndefined = (val: unknown) => (val === "" ? undefined : val);
 
 export const newTaskSchema = z.object({
@@ -33,7 +33,7 @@ export const newTaskSchema = z.object({
     emptyToUndefined,
     z.string().max(5000, "Descrição muito longa").nullable().optional()
   ),
-  status: z.enum(TASK_STATUSES).default("a_fazer"),
+  status: z.enum(TASK_STATUSES).default("todo"),
   prioridade: z.enum(TASK_PRIORITIES).default("média"),
   team: z.preprocess(emptyToUndefined, z.string().nullable().optional()),
   assignee_id: z.preprocess(emptyToUndefined, z.string().uuid().nullable().optional()),
