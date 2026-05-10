@@ -4,6 +4,7 @@ import { TopBar } from "@/components/TopBar";
 import { Avatar } from "@/components/Badges";
 import { useProductDetail } from "@/hooks/useProductDetail";
 import { BriefingDisplay } from "@/components/products/BriefingDisplay";
+import { ProductLaunchesList } from "@/components/products/ProductLaunchesList";
 import {
   CATEGORY_LABELS,
   LIFECYCLE_LABELS,
@@ -112,6 +113,10 @@ function ProductDetail() {
         </div>
 
         <BriefingDisplay productId={product.id} />
+
+        <div className="mt-8">
+          <ProductLaunchesList productId={product.id} />
+        </div>
       </div>
     </AppLayout>
   );
