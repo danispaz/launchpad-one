@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
@@ -5,12 +6,14 @@ import { Avatar } from "@/components/Badges";
 import { useProductDetail } from "@/hooks/useProductDetail";
 import { BriefingDisplay } from "@/components/products/BriefingDisplay";
 import { ProductLaunchesList } from "@/components/products/ProductLaunchesList";
+import { LifecycleTransitionDialog } from "@/components/products/LifecycleTransitionDialog";
+import { LifecycleHistoryDisplay } from "@/components/products/LifecycleHistoryDisplay";
 import {
   CATEGORY_LABELS,
   LIFECYCLE_LABELS,
   LIFECYCLE_ICONS,
 } from "@/lib/schemas/product-schema";
-import { ChevronLeft, Heart, User, Tag } from "lucide-react";
+import { ChevronLeft, Heart, User, Tag, ArrowRightLeft } from "lucide-react";
 
 export const Route = createFileRoute("/products/$id")({
   head: () => ({
@@ -22,7 +25,14 @@ export const Route = createFileRoute("/products/$id")({
 function ProductDetail() {
   const { id } = Route.useParams();
   console.log("PRODUCT DETAIL PAGE MOUNTED", { id });
-  const { product, loading, error } = useProductDetail(id);
+  const { product, loading, error, refetch } = useProductDetail(id);
+  const [isTransitionDialogOpen, setIsTransitionDialogOpen] = useState(false);
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+
+  const handleTransitionComplete = () => {
+    refetch();
+    setHistoryRefreshKey((k) => k + 1);
+  };
 
   if (loading) {
     return (
@@ -69,18 +79,27 @@ function ProductDetail() {
         </Link>
 
         <header className="mb-12">
-          <div className="flex flex-wrap items-center gap-2 mb-4">
-            <span className="inline-flex items-center px-2 py-1 rounded-md bg-surface text-[10px] font-medium text-muted-foreground border border-border/50">
-              {CATEGORY_LABELS[product.categoria]}
-            </span>
-            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-surface text-[10px] font-medium text-foreground border border-border/50">
-              <StageIcon className="w-3 h-3" />
-              {LIFECYCLE_LABELS[product.estagio_atual]}
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-surface text-[10px] font-medium text-muted-foreground border border-border/50">
-              <div className={`h-2 w-2 rounded-full ${healthColor}`}></div>
-              {product.score_saude}/100
-            </span>
+          <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center px-2 py-1 rounded-md bg-surface text-[10px] font-medium text-muted-foreground border border-border/50">
+                {CATEGORY_LABELS[product.categoria]}
+              </span>
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-surface text-[10px] font-medium text-foreground border border-border/50">
+                <StageIcon className="w-3 h-3" />
+                {LIFECYCLE_LABELS[product.estagio_atual]}
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-surface text-[10px] font-medium text-muted-foreground border border-border/50">
+                <div className={`h-2 w-2 rounded-full ${healthColor}`}></div>
+                {product.score_saude}/100
+              </span>
+            </div>
+            <button
+              onClick={() => setIsTransitionDialogOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-foreground text-background hover:opacity-90 transition-opacity"
+            >
+              <ArrowRightLeft className="w-3 h-3" />
+              Mudar estágio
+            </button>
           </div>
           <h2 className="text-4xl font-black tracking-tight text-slate-800 mb-4">{product.nome}</h2>
           <p className="text-lg text-slate-500 max-w-2xl leading-relaxed">{product.descricao || "Sem descrição."}</p>
@@ -117,7 +136,19 @@ function ProductDetail() {
         <div className="mt-8">
           <ProductLaunchesList productId={product.id} />
         </div>
+
+        <div className="mt-8">
+          <LifecycleHistoryDisplay productId={product.id} key={historyRefreshKey} />
+        </div>
       </div>
+
+      <LifecycleTransitionDialog
+        open={isTransitionDialogOpen}
+        onOpenChange={setIsTransitionDialogOpen}
+        productId={product.id}
+        estagioAtual={product.estagio_atual}
+        onTransitionComplete={handleTransitionComplete}
+      />
     </AppLayout>
   );
 }
