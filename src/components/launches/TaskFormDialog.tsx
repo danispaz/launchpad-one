@@ -79,8 +79,8 @@ export function TaskFormDialog({
 
   const isEdit = !!taskToEdit;
 
-  const form = useForm({
-    resolver: zodResolver(newTaskSchema) as never,
+  const form = useForm<NewTaskInput>({
+    resolver: zodResolver(newTaskSchema),
     defaultValues: {
       launch_id: launchId,
       titulo: "",
@@ -92,7 +92,7 @@ export function TaskFormDialog({
       phase_id: "",
       data_inicio: "",
       data_entrega: "",
-    } as never,
+    },
   });
 
   useEffect(() => {
