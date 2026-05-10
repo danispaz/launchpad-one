@@ -60,6 +60,7 @@ export function LifecycleTransitionDialog({
     defaultValues: {
       product_id: productId,
       estagio_anterior: estagioAtual,
+      estagio_novo: "" as any,
       motivo: "",
     },
   });
