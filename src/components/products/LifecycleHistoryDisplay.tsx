@@ -83,10 +83,11 @@ export function LifecycleHistoryDisplay({ productId }: LifecycleHistoryDisplayPr
                 )}
 
                 <div className="flex items-center gap-2 mt-1 pt-2 border-t border-border/30">
-                  <Avatar
-                    initials={item.transicionado_por_nome?.[0] || "U"}
-                    className="w-4 h-4 text-[8px]"
-                  />
+                  <div className="flex-shrink-0">
+                    <Avatar
+                      initials={item.transicionado_por_nome?.[0] || "U"}
+                    />
+                  </div>
                   <span className="text-[10px] text-muted-foreground">
                     Transicionado por <span className="font-medium">{item.transicionado_por_nome || "Usuário"}</span>
                   </span>
