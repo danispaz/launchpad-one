@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "with-react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import type { LifecycleHistoryItem } from "@/lib/schemas/lifecycle-schema";
 
