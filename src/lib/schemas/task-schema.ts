@@ -19,6 +19,8 @@ export const TASK_PRIORITY_LABELS: Record<TaskPriorityEnum, string> = {
   média: "Média",
   alta: "Alta",
   crítica: "Crítica",
+};
+
 export const TASK_TEAMS = ["marketing", "sales", "engineering", "product", "executive"] as const;
 export type TaskTeamEnum = typeof TASK_TEAMS[number];
 
