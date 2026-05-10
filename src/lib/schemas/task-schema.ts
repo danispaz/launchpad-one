@@ -1,10 +1,10 @@
 import { z } from "zod";
 
 export const TASK_STATUSES = ["a_fazer", "em_andamento", "bloqueado", "concluido"] as const;
-export type TaskStatusEnum = (typeof TASK_STATUSES)[number];
+export type TaskStatusEnum = typeof TASK_STATUSES[number];
 
 export const TASK_PRIORITIES = ["baixa", "média", "alta", "crítica"] as const;
-export type TaskPriorityEnum = (typeof TASK_PRIORITIES)[number];
+export type TaskPriorityEnum = typeof TASK_PRIORITIES[number];
 
 export const TASK_STATUS_LABELS: Record<TaskStatusEnum, string> = {
   a_fazer: "A Fazer",
