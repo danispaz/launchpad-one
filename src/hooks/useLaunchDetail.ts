@@ -186,5 +186,7 @@ export function useLaunchDetail(launchId: string) {
     fetchData();
   }, [fetchData]);
 
-  return { launch, phases, tasks, milestones, risks, loading, error, refresh: fetchData };
+  const refresh = useCallback(() => fetchData(true), [fetchData]);
+
+  return { launch, phases, tasks, milestones, risks, loading, error, refresh };
 }
