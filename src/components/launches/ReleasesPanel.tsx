@@ -50,7 +50,7 @@ const TiptapEditor = ({ content, onChange, placeholder }: { content: string; onC
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm focus:outline-none max-w-none min-h-[100px] px-3 py-2 text-sm',
+        class: 'prose prose-sm focus:outline-none max-w-none min-h-[80px] max-h-[200px] overflow-y-auto px-3 py-2 text-sm',
       },
     },
     immediatelyRender: false,
@@ -457,14 +457,7 @@ export function ReleasesPanel({ launchId }: Props) {
                 {preview.item.criterios_aceite && (
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-3">Critérios de Aceite</p>
-                    <div className="space-y-2">
-                      {preview.item.criterios_aceite.split("\n").filter(Boolean).map((c, i) => (
-                        <div key={i} className="flex items-start gap-2">
-                          <span className="text-emerald-500 font-bold shrink-0 mt-0.5">✓</span>
-                          <span className="text-sm text-slate-700">{c}</span>
-                        </div>
-                      ))}
-                    </div>
+                    <div className="text-sm text-slate-700 leading-relaxed prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: preview.item.criterios_aceite }} />
                   </div>
                 )}
                 {!preview.item.descricao && !preview.item.criterios_aceite && (
