@@ -1,7 +1,8 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
-import { LayoutDashboard, Rocket, Map, Users, AlertTriangle, Settings, ChevronRight, Package, LogOut } from "lucide-react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { LayoutDashboard, Rocket, Map, Users, AlertTriangle, Settings, ChevronRight, Package, LogOut } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,11 +17,31 @@ const items = [
   { title: "Roadmap", url: "/roadmap", icon: Map },
   { title: "Times", url: "/teams", icon: Users },
   { title: "Riscos", url: "/risks", icon: AlertTriangle },
-  { title: "Configurações", url: "/settings", icon: Settings },
+  { title: "Configurações", url: "/settings", icon: Settings, requiredRoles: ["executive"] },
 ];
 
 export function AppSidebar() {
   const { user } = useAuth();
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    async function fetchRole() {
+      const { data } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user?.id)
+        .single();
+      setUserRole(data?.role || null);
+    }
+    fetchRole();
+  }, [user]);
+
+  const visibleItems = items.filter((item: any) => {
+    if (!item.requiredRoles) return true;
+    return userRole && item.requiredRoles.includes(userRole);
+  });
+
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isActive = (url: string) => (url === "/" ? pathname === "/" : pathname.startsWith(url));
 
@@ -39,7 +60,7 @@ export function AppSidebar() {
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-0.5">
-        {items.map((item) => {
+        {visibleItems.map((item) => {
           const active = isActive(item.url);
           return (
             <Link
