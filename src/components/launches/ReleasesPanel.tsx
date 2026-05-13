@@ -445,7 +445,7 @@ export function ReleasesPanel({ launchId }: Props) {
           </div>
 
           {/* Conteúdo */}
-          <ScrollArea className="flex-1 px-8 py-6">
+          <ScrollArea className="flex-1 px-8 py-6 max-h-[55vh]">
             {preview?.type === "item" && preview.item && (
               <div className="space-y-6">
                 {preview.item.descricao && (
@@ -562,11 +562,10 @@ export function ReleasesPanel({ launchId }: Props) {
                 <SelectContent>{ITEM_STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="space-y-2"><Label>Descrição (opcional)</Label><Textarea value={itemDescricao} onChange={e => setItemDescricao(e.target.value)} placeholder="Descreva o que esse item entrega..." className="resize-none" rows={3} /></div>
+            <div className="space-y-2"><Label>Descrição (opcional)</Label><TiptapEditor content={itemDescricao} onChange={setItemDescricao} placeholder="Descreva o que esse item entrega..." /></div>
             <div className="space-y-2">
               <Label>Critérios de Aceite (opcional)</Label>
-              <Textarea value={itemCriterios} onChange={e => setItemCriterios(e.target.value)} placeholder={"Um critério por linha:\nO usuário consegue emitir CT-e\nO documento é enviado para SEFAZ"} className="resize-none" rows={4} />
-              <p className="text-[10px] text-slate-400">Um critério por linha. Cada linha vira um ✓ no PDF.</p>
+              <TiptapEditor content={itemCriterios} onChange={setItemCriterios} placeholder="Digite os critérios de aceite..." />
             </div>
           </div>
           <DialogFooter>
