@@ -74,7 +74,7 @@ function LaunchDetail() {
     await updateTaskStatus(taskId, newStatus);
   };
 
-  const handleDeleteTask = (taskId: string) => {
+  const handleDeleteTask = async (taskId: string) => {
     setTaskToDelete(taskId);
   };
 
