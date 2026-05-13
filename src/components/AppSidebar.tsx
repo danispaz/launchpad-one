@@ -94,6 +94,9 @@ export function AppSidebar() {
             </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" side="top" className="w-56">
+            <DropdownMenuItem asChild>
+              <Link to="/profile">Meu perfil</Link>
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
               <LogOut className="mr-2 h-4 w-4" />
               <span>Sair</span>
