@@ -109,7 +109,9 @@ function generateReleasePDF(release: Release) {
   ${release.descricao ? `<div class="section"><div class="section-title">Descrição</div><div class="section-content">${release.descricao}</div></div>` : ""}
   <div class="section">
     <div class="section-title">Progresso — ${doneItems}/${release.items.length} itens concluídos (${pct}%)</div>
-    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+    <div class="progress-container">
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+    </div>
   </div>
   <div class="section">
     <div class="section-title">Itens do Escopo</div>
