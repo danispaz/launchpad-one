@@ -22,6 +22,26 @@ const items = [
 
 export function AppSidebar() {
   const { user } = useAuth();
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    async function fetchRole() {
+      const { data } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+      setUserRole(data?.role || null);
+    }
+    fetchRole();
+  }, [user]);
+
+  const visibleItems = items.filter((item: any) => {
+    if (!item.requiredRoles) return true;
+    return userRole && item.requiredRoles.includes(userRole);
+  });
+
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isActive = (url: string) => (url === "/" ? pathname === "/" : pathname.startsWith(url));
 
