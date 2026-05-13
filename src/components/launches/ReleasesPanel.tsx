@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Plus, ChevronDown, Trash2, GripVertical } from "lucide-react";
+import { Plus, ChevronDown, Trash2, GripVertical, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,6 +49,7 @@ export function ReleasesPanel({ launchId }: Props) {
   const [releaseDataPrevista, setReleaseDataPrevista] = useState("");
   const [releaseStatus, setReleaseStatus] = useState("Planejamento");
 
+  const [editingRelease, setEditingRelease] = useState<Release | null>(null);
   const [isItemDialogOpen, setIsItemDialogOpen] = useState(false);
   const [activeReleaseId, setActiveReleaseId] = useState<string | null>(null);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
@@ -124,6 +125,30 @@ export function ReleasesPanel({ launchId }: Props) {
       fetchReleases();
     } catch (err: any) {
       toast.error("Erro ao deletar release", { description: err.message });
+    }
+  };
+
+  const handleUpdateRelease = async () => {
+    if (!editingRelease || !releaseNome.trim()) { toast.error("Nome é obrigatório"); return; }
+    setIsSubmittingRelease(true);
+    try {
+      const { error } = await supabase.from("releases").update({
+        nome: releaseNome,
+        descricao: releaseDescricao || null,
+        data_inicio: releaseDataInicio || null,
+        data_prevista: releaseDataPrevista || null,
+        status: releaseStatus,
+      }).eq("id", editingRelease.id);
+      if (error) throw error;
+      toast.success("Release atualizada");
+      setIsReleaseDialogOpen(false);
+      setEditingRelease(null);
+      setReleaseNome(""); setReleaseDescricao(""); setReleaseDataInicio(""); setReleaseDataPrevista(""); setReleaseStatus("Planejamento");
+      fetchReleases();
+    } catch (err: any) {
+      toast.error("Erro ao atualizar release", { description: err.message });
+    } finally {
+      setIsSubmittingRelease(false);
     }
   };
 
@@ -227,6 +252,10 @@ export function ReleasesPanel({ launchId }: Props) {
                       className="h-7 px-2 rounded border border-border text-[11px] font-medium hover:bg-slate-50 transition-colors flex items-center gap-1">
                       <Plus className="w-3 h-3" /> Item
                     </button>
+                    <button onClick={() => { setEditingRelease(release); setReleaseNome(release.nome); setReleaseDescricao(release.descricao || ""); setReleaseDataInicio(release.data_inicio || ""); setReleaseDataPrevista(release.data_prevista || ""); setReleaseStatus(release.status); setIsReleaseDialogOpen(true); }}
+                      className="p-1.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
                     <button onClick={() => setReleaseToDelete(release.id)}
                       className="p-1.5 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-500 transition-colors">
                       <Trash2 className="w-3.5 h-3.5" />
@@ -267,9 +296,9 @@ export function ReleasesPanel({ launchId }: Props) {
         </div>
       )}
 
-      <Dialog open={isReleaseDialogOpen} onOpenChange={(open) => { setIsReleaseDialogOpen(open); if (!open) { setReleaseNome(""); setReleaseDescricao(""); setReleaseDataInicio(""); setReleaseDataPrevista(""); setReleaseStatus("Planejamento"); } }}>
+      <Dialog open={isReleaseDialogOpen} onOpenChange={(open) => { setIsReleaseDialogOpen(open); if (!open) { setEditingRelease(null); setReleaseNome(""); setReleaseDescricao(""); setReleaseDataInicio(""); setReleaseDataPrevista(""); setReleaseStatus("Planejamento"); } }}>
         <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader><DialogTitle>Nova Release</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingRelease ? "Editar Release" : "Nova Release"}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2"><Label>Nome</Label><Input value={releaseNome} onChange={e => setReleaseNome(e.target.value)} placeholder="Ex: Release 1, v1.0, Beta..." /></div>
             <div className="space-y-2"><Label>Descrição (opcional)</Label><Input value={releaseDescricao} onChange={e => setReleaseDescricao(e.target.value)} placeholder="O que entra nessa release..." /></div>
@@ -286,7 +315,7 @@ export function ReleasesPanel({ launchId }: Props) {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsReleaseDialogOpen(false)} disabled={isSubmittingRelease}>Cancelar</Button>
-            <Button onClick={handleCreateRelease} disabled={isSubmittingRelease}>{isSubmittingRelease ? "Criando..." : "Criar Release"}</Button>
+            <Button onClick={editingRelease ? handleUpdateRelease : handleCreateRelease} disabled={isSubmittingRelease}>{isSubmittingRelease ? "Salvando..." : (editingRelease ? "Salvar alterações" : "Criar Release")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
