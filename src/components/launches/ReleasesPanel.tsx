@@ -56,6 +56,7 @@ export function ReleasesPanel({ launchId }: Props) {
   const [isSubmittingItem, setIsSubmittingItem] = useState(false);
   const [itemNome, setItemNome] = useState("");
   const [itemStatus, setItemStatus] = useState("pendente");
+  const [editingItem, setEditingItem] = useState<ReleaseItem | null>(null);
 
   useEffect(() => { fetchReleases(); }, [launchId]);
 
@@ -188,6 +189,27 @@ export function ReleasesPanel({ launchId }: Props) {
     }
   };
 
+  const handleUpdateItem = async () => {
+    if (!editingItem || !itemNome.trim()) { toast.error("Nome é obrigatório"); return; }
+    setIsSubmittingItem(true);
+    try {
+      const { error } = await supabase.from("release_items").update({
+        nome: itemNome,
+        status: itemStatus,
+      }).eq("id", editingItem.id);
+      if (error) throw error;
+      toast.success("Item atualizado");
+      setIsItemDialogOpen(false);
+      setEditingItem(null);
+      setItemNome(""); setItemStatus("pendente");
+      fetchReleases();
+    } catch (err: any) {
+      toast.error("Erro ao atualizar item", { description: err.message });
+    } finally {
+      setIsSubmittingItem(false);
+    }
+  };
+
   const handleUpdateItemStatus = async (itemId: string, newStatus: string) => {
     try {
       const { error } = await supabase.from("release_items").update({ status: newStatus }).eq("id", itemId);
@@ -281,6 +303,10 @@ export function ReleasesPanel({ launchId }: Props) {
                           >
                             {ITEM_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                           </select>
+                          <button onClick={() => { setEditingItem(item); setItemNome(item.nome); setItemStatus(item.status); setActiveReleaseId(null); setIsItemDialogOpen(true); }}
+                            className="p-1 rounded hover:bg-slate-100 text-slate-300 hover:text-slate-500 transition-colors opacity-0 group-hover:opacity-100">
+                            <Pencil className="w-3 h-3" />
+                          </button>
                           <button onClick={() => setItemToDelete(item.id)}
                             className="p-1 rounded hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100">
                             <Trash2 className="w-3 h-3" />
@@ -320,9 +346,9 @@ export function ReleasesPanel({ launchId }: Props) {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isItemDialogOpen} onOpenChange={(open) => { setIsItemDialogOpen(open); if (!open) { setItemNome(""); setItemStatus("pendente"); } }}>
+      <Dialog open={isItemDialogOpen} onOpenChange={(open) => { setIsItemDialogOpen(open); if (!open) { setEditingItem(null); setItemNome(""); setItemStatus("pendente"); } }}>
         <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader><DialogTitle>Novo Item</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingItem ? "Editar Item" : "Novo Item"}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2"><Label>Nome do item</Label><Input value={itemNome} onChange={e => setItemNome(e.target.value)} placeholder="Ex: Conta Digital, Emissão CT-e..." /></div>
             <div className="space-y-2"><Label>Status</Label>
@@ -334,7 +360,7 @@ export function ReleasesPanel({ launchId }: Props) {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsItemDialogOpen(false)} disabled={isSubmittingItem}>Cancelar</Button>
-            <Button onClick={handleCreateItem} disabled={isSubmittingItem}>{isSubmittingItem ? "Adicionando..." : "Adicionar Item"}</Button>
+            <Button onClick={editingItem ? handleUpdateItem : handleCreateItem} disabled={isSubmittingItem}>{isSubmittingItem ? "Salvando..." : (editingItem ? "Salvar alterações" : "Adicionar Item")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
