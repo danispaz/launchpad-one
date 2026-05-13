@@ -112,7 +112,7 @@ function UsersPage() {
     }
     setIsSubmitting(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-user", {
+      const { data, error } = await supabase.functions.invoke("bright-handler", {
         body: { email: formEmail, password: formPassword, nome: formNome, role: formRole, team: formTeam },
       });
       if (error) {
