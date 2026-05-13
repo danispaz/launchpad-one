@@ -148,7 +148,7 @@ export function RisksPanel({ launchId }: Props) {
                   </button>
                 </div>
               </div>
-              {risk.descricao && <p className="text-xs text-slate-500 leading-relaxed mb-4">{risk.descricao}</p>}
+              {risk.descricao && <p className="text-xs text-slate-500 leading-relaxed mb-4 break-words overflow-hidden">{risk.descricao}</p>}
               <div className="flex items-center gap-2 flex-wrap mb-4">
                 <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${IMPACTO_COLORS[risk.impacto] || IMPACTO_COLORS["baixo"]}`}>Impacto {risk.impacto}</span>
                 <span className="text-[9px] text-slate-400 font-bold uppercase">Prob. {risk.probabilidade}</span>
