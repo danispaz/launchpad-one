@@ -23,6 +23,16 @@ import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskFormDialog } from "@/components/launches/TaskFormDialog";
 import { KanbanBoard } from "@/components/launches/KanbanBoard";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useTaskMutations } from "@/hooks/useTaskMutations";
 import type { TaskStatusEnum } from "@/lib/schemas/task-schema";
 export const Route = createFileRoute("/launches/$id")({
@@ -64,9 +74,14 @@ function LaunchDetail() {
     await updateTaskStatus(taskId, newStatus);
   };
 
-  const handleDeleteTask = async (taskId: string) => {
-    if (!window.confirm("Tem certeza que deseja deletar esta tarefa?")) return;
-    await deleteTask(taskId);
+  const handleDeleteTask = (taskId: string) => {
+    setTaskToDelete(taskId);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!taskToDelete) return;
+    await deleteTask(taskToDelete);
+    setTaskToDelete(null);
     refresh();
   };
 
@@ -328,7 +343,7 @@ function LaunchDetail() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete} className=\"bg-rose-500 hover:bg-rose-600\">
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-rose-500 hover:bg-rose-600">
               Deletar
             </AlertDialogAction>
           </AlertDialogFooter>
