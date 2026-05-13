@@ -23,6 +23,7 @@ const items = [
 export function AppSidebar() {
   const { user } = useAuth();
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     if (!user) return;
