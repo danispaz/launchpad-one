@@ -52,7 +52,7 @@ function LaunchDetail() {
     refresh();
   };
 
-  const { updateTaskStatus } = useTaskMutations();
+  const { updateTaskStatus, deleteTask } = useTaskMutations();
 
   const handleTaskClick = (task: any) => {
     setTaskToEdit(task);
@@ -61,6 +61,12 @@ function LaunchDetail() {
 
   const handleStatusChange = async (taskId: string, newStatus: TaskStatusEnum) => {
     await updateTaskStatus(taskId, newStatus);
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    if (!window.confirm("Tem certeza que deseja deletar esta tarefa?")) return;
+    await deleteTask(taskId);
+    refresh();
   };
 
 // Removendo duplicatas injetadas erroneamente
@@ -223,6 +229,7 @@ function LaunchDetail() {
               tasks={tasks as any}
               onTaskClick={handleTaskClick}
               onStatusChange={handleStatusChange}
+              onTaskDelete={handleDeleteTask}
               onRefresh={refresh}
             />
           </TabsContent>
