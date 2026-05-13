@@ -1,6 +1,6 @@
 import { DndContext, type DragEndEvent, PointerSensor, useSensor, useSensors, useDroppable, useDraggable } from "@dnd-kit/core";
 import { TeamChip } from "@/components/Badges";
-import { Calendar } from "lucide-react";
+import { Calendar, Trash2 } from "lucide-react";
 import { TASK_STATUSES, TASK_STATUS_LABELS, type TaskStatusEnum } from "@/lib/schemas/task-schema";
 import type { ReactNode, CSSProperties } from "react";
 
@@ -17,6 +17,7 @@ interface KanbanBoardProps {
   tasks: KanbanTask[];
   onTaskClick: (task: KanbanTask) => void;
   onStatusChange: (taskId: string, newStatus: TaskStatusEnum) => Promise<void>;
+  onTaskDelete: (taskId: string) => Promise<void>;
   onRefresh: () => void;
 }
 
@@ -40,13 +41,16 @@ function Column({ status, label, color, count, children }: { status: TaskStatusE
   );
 }
 
-function Card({ task, onClick }: { task: KanbanTask; onClick: () => void }) {
+function Card({ task, onClick, onDelete }: { task: KanbanTask; onClick: () => void; onDelete: (e: React.MouseEvent) => void }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: task.id });
   const style: CSSProperties = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, opacity: isDragging ? 0.5 : 1, cursor: "grab", zIndex: isDragging ? 50 : "auto" } : { cursor: "grab" };
   const initials = task.assignee?.nome?.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase() || "??";
   return (
-    <div ref={setNodeRef} style={style} {...listeners} {...attributes} onClick={onClick} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow group">
-      <div className="flex items-center gap-2 mb-2"><TeamChip team={(task.team as any) || "product"} /></div>
+    <div ref={setNodeRef} style={style} {...listeners} {...attributes} onClick={onClick} className="relative bg-white p-4 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow group">
+      <button onClick={onDelete} onPointerDown={(e) => e.stopPropagation()} className="absolute top-2 right-2 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-rose-50 text-slate-400 hover:text-rose-500 transition-opacity z-10" title="Deletar tarefa">
+        <Trash2 className="w-3.5 h-3.5" />
+      </button>
+      <div className="flex items-center gap-2 mb-2 pr-6"><TeamChip team={(task.team as any) || "product"} /></div>
       <p className="text-sm font-bold text-slate-800 leading-tight mb-3 group-hover:text-primary transition-colors">{task.titulo}</p>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold uppercase">
@@ -59,7 +63,7 @@ function Card({ task, onClick }: { task: KanbanTask; onClick: () => void }) {
   );
 }
 
-export function KanbanBoard({ tasks, onTaskClick, onStatusChange, onRefresh }: KanbanBoardProps) {
+export function KanbanBoard({ tasks, onTaskClick, onStatusChange, onTaskDelete, onRefresh }: KanbanBoardProps) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
   const tasksByStatus: Record<TaskStatusEnum, KanbanTask[]> = {
     todo: tasks.filter((t) => t.status === "todo"),
@@ -87,7 +91,7 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange, onRefresh }: K
       <div className="flex gap-6 overflow-x-auto pb-4">
         {TASK_STATUSES.map((status) => (
           <Column key={status} status={status} label={TASK_STATUS_LABELS[status]} color={COLUMN_COLORS[status]} count={tasksByStatus[status].length}>
-            {tasksByStatus[status].map((task) => <Card key={task.id} task={task} onClick={() => onTaskClick(task)} />)}
+            {tasksByStatus[status].map((task) => <Card key={task.id} task={task} onClick={() => onTaskClick(task)} onDelete={(e) => { e.stopPropagation(); onTaskDelete(task.id); }} />)}
           </Column>
         ))}
       </div>
