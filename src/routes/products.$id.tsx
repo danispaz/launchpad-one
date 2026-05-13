@@ -15,6 +15,7 @@ import {
   LIFECYCLE_ICONS,
 } from "@/lib/schemas/product-schema";
 import { ChevronLeft, Heart, User, Tag, ArrowRightLeft } from "lucide-react";
+import { ProductRoadmap } from "@/components/products/ProductRoadmap";
 
 export const Route = createFileRoute("/products/$id")({
   head: () => ({
@@ -146,9 +147,7 @@ function ProductDetail() {
           </TabsContent>
 
           <TabsContent value="roadmap">
-            <div className="bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-12 text-center">
-              <p className="text-sm text-slate-400 font-medium">Roadmap em construção — em breve aqui.</p>
-            </div>
+            <ProductRoadmap productId={product.id} />
           </TabsContent>
 
           <TabsContent value="tasks">
