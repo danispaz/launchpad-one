@@ -14,6 +14,7 @@ import { Route as TeamsRouteImport } from './routes/teams'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RoadmapRouteImport } from './routes/roadmap'
 import { Route as RisksRouteImport } from './routes/risks'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LaunchesRouteImport } from './routes/launches'
 import { Route as IndexRouteImport } from './routes/index'
@@ -45,6 +46,11 @@ const RoadmapRoute = RoadmapRouteImport.update({
 const RisksRoute = RisksRouteImport.update({
   id: '/risks',
   path: '/risks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/launches': typeof LaunchesRouteWithChildren
   '/login': typeof LoginRoute
+  '/profile': typeof ProfileRoute
   '/risks': typeof RisksRoute
   '/roadmap': typeof RoadmapRoute
   '/settings': typeof SettingsRoute
@@ -100,6 +107,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/profile': typeof ProfileRoute
   '/risks': typeof RisksRoute
   '/roadmap': typeof RoadmapRoute
   '/settings': typeof SettingsRoute
@@ -115,6 +123,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/launches': typeof LaunchesRouteWithChildren
   '/login': typeof LoginRoute
+  '/profile': typeof ProfileRoute
   '/risks': typeof RisksRoute
   '/roadmap': typeof RoadmapRoute
   '/settings': typeof SettingsRoute
@@ -131,6 +140,7 @@ export interface FileRouteTypes {
     | '/'
     | '/launches'
     | '/login'
+    | '/profile'
     | '/risks'
     | '/roadmap'
     | '/settings'
@@ -144,6 +154,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/profile'
     | '/risks'
     | '/roadmap'
     | '/settings'
@@ -158,6 +169,7 @@ export interface FileRouteTypes {
     | '/'
     | '/launches'
     | '/login'
+    | '/profile'
     | '/risks'
     | '/roadmap'
     | '/settings'
@@ -173,6 +185,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LaunchesRoute: typeof LaunchesRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ProfileRoute: typeof ProfileRoute
   RisksRoute: typeof RisksRoute
   RoadmapRoute: typeof RoadmapRoute
   SettingsRoute: typeof SettingsRoute
@@ -217,6 +230,13 @@ declare module '@tanstack/react-router' {
       path: '/risks'
       fullPath: '/risks'
       preLoaderRoute: typeof RisksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -289,6 +309,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LaunchesRoute: LaunchesRouteWithChildren,
   LoginRoute: LoginRoute,
+  ProfileRoute: ProfileRoute,
   RisksRoute: RisksRoute,
   RoadmapRoute: RoadmapRoute,
   SettingsRoute: SettingsRoute,
