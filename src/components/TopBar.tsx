@@ -27,11 +27,7 @@ export function TopBar({ title, subtitle, actions }: { title: string; subtitle?:
           <button className="h-8 w-8 rounded hover:bg-surface flex items-center justify-center transition-colors">
             <Bell className="h-4 w-4 text-muted-foreground" />
           </button>
-          {actions ?? (
-            <button className="h-8 px-3 rounded bg-foreground text-background text-xs font-medium hover:opacity-90 transition-opacity">
-              Novo
-            </button>
-          )}
+          {actions}
         </div>
       </div>
     </div>
