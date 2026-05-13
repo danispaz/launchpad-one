@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { LayoutDashboard, Rocket, Map, Users, AlertTriangle, Settings, ChevronRight, Package, LogOut } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
