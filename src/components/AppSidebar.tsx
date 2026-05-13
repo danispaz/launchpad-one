@@ -17,7 +17,7 @@ const items = [
   { title: "Roadmap", url: "/roadmap", icon: Map },
   { title: "Times", url: "/teams", icon: Users },
   { title: "Riscos", url: "/risks", icon: AlertTriangle },
-  { title: "Configurações", url: "/settings", icon: Settings },
+  { title: "Configurações", url: "/settings", icon: Settings, requiredRoles: ["executive"] },
 ];
 
 export function AppSidebar() {
