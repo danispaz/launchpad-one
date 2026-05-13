@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
-import { LayoutDashboard, Rocket, Map, Users, AlertTriangle, Settings, ChevronRight, Package, LogOut, UserPlus } from "lucide-react";
+import { LayoutDashboard, Rocket, Map, Users, AlertTriangle, Settings, ChevronRight, Package, LogOut } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import {
   DropdownMenu,
@@ -15,7 +15,6 @@ const items = [
   { title: "Lançamentos", url: "/launches", icon: Rocket },
   { title: "Roadmap", url: "/roadmap", icon: Map },
   { title: "Times", url: "/teams", icon: Users },
-  { title: "Usuários", url: "/users", icon: UserPlus },
   { title: "Riscos", url: "/risks", icon: AlertTriangle },
   { title: "Configurações", url: "/settings", icon: Settings },
 ];
