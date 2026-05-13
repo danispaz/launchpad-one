@@ -34,6 +34,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useTaskMutations } from "@/hooks/useTaskMutations";
+import { ReleasesPanel } from "@/components/launches/ReleasesPanel";
 import type { TaskStatusEnum } from "@/lib/schemas/task-schema";
 export const Route = createFileRoute("/launches/$id")({
   head: () => ({
@@ -189,6 +190,7 @@ function LaunchDetail() {
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="bg-slate-100/50 p-1 mb-10 h-12 w-fit">
             <TabsTrigger value="overview" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Visão Geral</TabsTrigger>
+            <TabsTrigger value="scope" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Escopo</TabsTrigger>
             <TabsTrigger value="activities" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Atividades (Kanban)</TabsTrigger>
             <TabsTrigger value="by_team" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Por Time</TabsTrigger>
             <TabsTrigger value="risks" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Riscos</TabsTrigger>
@@ -239,6 +241,10 @@ function LaunchDetail() {
                 </div>
               </div>
             </section>
+          </TabsContent>
+
+          <TabsContent value="scope">
+            <ReleasesPanel launchId={launch.id} />
           </TabsContent>
 
           <TabsContent value="activities">
