@@ -3,7 +3,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { LayoutDashboard, Rocket, Users, Settings, ChevronRight, ChevronLeft, Package, LogOut } from "lucide-react";
-// ... keep existing code
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 const items = [
   { title: "Visão geral", url: "/", icon: LayoutDashboard },
   { title: "Produtos", url: "/products", icon: Package },
