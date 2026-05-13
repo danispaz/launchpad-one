@@ -445,7 +445,7 @@ export function ReleasesPanel({ launchId }: Props) {
           </div>
 
           {/* Conteúdo */}
-          <ScrollArea className="flex-1 px-8 py-6 max-h-[55vh]">
+          <div className="overflow-y-auto px-8 py-6" style={{ maxHeight: "55vh" }}>
             {preview?.type === "item" && preview.item && (
               <div className="space-y-6">
                 {preview.item.descricao && (
@@ -507,7 +507,7 @@ export function ReleasesPanel({ launchId }: Props) {
                 </div>
               </div>
             )}
-          </ScrollArea>
+          </div>
 
           {/* Footer */}
           <div className="px-8 py-4 border-t border-slate-100 flex items-center justify-between shrink-0 bg-white">
