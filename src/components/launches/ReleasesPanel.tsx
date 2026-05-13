@@ -552,8 +552,9 @@ export function ReleasesPanel({ launchId }: Props) {
       </Dialog>
 
       <Dialog open={isItemDialogOpen} onOpenChange={(open) => { setIsItemDialogOpen(open); if (!open) { setEditingItem(null); setItemNome(""); setItemStatus("pendente"); setItemDescricao(""); setItemCriterios(""); } }}>
-        <DialogContent className="sm:max-w-[540px]">
+        <DialogContent className="sm:max-w-[720px] max-h-[90vh] flex flex-col">
           <DialogHeader><DialogTitle>{editingItem ? "Editar Item" : "Novo Item"}</DialogTitle></DialogHeader>
+          <ScrollArea className="flex-1 pr-2">
           <div className="space-y-4 py-4">
             <div className="space-y-2"><Label>Nome do item</Label><Input value={itemNome} onChange={e => setItemNome(e.target.value)} placeholder="Ex: Conta Digital, Emissão CT-e..." /></div>
             <div className="space-y-2"><Label>Status</Label>
@@ -568,7 +569,8 @@ export function ReleasesPanel({ launchId }: Props) {
               <TiptapEditor content={itemCriterios} onChange={setItemCriterios} placeholder="Digite os critérios de aceite..." />
             </div>
           </div>
-          <DialogFooter>
+          </ScrollArea>
+          <DialogFooter className="pt-4 border-t border-slate-100 mt-2">
             <Button variant="outline" onClick={() => setIsItemDialogOpen(false)} disabled={isSubmittingItem}>Cancelar</Button>
             <Button onClick={editingItem ? handleUpdateItem : handleCreateItem} disabled={isSubmittingItem}>{isSubmittingItem ? "Salvando..." : (editingItem ? "Salvar alterações" : "Adicionar Item")}</Button>
           </DialogFooter>
