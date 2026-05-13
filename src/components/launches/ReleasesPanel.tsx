@@ -35,6 +35,12 @@ const ITEM_STATUS_COLORS: Record<string, string> = {
   "em_progresso": "bg-blue-100 text-blue-600",
   "concluido": "bg-emerald-100 text-emerald-600",
 };
+const ITEM_STATUS_LABELS: Record<string, string> = {
+  "pendente": "Pendente",
+  "em_progresso": "Em Progresso",
+  "concluido": "Concluído",
+};
+
 const TiptapEditor = ({ content, onChange, placeholder }: { content: string; onChange: (content: string) => void; placeholder: string }) => {
   const editor = useEditor({
     extensions: [StarterKit],
@@ -107,7 +113,6 @@ const TiptapEditor = ({ content, onChange, placeholder }: { content: string; onC
     </div>
   );
 };
-
 function printPreview(preview: PreviewData) {
   const doneItems = preview.release?.items.filter(i => i.status === "concluido").length || 0;
   const total = preview.release?.items.length || 0;
