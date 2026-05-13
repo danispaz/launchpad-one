@@ -164,7 +164,7 @@ function printPreview(preview: PreviewData) {
       </div>
       <div class="body">
         ${item.descricao ? `<div class="section-title">Descrição</div><div class="section-content">${item.descricao}</div>` : ""}
-        ${item.criterios_aceite ? `<div class="section-title">Critérios de Aceite</div>${item.criterios_aceite.split("\n").filter(Boolean).map(c => `<div class="criterio"><span class="check">✓</span><span>${c}</span></div>`).join("")}` : ""}
+        ${item.criterios_aceite ? `<div class="section-title">Critérios de Aceite</div><div class="section-content">${item.criterios_aceite}</div>` : ""}
         ${!item.descricao && !item.criterios_aceite ? `<p style="color:#94a3b8;font-style:italic;font-size:13px;margin-top:24px">Nenhum detalhamento registrado.</p>` : ""}
         <div class="footer"><span>LaunchHub</span><span>Gerado em ${new Date().toLocaleDateString("pt-BR")}</span></div>
       </div>`;
