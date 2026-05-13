@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Plus, ChevronDown, Trash2, GripVertical, Pencil, FileText, Printer } from "lucide-react";
+import { Plus, ChevronDown, Trash2, GripVertical, Pencil, FileText, Printer, Bold, Italic, List, ListOrdered } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
 
 interface ReleaseItem { id: string; nome: string; status: string; ordem: number; descricao: string | null; criterios_aceite: string | null; owner_id: string | null; }
 interface Release { id: string; nome: string; descricao: string | null; data_inicio: string | null; data_prevista: string | null; status: string; ordem: number; items: ReleaseItem[]; }
@@ -33,10 +35,77 @@ const ITEM_STATUS_COLORS: Record<string, string> = {
   "em_progresso": "bg-blue-100 text-blue-600",
   "concluido": "bg-emerald-100 text-emerald-600",
 };
-const ITEM_STATUS_LABELS: Record<string, string> = {
-  "pendente": "Pendente",
-  "em_progresso": "Em Progresso",
-  "concluido": "Concluído",
+const TiptapEditor = ({ content, onChange, placeholder }: { content: string; onChange: (content: string) => void; placeholder: string }) => {
+  const editor = useEditor({
+    extensions: [StarterKit],
+    content,
+    onUpdate: ({ editor }) => {
+      onChange(editor.getHTML());
+    },
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm focus:outline-none max-w-none min-h-[100px] px-3 py-2 text-sm',
+      },
+    },
+    immediatelyRender: false,
+  });
+
+  useEffect(() => {
+    if (editor && content !== editor.getHTML()) {
+      editor.commands.setContent(content);
+    }
+  }, [content, editor]);
+
+  if (!editor) return null;
+
+  return (
+    <div className="rounded-md border border-input bg-background overflow-hidden focus-within:ring-1 focus-within:ring-ring">
+      <div className="flex items-center gap-1 p-1 border-b bg-slate-50/50">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className={`h-7 w-7 ${editor.isActive('bold') ? 'bg-slate-200' : ''}`}
+          onClick={() => editor.chain().focus().toggleBold().run()}
+        >
+          <Bold className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className={`h-7 w-7 ${editor.isActive('italic') ? 'bg-slate-200' : ''}`}
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+        >
+          <Italic className="h-3.5 w-3.5" />
+        </Button>
+        <div className="w-px h-4 bg-slate-200 mx-1" />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className={`h-7 w-7 ${editor.isActive('bulletList') ? 'bg-slate-200' : ''}`}
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+        >
+          <List className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className={`h-7 w-7 ${editor.isActive('orderedList') ? 'bg-slate-200' : ''}`}
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        >
+          <ListOrdered className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+      <EditorContent editor={editor} />
+      <style>{`
+        .prose ul { list-style-type: disc; padding-left: 1.25rem; }
+        .prose ol { list-style-type: decimal; padding-left: 1.25rem; }
+      `}</style>
+    </div>
+  );
 };
 
 function printPreview(preview: PreviewData) {
@@ -100,7 +169,7 @@ function printPreview(preview: PreviewData) {
     const itemsHTML = rel.items.map(item => {
       const bg = item.status === "concluido" ? "#dcfce7" : item.status === "em_progresso" ? "#dbeafe" : "#f1f5f9";
       const color = item.status === "concluido" ? "#15803d" : item.status === "em_progresso" ? "#1d4ed8" : "#64748b";
-      return `<div class="item-row"><span class="item-badge" style="background:${bg};color:${color}">${ITEM_STATUS_LABELS[item.status] || item.status}</span><div><div class="item-name">${item.nome}</div>${item.descricao ? `<div class="item-desc">${item.descricao}</div>` : ""}</div></div>`;
+      return `<div class="item-row"><span class="item-badge" style="background:${bg};color:${color}">${ITEM_STATUS_LABELS[item.status] || item.status}</span><div><div class="item-name">${item.nome}</div>${item.descricao ? `<div class="item-desc">${item.descricao.replace(/<[^>]*>/g, ' ')}</div>` : ""}</div></div>`;
     }).join("");
     body = `
       <div class="header">
@@ -319,7 +388,7 @@ export function ReleasesPanel({ launchId }: Props) {
                           <GripVertical className="w-3.5 h-3.5 text-slate-200 shrink-0" />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm text-slate-700">{item.nome}</p>
-                            {item.descricao && <p className="text-[11px] text-slate-400 truncate mt-0.5">{item.descricao}</p>}
+                            {item.descricao && <p className="text-[11px] text-slate-400 truncate mt-0.5">{item.descricao.replace(/<[^>]*>/g, ' ')}</p>}
                           </div>
                           <select value={item.status} onChange={e => handleUpdateItemStatus(item.id, e.target.value)} className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border-0 cursor-pointer ${ITEM_STATUS_COLORS[item.status] || ITEM_STATUS_COLORS["pendente"]}`}>
                             {ITEM_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
@@ -377,7 +446,7 @@ export function ReleasesPanel({ launchId }: Props) {
                 {preview.item.descricao && (
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-3">Descrição</p>
-                    <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{preview.item.descricao}</p>
+                    <div className="text-sm text-slate-700 leading-relaxed prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: preview.item.descricao }} />
                   </div>
                 )}
                 {preview.item.criterios_aceite && (
@@ -431,7 +500,7 @@ export function ReleasesPanel({ launchId }: Props) {
                           <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded shrink-0 mt-0.5 ${ITEM_STATUS_COLORS[item.status] || ITEM_STATUS_COLORS["pendente"]}`}>{ITEM_STATUS_LABELS[item.status] || item.status}</span>
                           <div className="min-w-0">
                             <p className="text-sm font-medium text-slate-800">{item.nome}</p>
-                            {item.descricao && <p className="text-xs text-slate-500 mt-0.5 truncate">{item.descricao}</p>}
+                            {item.descricao && <p className="text-xs text-slate-500 mt-0.5 truncate">{item.descricao.replace(/<[^>]*>/g, ' ')}</p>}
                           </div>
                         </div>
                       ))}
