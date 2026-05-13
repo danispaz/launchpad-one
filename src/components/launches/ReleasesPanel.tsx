@@ -420,7 +420,7 @@ export function ReleasesPanel({ launchId }: Props) {
 
       {/* Modal de pré-visualização */}
       <Dialog open={!!preview} onOpenChange={(open) => !open && setPreview(null)}>
-        <DialogContent className="sm:max-w-[680px] max-h-[88vh] flex flex-col p-0 overflow-hidden">
+        <DialogContent className="sm:max-w-[680px] h-[88vh] flex flex-col p-0 overflow-hidden">
           {/* Header do preview */}
           <div className="bg-slate-900 text-white px-8 py-6 shrink-0">
             <div className="text-[10px] font-bold tracking-widest uppercase text-slate-400 mb-3">
