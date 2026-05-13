@@ -1,17 +1,19 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Plus, ChevronDown, Trash2, GripVertical, Pencil, FileText } from "lucide-react";
+import { Plus, ChevronDown, Trash2, GripVertical, Pencil, FileText, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ReleaseItem { id: string; nome: string; status: string; ordem: number; descricao: string | null; criterios_aceite: string | null; owner_id: string | null; }
 interface Release { id: string; nome: string; descricao: string | null; data_inicio: string | null; data_prevista: string | null; status: string; ordem: number; items: ReleaseItem[]; }
+interface PreviewData { type: "item" | "release"; item?: ReleaseItem; release?: Release; releaseName?: string; }
 
 const RELEASE_STATUSES = ["Planejamento", "Em Andamento", "Concluído", "Atrasado", "Cancelado"];
 const ITEM_STATUSES = [
@@ -37,92 +39,91 @@ const ITEM_STATUS_LABELS: Record<string, string> = {
   "concluido": "Concluído",
 };
 
-const PDF_STYLE = `
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; background: #ffffff; color: #1e293b; line-height: 1.5; }
-  .header { padding: 40px 48px; border-bottom: 1px solid #f1f5f9; position: relative; }
-  .logo { font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 24px; display: flex; align-items: center; }
-  .logo span { color: #0ea5e9; }
-  .header-title { font-size: 32px; font-weight: 800; color: #0f172a; line-height: 1.1; margin-bottom: 8px; letter-spacing: -0.025em; }
-  .header-sub { font-size: 14px; color: #64748b; font-weight: 500; }
-  .badge { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; margin-top: 16px; }
-  .badge-pendente { background: #f8fafc; color: #64748b; border: 1px solid #f1f5f9; }
-  .badge-em_progresso { background: #f0f9ff; color: #0ea5e9; border: 1px solid #e0f2fe; }
-  .badge-concluido { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
-  .badge-Planejamento { background: #f8fafc; color: #64748b; border: 1px solid #f1f5f9; }
-  .badge-Em.Andamento { background: #f0f9ff; color: #0ea5e9; border: 1px solid #e0f2fe; }
-  .badge-Concluído { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
-  .badge-Atrasado { background: #fff1f2; color: #e11d48; border: 1px solid #ffe4e6; }
-  .body { padding: 40px 48px; }
-  .section { margin-bottom: 40px; }
-  .section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 16px; }
-  .section-content { font-size: 15px; color: #334155; line-height: 1.6; white-space: pre-wrap; }
-  .criterio { display: flex; gap: 12px; margin-bottom: 10px; font-size: 15px; color: #334155; align-items: flex-start; }
-  .criterio-check { color: #16a34a; font-weight: 700; flex-shrink: 0; }
-  .progress-container { margin-top: 8px; }
-  .progress-bar { height: 6px; background: #f1f5f9; border-radius: 100px; overflow: hidden; margin-bottom: 8px; width: 100%; }
-  .progress-fill { height: 100%; background: #0ea5e9; border-radius: 100px; }
-  table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 8px; }
-  thead th { padding: 12px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; border-bottom: 1px solid #f1f5f9; }
-  tbody td { padding: 16px 12px; font-size: 14px; color: #334155; border-bottom: 1px solid #f8fafc; vertical-align: top; }
-  .status-badge { display: inline-flex; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-  .footer { margin-top: 80px; padding-top: 24px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; font-size: 12px; color: #94a3b8; font-weight: 500; }
-  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .header, .body { padding-left: 0; padding-right: 0; } }
-`;
+function printPreview(preview: PreviewData) {
+  const doneItems = preview.release?.items.filter(i => i.status === "concluido").length || 0;
+  const total = preview.release?.items.length || 0;
+  const pct = total > 0 ? Math.round((doneItems / total) * 100) : 0;
 
-function generateItemPDF(item: ReleaseItem, releaseName: string) {
-  const statusClass = item.status.replace(/ /g, ".");
-  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${item.nome}</title><style>${PDF_STYLE}</style></head><body>
-<div class="header">
-  <div class="logo">Launch<span>Hub</span></div>
-  <div class="header-title">${item.nome}</div>
-  <div class="header-sub">Release: ${releaseName}</div>
-  <div><span class="badge badge-${statusClass}">${ITEM_STATUS_LABELS[item.status] || item.status}</span></div>
-</div>
-<div class="body">
-  ${item.descricao ? `<div class="section"><div class="section-title">Descrição</div><div class="section-content">${item.descricao}</div></div>` : ""}
-  ${item.criterios_aceite ? `<div class="section"><div class="section-title">Critérios de Aceite</div>${item.criterios_aceite.split("\n").filter(Boolean).map(c => `<div class="criterio"><span class="criterio-check">✓</span><span>${c}</span></div>`).join("")}</div>` : ""}
-  ${!item.descricao && !item.criterios_aceite ? `<div class="section"><p style="font-size:13px;color:#94a3b8;font-style:italic">Nenhum detalhamento registrado.</p></div>` : ""}
-  <div class="footer"><span>LaunchHub — Gestão de Produto</span><span>Gerado em ${new Date().toLocaleDateString("pt-BR")}</span></div>
-</div>
-<script>window.onload=()=>window.print()</script>
-</body></html>`;
-  const w = window.open("", "_blank");
-  if (w) { w.document.write(html); w.document.close(); }
-}
+  const style = `
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fff;color:#1e293b}
+    .header{background:#0f172a;color:#fff;padding:36px 48px 28px}
+    .logo{font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:16px}
+    .logo span{color:#38bdf8}
+    .header-title{font-size:26px;font-weight:700;color:#fff;margin-bottom:6px}
+    .header-sub{font-size:12px;color:rgba(255,255,255,.5)}
+    .badge{display:inline-block;padding:3px 10px;border-radius:6px;font-size:10px;font-weight:600;text-transform:uppercase;margin-top:12px}
+    .badge-pendente{background:rgba(255,255,255,.1);color:rgba(255,255,255,.7)}
+    .badge-em_progresso{background:#dbeafe;color:#1d4ed8}
+    .badge-concluido{background:#dcfce7;color:#15803d}
+    .badge-Planejamento{background:rgba(255,255,255,.1);color:rgba(255,255,255,.7)}
+    .badge-EmAndamento{background:#dbeafe;color:#1d4ed8}
+    .badge-Concluido{background:#dcfce7;color:#15803d}
+    .badge-Atrasado{background:#fee2e2;color:#b91c1c}
+    .body{padding:40px 48px}
+    .section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;margin:28px 0 12px;padding-bottom:6px;border-bottom:1px solid #f1f5f9}
+    .section-content{font-size:13px;color:#334155;line-height:1.8;white-space:pre-wrap}
+    .criterio{display:flex;gap:10px;margin-bottom:8px;font-size:13px;color:#334155;align-items:flex-start}
+    .check{color:#16a34a;font-weight:700;margin-top:1px}
+    .progress-wrap{margin:8px 0 4px}
+    .progress-bar{height:5px;background:#f1f5f9;border-radius:100px;overflow:hidden}
+    .progress-fill{height:100%;background:#0ea5e9;border-radius:100px}
+    .progress-label{font-size:11px;color:#94a3b8;margin-top:4px}
+    .item-row{padding:10px 14px;border:1px solid #f1f5f9;border-radius:8px;margin-bottom:6px;display:flex;gap:12px;align-items:flex-start}
+    .item-badge{padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700;text-transform:uppercase;white-space:nowrap;margin-top:2px}
+    .item-name{font-size:13px;font-weight:500;color:#1e293b}
+    .item-desc{font-size:12px;color:#64748b;margin-top:2px}
+    .footer{margin-top:48px;padding-top:14px;border-top:1px solid #f1f5f9;display:flex;justify-content:space-between;font-size:11px;color:#cbd5e1}
+    @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  `;
 
-function generateReleasePDF(release: Release) {
-  const doneItems = release.items.filter(i => i.status === "concluido").length;
-  const pct = release.items.length > 0 ? Math.round((doneItems / release.items.length) * 100) : 0;
-  const itemsHTML = release.items.map(item => {
-    const bg = item.status === "concluido" ? "#f0fdf4" : item.status === "em_progresso" ? "#eff6ff" : "#f1f5f9";
-    const color = item.status === "concluido" ? "#16a34a" : item.status === "em_progresso" ? "#3b82f6" : "#64748b";
-    return `<tr><td>${item.nome}</td><td><span class="status-badge" style="background:${bg};color:${color}">${ITEM_STATUS_LABELS[item.status] || item.status}</span></td><td style="color:#64748b">${item.descricao || "—"}</td></tr>`;
-  }).join("");
-  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${release.nome}</title><style>${PDF_STYLE}</style></head><body>
-<div class="header">
-  <div class="logo">Launch<span>Hub</span></div>
-  <div class="header-title">${release.nome}</div>
-  <div class="header-sub">${release.data_inicio ? new Date(release.data_inicio).toLocaleDateString("pt-BR") : "—"} → ${release.data_prevista ? new Date(release.data_prevista).toLocaleDateString("pt-BR") : "—"} &nbsp;·&nbsp; ${release.status}</div>
-</div>
-<div class="body">
-  ${release.descricao ? `<div class="section"><div class="section-title">Descrição</div><div class="section-content">${release.descricao}</div></div>` : ""}
-  <div class="section">
-    <div class="section-title">Progresso — ${doneItems}/${release.items.length} itens concluídos (${pct}%)</div>
-    <div class="progress-container">
-      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
-    </div>
-  </div>
-  <div class="section">
-    <div class="section-title">Itens do Escopo</div>
-    ${release.items.length === 0 ? `<p style="font-size:13px;color:#94a3b8;font-style:italic">Nenhum item cadastrado.</p>` : `<table><thead><tr><th>Item</th><th>Status</th><th>Descrição</th></tr></thead><tbody>${itemsHTML}</tbody></table>`}
-  </div>
-  <div class="footer"><span>LaunchHub — Gestão de Produto</span><span>Gerado em ${new Date().toLocaleDateString("pt-BR")}</span></div>
-</div>
-<script>window.onload=()=>window.print()</script>
-</body></html>`;
+  let body = "";
+  if (preview.type === "item" && preview.item) {
+    const item = preview.item;
+    const sc = item.status.replace(/_/g, "");
+    body = `
+      <div class="header">
+        <div class="logo">Launch<span>Hub</span></div>
+        <div class="header-title">${item.nome}</div>
+        <div class="header-sub">Release: ${preview.releaseName || ""}</div>
+        <div><span class="badge badge-${sc}">${ITEM_STATUS_LABELS[item.status] || item.status}</span></div>
+      </div>
+      <div class="body">
+        ${item.descricao ? `<div class="section-title">Descrição</div><div class="section-content">${item.descricao}</div>` : ""}
+        ${item.criterios_aceite ? `<div class="section-title">Critérios de Aceite</div>${item.criterios_aceite.split("\n").filter(Boolean).map(c => `<div class="criterio"><span class="check">✓</span><span>${c}</span></div>`).join("")}` : ""}
+        ${!item.descricao && !item.criterios_aceite ? `<p style="color:#94a3b8;font-style:italic;font-size:13px;margin-top:24px">Nenhum detalhamento registrado.</p>` : ""}
+        <div class="footer"><span>LaunchHub</span><span>Gerado em ${new Date().toLocaleDateString("pt-BR")}</span></div>
+      </div>`;
+  } else if (preview.type === "release" && preview.release) {
+    const rel = preview.release;
+    const sc = rel.status.replace(/ /g, "");
+    const itemsHTML = rel.items.map(item => {
+      const bg = item.status === "concluido" ? "#dcfce7" : item.status === "em_progresso" ? "#dbeafe" : "#f1f5f9";
+      const color = item.status === "concluido" ? "#15803d" : item.status === "em_progresso" ? "#1d4ed8" : "#64748b";
+      return `<div class="item-row"><span class="item-badge" style="background:${bg};color:${color}">${ITEM_STATUS_LABELS[item.status] || item.status}</span><div><div class="item-name">${item.nome}</div>${item.descricao ? `<div class="item-desc">${item.descricao}</div>` : ""}</div></div>`;
+    }).join("");
+    body = `
+      <div class="header">
+        <div class="logo">Launch<span>Hub</span></div>
+        <div class="header-title">${rel.nome}</div>
+        <div class="header-sub">${rel.data_inicio ? new Date(rel.data_inicio).toLocaleDateString("pt-BR") : "—"} → ${rel.data_prevista ? new Date(rel.data_prevista).toLocaleDateString("pt-BR") : "—"}</div>
+        <div><span class="badge badge-${sc}">${rel.status}</span></div>
+      </div>
+      <div class="body">
+        ${rel.descricao ? `<div class="section-title">Descrição</div><div class="section-content">${rel.descricao}</div>` : ""}
+        <div class="section-title">Progresso — ${doneItems}/${total} itens concluídos</div>
+        <div class="progress-wrap"><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div><div class="progress-label">${pct}% concluído</div></div>
+        <div class="section-title">Itens do Escopo</div>
+        ${rel.items.length === 0 ? `<p style="color:#94a3b8;font-style:italic;font-size:13px">Nenhum item cadastrado.</p>` : itemsHTML}
+        <div class="footer"><span>LaunchHub</span><span>Gerado em ${new Date().toLocaleDateString("pt-BR")}</span></div>
+      </div>`;
+  }
+
   const w = window.open("", "_blank");
-  if (w) { w.document.write(html); w.document.close(); }
+  if (w) {
+    w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>LaunchHub PDF</title><style>${style}</style></head><body>${body}<script>window.onload=()=>window.print()<\/script></body></html>`);
+    w.document.close();
+  }
 }
 
 interface Props { launchId: string; }
@@ -131,6 +132,7 @@ export function ReleasesPanel({ launchId }: Props) {
   const [releases, setReleases] = useState<Release[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedReleases, setExpandedReleases] = useState<string[]>([]);
+  const [preview, setPreview] = useState<PreviewData | null>(null);
   const [isReleaseDialogOpen, setIsReleaseDialogOpen] = useState(false);
   const [releaseToDelete, setReleaseToDelete] = useState<string | null>(null);
   const [isSubmittingRelease, setIsSubmittingRelease] = useState(false);
@@ -293,7 +295,7 @@ export function ReleasesPanel({ launchId }: Props) {
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="text-[10px] text-slate-400 font-medium">{doneItems}/{release.items.length} itens</span>
-                    <button onClick={() => generateReleasePDF(release)} className="p-1.5 rounded hover:bg-blue-50 text-slate-400 hover:text-blue-500 transition-colors" title="Exportar PDF da release">
+                    <button onClick={() => setPreview({ type: "release", release })} className="p-1.5 rounded hover:bg-blue-50 text-slate-400 hover:text-blue-500 transition-colors" title="Pré-visualizar PDF">
                       <FileText className="w-3.5 h-3.5" />
                     </button>
                     <button onClick={() => { setActiveReleaseId(release.id); setIsItemDialogOpen(true); }} className="h-7 px-2 rounded border border-border text-[11px] font-medium hover:bg-slate-50 transition-colors flex items-center gap-1">
@@ -322,7 +324,7 @@ export function ReleasesPanel({ launchId }: Props) {
                           <select value={item.status} onChange={e => handleUpdateItemStatus(item.id, e.target.value)} className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border-0 cursor-pointer ${ITEM_STATUS_COLORS[item.status] || ITEM_STATUS_COLORS["pendente"]}`}>
                             {ITEM_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                           </select>
-                          <button onClick={() => generateItemPDF(item, release.nome)} className="p-1 rounded hover:bg-blue-50 text-slate-300 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100" title="PDF do item">
+                          <button onClick={() => setPreview({ type: "item", item, releaseName: release.nome })} className="p-1 rounded hover:bg-blue-50 text-slate-300 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100" title="Pré-visualizar PDF">
                             <FileText className="w-3 h-3" />
                           </button>
                           <button onClick={() => { setEditingItem(item); setItemNome(item.nome); setItemStatus(item.status); setItemDescricao(item.descricao || ""); setItemCriterios(item.criterios_aceite || ""); setActiveReleaseId(null); setIsItemDialogOpen(true); }} className="p-1 rounded hover:bg-slate-100 text-slate-300 hover:text-slate-500 transition-colors opacity-0 group-hover:opacity-100">
@@ -341,6 +343,115 @@ export function ReleasesPanel({ launchId }: Props) {
           })}
         </div>
       )}
+
+      {/* Modal de pré-visualização */}
+      <Dialog open={!!preview} onOpenChange={(open) => !open && setPreview(null)}>
+        <DialogContent className="sm:max-w-[680px] max-h-[88vh] flex flex-col p-0 overflow-hidden">
+          {/* Header do preview */}
+          <div className="bg-slate-900 text-white px-8 py-6 shrink-0">
+            <div className="text-[10px] font-bold tracking-widest uppercase text-slate-400 mb-3">
+              Launch<span className="text-sky-400">Hub</span>
+            </div>
+            <h2 className="text-xl font-bold text-white leading-tight">
+              {preview?.type === "item" ? preview.item?.nome : preview?.release?.nome}
+            </h2>
+            <p className="text-sm text-slate-400 mt-1">
+              {preview?.type === "item" ? `Release: ${preview.releaseName}` : `${preview?.release?.items.length || 0} itens · ${preview?.release?.status}`}
+            </p>
+            {preview?.type === "item" && preview.item && (
+              <span className={`inline-block mt-3 text-[10px] font-bold uppercase px-2.5 py-1 rounded-md ${ITEM_STATUS_COLORS[preview.item.status] || ITEM_STATUS_COLORS["pendente"]}`}>
+                {ITEM_STATUS_LABELS[preview.item.status] || preview.item.status}
+              </span>
+            )}
+            {preview?.type === "release" && preview.release && (
+              <span className={`inline-block mt-3 text-[10px] font-bold uppercase px-2.5 py-1 rounded-md ${STATUS_COLORS[preview.release.status] || STATUS_COLORS["Planejamento"]}`}>
+                {preview.release.status}
+              </span>
+            )}
+          </div>
+
+          {/* Conteúdo */}
+          <ScrollArea className="flex-1 px-8 py-6">
+            {preview?.type === "item" && preview.item && (
+              <div className="space-y-6">
+                {preview.item.descricao && (
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-3">Descrição</p>
+                    <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{preview.item.descricao}</p>
+                  </div>
+                )}
+                {preview.item.criterios_aceite && (
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-3">Critérios de Aceite</p>
+                    <div className="space-y-2">
+                      {preview.item.criterios_aceite.split("\n").filter(Boolean).map((c, i) => (
+                        <div key={i} className="flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold shrink-0 mt-0.5">✓</span>
+                          <span className="text-sm text-slate-700">{c}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {!preview.item.descricao && !preview.item.criterios_aceite && (
+                  <p className="text-sm text-slate-400 italic">Nenhum detalhamento registrado para este item.</p>
+                )}
+              </div>
+            )}
+            {preview?.type === "release" && preview.release && (
+              <div className="space-y-6">
+                {preview.release.data_inicio && preview.release.data_prevista && (
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-2">Período</p>
+                    <p className="text-sm text-slate-700">{new Date(preview.release.data_inicio).toLocaleDateString("pt-BR")} → {new Date(preview.release.data_prevista).toLocaleDateString("pt-BR")}</p>
+                  </div>
+                )}
+                {preview.release.descricao && (
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-3">Descrição</p>
+                    <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{preview.release.descricao}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-3">
+                    Progresso — {preview.release.items.filter(i => i.status === "concluido").length}/{preview.release.items.length} concluídos
+                  </p>
+                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-sky-500 rounded-full transition-all" style={{ width: `${preview.release.items.length > 0 ? Math.round((preview.release.items.filter(i => i.status === "concluido").length / preview.release.items.length) * 100) : 0}%` }}></div>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-3">Itens do Escopo</p>
+                  {preview.release.items.length === 0 ? (
+                    <p className="text-sm text-slate-400 italic">Nenhum item cadastrado.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {preview.release.items.map(item => (
+                        <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg border border-slate-100 hover:bg-slate-50/50 transition-colors">
+                          <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded shrink-0 mt-0.5 ${ITEM_STATUS_COLORS[item.status] || ITEM_STATUS_COLORS["pendente"]}`}>{ITEM_STATUS_LABELS[item.status] || item.status}</span>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-slate-800">{item.nome}</p>
+                            {item.descricao && <p className="text-xs text-slate-500 mt-0.5 truncate">{item.descricao}</p>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </ScrollArea>
+
+          {/* Footer */}
+          <div className="px-8 py-4 border-t border-slate-100 flex items-center justify-between shrink-0 bg-white">
+            <Button variant="outline" onClick={() => setPreview(null)}>Fechar</Button>
+            <Button onClick={() => preview && printPreview(preview)} className="flex items-center gap-2">
+              <Printer className="w-3.5 h-3.5" />
+              Imprimir / Salvar PDF
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isReleaseDialogOpen} onOpenChange={(open) => { setIsReleaseDialogOpen(open); if (!open) { setEditingRelease(null); setReleaseNome(""); setReleaseDescricao(""); setReleaseDataInicio(""); setReleaseDataPrevista(""); setReleaseStatus("Planejamento"); } }}>
         <DialogContent className="sm:max-w-[500px]">
