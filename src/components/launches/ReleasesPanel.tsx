@@ -569,7 +569,8 @@ export function ReleasesPanel({ launchId }: Props) {
               <TiptapEditor content={itemCriterios} onChange={setItemCriterios} placeholder="Digite os critérios de aceite..." />
             </div>
           </div>
-          <DialogFooter>
+          </ScrollArea>
+          <DialogFooter className="pt-4 border-t border-slate-100 mt-2">
             <Button variant="outline" onClick={() => setIsItemDialogOpen(false)} disabled={isSubmittingItem}>Cancelar</Button>
             <Button onClick={editingItem ? handleUpdateItem : handleCreateItem} disabled={isSubmittingItem}>{isSubmittingItem ? "Salvando..." : (editingItem ? "Salvar alterações" : "Adicionar Item")}</Button>
           </DialogFooter>
