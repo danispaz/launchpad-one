@@ -1,373 +1,346 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { TeamName } from "@/lib/utils/formatters";
-import { AppLayout } from "@/components/AppLayout";
-import { TopBar } from "@/components/TopBar";
-import { StatusBadge, TeamChip, ProgressBar, Avatar, PriorityDot } from "@/components/Badges";
-import { formatLaunchCode, teamMap, taskStatusMap, priorityMap, TASK_STATUS_DONE, TASK_STATUS_IN_PROGRESS, TASK_STATUS_TODO, TASK_STATUS_BLOCKED } from "@/lib/utils/formatters";
-import { useLaunchDetail, type Task } from "@/hooks/useLaunchDetail";
-import { 
-  ChevronLeft, 
-  Calendar, 
-  Target, 
-  CheckCircle2, 
-  Circle, 
-  Layout, 
-  ListTodo, 
-  Users, 
-  AlertOctagon,
-  Clock,
-  ChevronDown,
-  ChevronUp
-} from "lucide-react";
-import { useState, useMemo } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TaskFormDialog } from "@/components/launches/TaskFormDialog";
-import { KanbanBoard } from "@/components/launches/KanbanBoard";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { useTaskMutations } from "@/hooks/useTaskMutations";
-import type { TaskStatusEnum } from "@/lib/schemas/task-schema";
-export const Route = createFileRoute("/launches/$id")({
-  head: () => ({
-    meta: [
-      { title: "LaunchHub — Detalhes do Lançamento" },
-    ],
-  }),
-  component: LaunchDetail,
-});
+Crie EXATAMENTE 1 arquivo novo: src/components/launches/ReleasesPanel.tsx
 
-function LaunchDetail() {
-  const params = Route.useParams();
-  const { id } = params;
-  console.log('LAUNCH DETAIL PAGE MOUNTED', { id });
-  const { launch, phases, tasks, milestones, risks, loading, error, refresh } = useLaunchDetail(id);
-  const [expandedTeams, setExpandedTeams] = useState<string[]>([]);
-  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
-  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
-  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+NÃO toque em mais nada. NÃO instale pacotes.
 
-  const handleOpenNewTask = () => {
-    setTaskToEdit(null);
-    setIsTaskDialogOpen(true);
-  };
+Conteúdo completo do arquivo:
 
-  const handleTaskSuccess = () => {
-    refresh();
-  };
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
+import { Plus, ChevronDown, Trash2, GripVertical } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-  const { updateTaskStatus, deleteTask } = useTaskMutations();
+interface ReleaseItem { id: string; nome: string; status: string; ordem: number; }
+interface Release { id: string; nome: string; descricao: string | null; data_inicio: string | null; data_prevista: string | null; status: string; ordem: number; items: ReleaseItem[]; }
 
-  const handleTaskClick = (task: any) => {
-    setTaskToEdit(task);
-    setIsTaskDialogOpen(true);
-  };
+const RELEASE_STATUSES = ["Planejamento", "Em Andamento", "Concluído", "Atrasado", "Cancelado"];
+const ITEM_STATUSES = [
+  { value: "pendente", label: "Pendente" },
+  { value: "em_progresso", label: "Em Progresso" },
+  { value: "concluido", label: "Concluído" },
+];
 
-  const handleStatusChange = async (taskId: string, newStatus: TaskStatusEnum) => {
-    await updateTaskStatus(taskId, newStatus);
-  };
+const STATUS_COLORS: Record<string, string> = {
+  "Planejamento": "bg-slate-100 text-slate-600",
+  "Em Andamento": "bg-blue-100 text-blue-600",
+  "Concluído": "bg-emerald-100 text-emerald-600",
+  "Atrasado": "bg-rose-100 text-rose-600",
+  "Cancelado": "bg-slate-100 text-slate-400",
+};
 
-  const handleDeleteTask = async (taskId: string) => {
-    setTaskToDelete(taskId);
-  };
+const ITEM_STATUS_COLORS: Record<string, string> = {
+  "pendente": "bg-slate-100 text-slate-500",
+  "em_progresso": "bg-blue-100 text-blue-600",
+  "concluido": "bg-emerald-100 text-emerald-600",
+};
 
-  const handleConfirmDelete = async () => {
-    if (!taskToDelete) return;
-    await deleteTask(taskToDelete);
-    setTaskToDelete(null);
-    refresh();
-  };
+interface Props { launchId: string; }
 
-// Removendo duplicatas injetadas erroneamente
+export function ReleasesPanel({ launchId }: Props) {
+  const [releases, setReleases] = useState<Release[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedReleases, setExpandedReleases] = useState<string[]>([]);
 
+  const [isReleaseDialogOpen, setIsReleaseDialogOpen] = useState(false);
+  const [releaseToDelete, setReleaseToDelete] = useState<string | null>(null);
+  const [isSubmittingRelease, setIsSubmittingRelease] = useState(false);
+  const [releaseNome, setReleaseNome] = useState("");
+  const [releaseDescricao, setReleaseDescricao] = useState("");
+  const [releaseDataInicio, setReleaseDataInicio] = useState("");
+  const [releaseDataPrevista, setReleaseDataPrevista] = useState("");
+  const [releaseStatus, setReleaseStatus] = useState("Planejamento");
 
-  const toggleTeam = (team: string) => {
-    setExpandedTeams(prev => 
-      prev.includes(team) ? prev.filter(t => t !== team) : [...prev, team]
-    );
-  };
+  const [isItemDialogOpen, setIsItemDialogOpen] = useState(false);
+  const [activeReleaseId, setActiveReleaseId] = useState<string | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [isSubmittingItem, setIsSubmittingItem] = useState(false);
+  const [itemNome, setItemNome] = useState("");
+  const [itemStatus, setItemStatus] = useState("pendente");
 
-  const tasksByStatus = useMemo(() => {
-    return {
-      todo: tasks.filter(t => t.status === TASK_STATUS_TODO),
-      in_progress: tasks.filter(t => t.status === TASK_STATUS_IN_PROGRESS),
-      blocked: tasks.filter(t => t.status === TASK_STATUS_BLOCKED),
-      done: tasks.filter(t => t.status === TASK_STATUS_DONE)
-    };
-  }, [tasks]);
+  useEffect(() => { fetchReleases(); }, [launchId]);
 
-  const tasksByTeam = useMemo(() => {
-    return tasks.reduce((acc, task) => {
-      // Usar o campo team da própria tarefa, com fallback para 'outros'
-      const team = (task.team as string) || 'outros';
-      if (!acc[team]) acc[team] = [];
-      acc[team].push(task);
-      return acc;
-    }, {} as Record<string, typeof tasks>);
-  }, [tasks]);
+  async function fetchReleases() {
+    setLoading(true);
+    try {
+      const { data: releasesRaw, error: rError } = await supabase
+        .from("releases").select("*").eq("launch_id", launchId).order("ordem");
+      if (rError) throw rError;
+      if (!releasesRaw?.length) { setReleases([]); return; }
 
-  console.log('DEBUG TASKS BY TEAM:', Object.keys(tasksByTeam).map(t => `${t}: ${tasksByTeam[t].length}`));
+      const releaseIds = releasesRaw.map(r => r.id);
+      const { data: itemsRaw, error: iError } = await supabase
+        .from("release_items").select("*").in("release_id", releaseIds).order("ordem");
+      if (iError) throw iError;
 
-  if (loading) {
-    return (
-      <AppLayout>
-        <div className="flex items-center justify-center h-[50vh]">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      </AppLayout>
-    );
+      const itemsByRelease = (itemsRaw || []).reduce((acc, item) => {
+        if (!acc[item.release_id]) acc[item.release_id] = [];
+        acc[item.release_id].push(item);
+        return acc;
+      }, {} as Record<string, ReleaseItem[]>);
+
+      setReleases(releasesRaw.map(r => ({ ...r, items: itemsByRelease[r.id] || [] })));
+    } catch (err: any) {
+      toast.error("Erro ao carregar releases", { description: err.message });
+    } finally {
+      setLoading(false);
+    }
   }
 
-  if (error || !launch) {
-    return (
-      <AppLayout>
-        <div className="flex flex-col items-center justify-center h-[50vh] space-y-4">
-          <p className="text-destructive font-bold">Erro ao carregar lançamento</p>
-          <Link to="/launches" className="text-primary hover:underline flex items-center gap-1">
-            <ChevronLeft className="h-4 w-4" /> Voltar para lançamentos
-          </Link>
-        </div>
-      </AppLayout>
-    );
-  }
+  const toggleRelease = (id: string) => setExpandedReleases(prev =>
+    prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+  );
+
+  const handleCreateRelease = async () => {
+    if (!releaseNome.trim()) { toast.error("Nome é obrigatório"); return; }
+    setIsSubmittingRelease(true);
+    try {
+      const { error } = await supabase.from("releases").insert({
+        launch_id: launchId,
+        nome: releaseNome,
+        descricao: releaseDescricao || null,
+        data_inicio: releaseDataInicio || null,
+        data_prevista: releaseDataPrevista || null,
+        status: releaseStatus,
+        ordem: releases.length,
+      });
+      if (error) throw error;
+      toast.success("Release criada com sucesso");
+      setIsReleaseDialogOpen(false);
+      setReleaseNome(""); setReleaseDescricao(""); setReleaseDataInicio(""); setReleaseDataPrevista(""); setReleaseStatus("Planejamento");
+      fetchReleases();
+    } catch (err: any) {
+      toast.error("Erro ao criar release", { description: err.message });
+    } finally {
+      setIsSubmittingRelease(false);
+    }
+  };
+
+  const handleDeleteRelease = async () => {
+    if (!releaseToDelete) return;
+    try {
+      const { error } = await supabase.from("releases").delete().eq("id", releaseToDelete);
+      if (error) throw error;
+      toast.success("Release deletada");
+      setReleaseToDelete(null);
+      fetchReleases();
+    } catch (err: any) {
+      toast.error("Erro ao deletar release", { description: err.message });
+    }
+  };
+
+  const handleCreateItem = async () => {
+    if (!itemNome.trim() || !activeReleaseId) { toast.error("Nome é obrigatório"); return; }
+    setIsSubmittingItem(true);
+    try {
+      const release = releases.find(r => r.id === activeReleaseId);
+      const { error } = await supabase.from("release_items").insert({
+        release_id: activeReleaseId,
+        nome: itemNome,
+        status: itemStatus,
+        ordem: release?.items.length || 0,
+      });
+      if (error) throw error;
+      toast.success("Item adicionado");
+      setIsItemDialogOpen(false);
+      setItemNome(""); setItemStatus("pendente");
+      fetchReleases();
+    } catch (err: any) {
+      toast.error("Erro ao criar item", { description: err.message });
+    } finally {
+      setIsSubmittingItem(false);
+    }
+  };
+
+  const handleDeleteItem = async () => {
+    if (!itemToDelete) return;
+    try {
+      const { error } = await supabase.from("release_items").delete().eq("id", itemToDelete);
+      if (error) throw error;
+      toast.success("Item removido");
+      setItemToDelete(null);
+      fetchReleases();
+    } catch (err: any) {
+      toast.error("Erro ao remover item", { description: err.message });
+    }
+  };
+
+  const handleUpdateItemStatus = async (itemId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase.from("release_items").update({ status: newStatus }).eq("id", itemId);
+      if (error) throw error;
+      fetchReleases();
+    } catch (err: any) {
+      toast.error("Erro ao atualizar status", { description: err.message });
+    }
+  };
+
+  if (loading) return (
+    <div className="flex items-center justify-center h-32">
+      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+    </div>
+  );
 
   return (
-    <AppLayout>
-      <TopBar 
-        title={launch.nome} 
-        subtitle={formatLaunchCode(launch.id)}
-        actions={
-          <button 
-            onClick={handleOpenNewTask}
-            className="h-8 px-3 rounded bg-foreground text-background text-xs font-medium hover:opacity-90 transition-opacity"
-          >
-            + Nova tarefa
-          </button>
-        }
-      />
-      
-      <div className="flex-1 px-8 py-10 max-w-[1200px] mx-auto w-full">
-        <Link to="/launches" className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-primary mb-8 font-bold uppercase tracking-wider transition-colors">
-          <ChevronLeft className="h-3 w-3" /> Lançamentos
-        </Link>
-
-        <header className="mb-12">
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 uppercase tracking-wider">
-              {formatLaunchCode(launch.id)}
-            </span>
-            <StatusBadge status={launch.status as any} />
-            <PriorityDot priority={launch.prioridade as any} />
-          </div>
-          <h2 className="text-4xl font-black tracking-tight text-slate-800 mb-4">{launch.nome}</h2>
-          <p className="text-lg text-slate-500 max-w-2xl leading-relaxed">{launch.descricao || 'Sem descrição.'}</p>
-        </header>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-            <Meta icon={Target} label="Progresso" value={`${launch.progresso}%`} />
-            <div className="pt-3"><ProgressBar value={launch.progresso} /></div>
-          </div>
-          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-            <Meta icon={Calendar} label="Data Alvo" value={launch.data_lancamento_prevista ? new Date(launch.data_lancamento_prevista).toLocaleDateString("pt-BR", { day: "2-digit", month: "long" }) : 'Não definida'} />
-          </div>
-          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-            <Meta icon={Avatar} label="Responsável" value={launch.owner?.nome || 'Não atribuído'} />
-          </div>
-          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-            <Meta icon={ListTodo} label="Tarefas" value={`${tasks.filter(t => t.status === TASK_STATUS_DONE).length}/${tasks.length}`} />
-          </div>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-bold text-slate-800">Releases</h3>
+          <p className="text-xs text-slate-400 mt-0.5">{releases.length} release{releases.length !== 1 ? "s" : ""} · {releases.reduce((acc, r) => acc + r.items.length, 0)} itens no total</p>
         </div>
-
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="bg-slate-100/50 p-1 mb-10 h-12 w-fit">
-            <TabsTrigger value="overview" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Visão Geral</TabsTrigger>
-            <TabsTrigger value="activities" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Atividades (Kanban)</TabsTrigger>
-            <TabsTrigger value="by_team" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Por Time</TabsTrigger>
-            <TabsTrigger value="risks" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Riscos</TabsTrigger>
-            <TabsTrigger value="team" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Time</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-12">
-            <section className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-              <div className="space-y-8">
-                <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
-                  <Layout className="w-5 h-5 text-primary" />
-                  Marcos do Projeto
-                </h3>
-                {milestones.length === 0 ? (
-                  <p className="text-sm text-slate-400 font-medium bg-slate-50 p-6 rounded-xl border border-dashed border-slate-200">Nenhum marco cadastrado.</p>
-                ) : (
-                  <div className="space-y-4">
-                    {milestones.map(m => (
-                      <div key={m.id} className="flex items-center gap-4 p-4 bg-white rounded-xl border border-slate-100 shadow-sm">
-                        <div className={`p-2 rounded-lg ${m.status === 'concluido' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400'}`}>
-                          {m.status === 'concluido' ? <CheckCircle2 className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-bold text-slate-800">{m.nome}</p>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase">{new Date(m.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
-                        </div>
-                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${m.status === 'concluido' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                          {m.status === 'concluido' ? 'Concluído' : 'Pendente'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-8">
-                <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
-                  <Users className="w-5 h-5 text-primary" />
-                  Fases do Lançamento
-                </h3>
-                <div className="space-y-3">
-                  {phases.map((p, idx) => (
-                    <div key={p.id} className="flex items-center gap-4 p-4 bg-slate-50/50 rounded-xl border border-slate-100">
-                      <span className="text-xs font-black text-slate-300 w-4">{idx + 1}</span>
-                      <p className="text-sm font-bold text-slate-700">{p.nome}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-          </TabsContent>
-
-          <TabsContent value="activities">
-            <KanbanBoard
-              tasks={tasks as any}
-              onTaskClick={handleTaskClick}
-              onStatusChange={handleStatusChange}
-              onTaskDelete={handleDeleteTask}
-              onRefresh={refresh}
-            />
-          </TabsContent>
-
-          <TabsContent value="by_team" className="space-y-4">
-            {Object.entries(tasksByTeam).map(([team, teamTasks]) => (
-              <div key={team} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                <button 
-                  onClick={() => toggleTeam(team)}
-                  className="w-full flex items-center justify-between p-5 hover:bg-slate-50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <TeamChip team={team as any} />
-                    <span className="text-sm font-bold text-slate-700">{teamMap[team as TeamName] || team} · {teamTasks.length} tarefas</span>
-                  </div>
-                  {expandedTeams.includes(team) ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
-                </button>
-                {expandedTeams.includes(team) && (
-                  <div className="p-5 pt-0 border-t border-slate-50">
-                    <div className="space-y-3 mt-4">
-                      {teamTasks.map(task => (
-                        <div key={task.id} className="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-xl transition-colors group">
-                          {task.status === TASK_STATUS_DONE ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <Circle className="h-4 w-4 text-slate-300" />}
-                          <div className="flex-1">
-                            <p className={`text-sm ${task.status === TASK_STATUS_DONE ? "line-through text-slate-400" : "font-bold text-slate-700"}`}>{task.titulo}</p>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase">{task.assignee?.nome || 'Sem responsável'} · {task.data_entrega ? new Date(task.data_entrega).toLocaleDateString('pt-BR') : 'Sem data'}</p>
-                          </div>
-                          <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-500`}>
-                            {(taskStatusMap as any)[task.status] || task.status}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </TabsContent>
-
-          <TabsContent value="risks">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {risks.length === 0 ? (
-                <p className="text-sm text-slate-400 font-medium bg-slate-50 p-6 rounded-xl border border-dashed border-slate-200 md:col-span-2">Nenhum risco identificado.</p>
-              ) : (
-                risks.map(risk => (
-                  <div key={risk.id} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm border-l-4 border-l-rose-400">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <AlertOctagon className="w-5 h-5 text-rose-500" />
-                        <h4 className="font-bold text-slate-800">{risk.titulo}</h4>
-                      </div>
-                      <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${
-                        risk.impacto === 'alto' ? 'bg-rose-100 text-rose-600' : 
-                        risk.impacto === 'médio' ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-500'
-                      }`}>
-                        Impacto {risk.impacto}
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-500 mb-6 leading-relaxed">{risk.descricao || 'Sem descrição detalhada.'}</p>
-                    <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-                      <div className="flex items-center gap-2">
-                        <div className="h-6 w-6 rounded-full bg-slate-100 border border-white flex items-center justify-center text-[9px] font-bold text-slate-500">
-                          {risk.owner?.nome?.split(' ').map((n: string) => n[0]).join('').substring(0, 2) || '??'}
-                        </div>
-                        <span className="text-[11px] font-bold text-slate-600">{risk.owner?.nome || 'Responsável não definido'}</span>
-                      </div>
-                      <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                        Prob. {risk.probabilidade}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="team">
-            <div className="bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-12 text-center">
-              <p className="text-sm text-slate-400 font-medium">Time do lançamento em construção — em breve aqui.</p>
-            </div>
-          </TabsContent>
-        </Tabs>
+        <Button onClick={() => setIsReleaseDialogOpen(true)} size="sm" className="h-8 text-xs">
+          <Plus className="w-3.5 h-3.5 mr-1" /> Nova Release
+        </Button>
       </div>
 
-      <TaskFormDialog
-        open={isTaskDialogOpen}
-        onOpenChange={setIsTaskDialogOpen}
-        launchId={launch.id}
-        phases={phases}
-        taskToEdit={taskToEdit}
-        onSuccess={handleTaskSuccess}
-      />
+      {releases.length === 0 ? (
+        <div className="bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-12 text-center">
+          <p className="text-sm text-slate-400">Nenhuma release cadastrada.</p>
+          <p className="text-xs text-slate-300 mt-1">Crie releases para organizar o escopo deste lançamento.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {releases.map(release => {
+            const isExpanded = expandedReleases.includes(release.id);
+            const doneItems = release.items.filter(i => i.status === "concluido").length;
+            return (
+              <div key={release.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <div className="flex items-center p-4 gap-3">
+                  <button onClick={() => toggleRelease(release.id)} className="p-1 rounded hover:bg-slate-100 transition-colors">
+                    <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${isExpanded ? "" : "-rotate-90"}`} />
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-bold text-slate-800">{release.nome}</p>
+                      <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${STATUS_COLORS[release.status] || STATUS_COLORS["Planejamento"]}`}>
+                        {release.status}
+                      </span>
+                      {release.data_inicio && release.data_prevista && (
+                        <span className="text-[10px] text-slate-400">
+                          {new Date(release.data_inicio).toLocaleDateString("pt-BR")} → {new Date(release.data_prevista).toLocaleDateString("pt-BR")}
+                        </span>
+                      )}
+                    </div>
+                    {release.descricao && <p className="text-xs text-slate-400 mt-0.5 truncate">{release.descricao}</p>}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[10px] text-slate-400 font-medium">{doneItems}/{release.items.length} itens</span>
+                    <button onClick={() => { setActiveReleaseId(release.id); setIsItemDialogOpen(true); }}
+                      className="h-7 px-2 rounded border border-border text-[11px] font-medium hover:bg-slate-50 transition-colors flex items-center gap-1">
+                      <Plus className="w-3 h-3" /> Item
+                    </button>
+                    <button onClick={() => setReleaseToDelete(release.id)}
+                      className="p-1.5 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-500 transition-colors">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
 
-      <AlertDialog open={!!taskToDelete} onOpenChange={(open) => !open && setTaskToDelete(null)}>
+                {isExpanded && (
+                  <div className="border-t border-slate-50 divide-y divide-slate-50">
+                    {release.items.length === 0 ? (
+                      <div className="px-6 py-4 text-center">
+                        <p className="text-xs text-slate-300 italic">Nenhum item. Clique em "+ Item" para adicionar.</p>
+                      </div>
+                    ) : (
+                      release.items.map(item => (
+                        <div key={item.id} className="flex items-center gap-3 px-6 py-3 hover:bg-slate-50/50 transition-colors group">
+                          <GripVertical className="w-3.5 h-3.5 text-slate-200 shrink-0" />
+                          <p className="flex-1 text-sm text-slate-700">{item.nome}</p>
+                          <select
+                            value={item.status}
+                            onChange={e => handleUpdateItemStatus(item.id, e.target.value)}
+                            className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border-0 cursor-pointer ${ITEM_STATUS_COLORS[item.status] || ITEM_STATUS_COLORS["pendente"]}`}
+                          >
+                            {ITEM_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                          </select>
+                          <button onClick={() => setItemToDelete(item.id)}
+                            className="p-1 rounded hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100">
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <Dialog open={isReleaseDialogOpen} onOpenChange={(open) => { setIsReleaseDialogOpen(open); if (!open) { setReleaseNome(""); setReleaseDescricao(""); setReleaseDataInicio(""); setReleaseDataPrevista(""); setReleaseStatus("Planejamento"); } }}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader><DialogTitle>Nova Release</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2"><Label>Nome</Label><Input value={releaseNome} onChange={e => setReleaseNome(e.target.value)} placeholder="Ex: Release 1, v1.0, Beta..." /></div>
+            <div className="space-y-2"><Label>Descrição (opcional)</Label><Input value={releaseDescricao} onChange={e => setReleaseDescricao(e.target.value)} placeholder="O que entra nessa release..." /></div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2"><Label>Data de Início</Label><Input type="date" value={releaseDataInicio} onChange={e => setReleaseDataInicio(e.target.value)} /></div>
+              <div className="space-y-2"><Label>Data Prevista</Label><Input type="date" value={releaseDataPrevista} onChange={e => setReleaseDataPrevista(e.target.value)} /></div>
+            </div>
+            <div className="space-y-2"><Label>Status</Label>
+              <Select value={releaseStatus} onValueChange={setReleaseStatus}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{RELEASE_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsReleaseDialogOpen(false)} disabled={isSubmittingRelease}>Cancelar</Button>
+            <Button onClick={handleCreateRelease} disabled={isSubmittingRelease}>{isSubmittingRelease ? "Criando..." : "Criar Release"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isItemDialogOpen} onOpenChange={(open) => { setIsItemDialogOpen(open); if (!open) { setItemNome(""); setItemStatus("pendente"); } }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader><DialogTitle>Novo Item</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2"><Label>Nome do item</Label><Input value={itemNome} onChange={e => setItemNome(e.target.value)} placeholder="Ex: Conta Digital, Emissão CT-e..." /></div>
+            <div className="space-y-2"><Label>Status</Label>
+              <Select value={itemStatus} onValueChange={setItemStatus}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{ITEM_STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsItemDialogOpen(false)} disabled={isSubmittingItem}>Cancelar</Button>
+            <Button onClick={handleCreateItem} disabled={isSubmittingItem}>{isSubmittingItem ? "Adicionando..." : "Adicionar Item"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!releaseToDelete} onOpenChange={(open) => !open && setReleaseToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Deletar tarefa</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja deletar esta tarefa? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
+            <AlertDialogTitle>Deletar release</AlertDialogTitle>
+            <AlertDialogDescription>Todos os itens desta release serão deletados. Esta ação não pode ser desfeita.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete} className="bg-rose-500 hover:bg-rose-600">
-              Deletar
-            </AlertDialogAction>
+            <AlertDialogAction onClick={handleDeleteRelease} className="bg-rose-500 hover:bg-rose-600">Deletar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </AppLayout>
-  );
-}
 
-function Meta({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
-  return (
-    <div>
-      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
-        <Icon className="h-3.5 w-3.5" />
-        {label}
-      </div>
-      <p className="text-sm font-black text-slate-700">{value}</p>
+      <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover item</AlertDialogTitle>
+            <AlertDialogDescription>Tem certeza que deseja remover este item?</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteItem} className="bg-rose-500 hover:bg-rose-600">Remover</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
