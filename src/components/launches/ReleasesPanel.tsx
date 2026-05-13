@@ -38,37 +38,36 @@ const ITEM_STATUS_LABELS: Record<string, string> = {
 };
 
 const PDF_STYLE = `
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fff;color:#1e293b}
-.header{padding:40px 48px 28px;border-bottom:1px solid #f1f5f9}
-.logo{font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#94a3b8;margin-bottom:16px}
-.logo span{color:#0ea5e9}
-.header-title{font-size:26px;font-weight:700;color:#0f172a;line-height:1.2;margin-bottom:6px}
-.header-sub{font-size:13px;color:#94a3b8}
-.badge{display:inline-block;padding:3px 10px;border-radius:6px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-top:10px}
-.badge-pendente{background:#f1f5f9;color:#64748b}
-.badge-em_progresso{background:#eff6ff;color:#3b82f6}
-.badge-concluido{background:#f0fdf4;color:#16a34a}
-.badge-Planejamento{background:#f1f5f9;color:#64748b}
-.badge-Em.Andamento{background:#eff6ff;color:#3b82f6}
-.badge-Concluido{background:#f0fdf4;color:#16a34a}
-.badge-Atrasado{background:#fff1f2;color:#e11d48}
-.body{padding:40px 48px}
-.section{margin-bottom:28px}
-.section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;margin-bottom:10px}
-.section-content{font-size:13px;color:#334155;line-height:1.8;white-space:pre-wrap}
-.criterio{display:flex;gap:10px;margin-bottom:7px;font-size:13px;color:#334155;align-items:flex-start}
-.criterio-check{color:#16a34a;font-weight:700}
-.progress-bar{height:6px;background:#f1f5f9;border-radius:100px;overflow:hidden;margin-bottom:4px}
-.progress-fill{height:100%;background:#0ea5e9;border-radius:100px}
-table{width:100%;border-collapse:collapse;margin-top:4px}
-thead tr{background:#f8fafc}
-thead th{padding:10px 12px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;border-bottom:1px solid #f1f5f9}
-tbody tr{border-bottom:1px solid #f8fafc}
-tbody td{padding:10px 12px;font-size:12px;color:#334155}
-.status-badge{padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700;text-transform:uppercase}
-.footer{margin-top:48px;padding-top:14px;border-top:1px solid #f1f5f9;display:flex;justify-content:space-between;font-size:11px;color:#cbd5e1}
-@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; background: #ffffff; color: #1e293b; line-height: 1.5; }
+  .header { padding: 40px 48px; border-bottom: 1px solid #f1f5f9; position: relative; }
+  .logo { font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 24px; display: flex; align-items: center; }
+  .logo span { color: #0ea5e9; }
+  .header-title { font-size: 32px; font-weight: 800; color: #0f172a; line-height: 1.1; margin-bottom: 8px; letter-spacing: -0.025em; }
+  .header-sub { font-size: 14px; color: #64748b; font-weight: 500; }
+  .badge { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; margin-top: 16px; }
+  .badge-pendente { background: #f8fafc; color: #64748b; border: 1px solid #f1f5f9; }
+  .badge-em_progresso { background: #f0f9ff; color: #0ea5e9; border: 1px solid #e0f2fe; }
+  .badge-concluido { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+  .badge-Planejamento { background: #f8fafc; color: #64748b; border: 1px solid #f1f5f9; }
+  .badge-Em.Andamento { background: #f0f9ff; color: #0ea5e9; border: 1px solid #e0f2fe; }
+  .badge-Concluído { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+  .badge-Atrasado { background: #fff1f2; color: #e11d48; border: 1px solid #ffe4e6; }
+  .body { padding: 40px 48px; }
+  .section { margin-bottom: 40px; }
+  .section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 16px; }
+  .section-content { font-size: 15px; color: #334155; line-height: 1.6; white-space: pre-wrap; }
+  .criterio { display: flex; gap: 12px; margin-bottom: 10px; font-size: 15px; color: #334155; align-items: flex-start; }
+  .criterio-check { color: #16a34a; font-weight: 700; flex-shrink: 0; }
+  .progress-container { margin-top: 8px; }
+  .progress-bar { height: 6px; background: #f1f5f9; border-radius: 100px; overflow: hidden; margin-bottom: 8px; width: 100%; }
+  .progress-fill { height: 100%; background: #0ea5e9; border-radius: 100px; }
+  table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 8px; }
+  thead th { padding: 12px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; border-bottom: 1px solid #f1f5f9; }
+  tbody td { padding: 16px 12px; font-size: 14px; color: #334155; border-bottom: 1px solid #f8fafc; vertical-align: top; }
+  .status-badge { display: inline-flex; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+  .footer { margin-top: 80px; padding-top: 24px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; font-size: 12px; color: #94a3b8; font-weight: 500; }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .header, .body { padding-left: 0; padding-right: 0; } }
 `;
 
 function generateItemPDF(item: ReleaseItem, releaseName: string) {
@@ -110,7 +109,9 @@ function generateReleasePDF(release: Release) {
   ${release.descricao ? `<div class="section"><div class="section-title">Descrição</div><div class="section-content">${release.descricao}</div></div>` : ""}
   <div class="section">
     <div class="section-title">Progresso — ${doneItems}/${release.items.length} itens concluídos (${pct}%)</div>
-    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+    <div class="progress-container">
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+    </div>
   </div>
   <div class="section">
     <div class="section-title">Itens do Escopo</div>
