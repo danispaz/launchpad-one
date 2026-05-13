@@ -4,6 +4,8 @@ import { TopBar } from "@/components/TopBar";
 import { StatusBadge, TeamChip, Avatar } from "@/components/Badges";
 import { type LaunchStatus, teamMap, formatDate, formatLaunchCode, TeamName, TASK_STATUS_DONE } from "@/lib/utils/formatters";
 import { useLaunches } from "@/hooks/useLaunches";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/lib/supabase";
 import { Search, X, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { NewLaunchDialog } from "@/components/launches/NewLaunchDialog";
@@ -63,6 +65,24 @@ function LaunchesList() {
   const { status, team, q } = useSearch({ from: "/launches/" });
   const navigate = useNavigate({ from: "/launches/" });
   const { launches, loading } = useLaunches();
+  const { user } = useAuth();
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    async function fetchRole() {
+      const { data } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user?.id)
+        .single();
+      console.log("[RAW launches.index userRole]", data?.role);
+      setUserRole(data?.role || null);
+    }
+    fetchRole();
+  }, [user]);
+
+  const canDelete = userRole === "executive" || userRole === "product";
 
   useEffect(() => {
     if (status === "all" && team === "all" && !q) {
@@ -257,13 +277,15 @@ function LaunchesList() {
                     <span className="text-xs font-medium text-muted-foreground">{formatDate(l.data_lancamento_prevista)}</span>
                   </td>
                   <td className="px-6 py-5 text-right">
-                    <button
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setLaunchToDelete(l.id); }}
-                      className="p-1.5 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-500 transition-colors"
-                      title="Deletar lançamento"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {canDelete && (
+                      <button
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setLaunchToDelete(l.id); }}
+                        className="p-1.5 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-500 transition-colors"
+                        title="Deletar lançamento"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
