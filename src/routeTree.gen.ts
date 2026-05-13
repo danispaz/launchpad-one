@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UsersRouteImport } from './routes/users'
 import { Route as TeamsRouteImport } from './routes/teams'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RoadmapRouteImport } from './routes/roadmap'
@@ -21,6 +22,11 @@ import { Route as LaunchesIndexRouteImport } from './routes/launches.index'
 import { Route as ProductsIdRouteImport } from './routes/products.$id'
 import { Route as LaunchesIdRouteImport } from './routes/launches.$id'
 
+const UsersRoute = UsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TeamsRoute = TeamsRouteImport.update({
   id: '/teams',
   path: '/teams',
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/roadmap': typeof RoadmapRoute
   '/settings': typeof SettingsRoute
   '/teams': typeof TeamsRoute
+  '/users': typeof UsersRoute
   '/launches/$id': typeof LaunchesIdRoute
   '/products/$id': typeof ProductsIdRoute
   '/launches/': typeof LaunchesIndexRoute
@@ -97,6 +104,7 @@ export interface FileRoutesByTo {
   '/roadmap': typeof RoadmapRoute
   '/settings': typeof SettingsRoute
   '/teams': typeof TeamsRoute
+  '/users': typeof UsersRoute
   '/launches/$id': typeof LaunchesIdRoute
   '/products/$id': typeof ProductsIdRoute
   '/launches': typeof LaunchesIndexRoute
@@ -111,6 +119,7 @@ export interface FileRoutesById {
   '/roadmap': typeof RoadmapRoute
   '/settings': typeof SettingsRoute
   '/teams': typeof TeamsRoute
+  '/users': typeof UsersRoute
   '/launches/$id': typeof LaunchesIdRoute
   '/products/$id': typeof ProductsIdRoute
   '/launches/': typeof LaunchesIndexRoute
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/roadmap'
     | '/settings'
     | '/teams'
+    | '/users'
     | '/launches/$id'
     | '/products/$id'
     | '/launches/'
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/roadmap'
     | '/settings'
     | '/teams'
+    | '/users'
     | '/launches/$id'
     | '/products/$id'
     | '/launches'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/roadmap'
     | '/settings'
     | '/teams'
+    | '/users'
     | '/launches/$id'
     | '/products/$id'
     | '/launches/'
@@ -165,12 +177,20 @@ export interface RootRouteChildren {
   RoadmapRoute: typeof RoadmapRoute
   SettingsRoute: typeof SettingsRoute
   TeamsRoute: typeof TeamsRoute
+  UsersRoute: typeof UsersRoute
   ProductsIdRoute: typeof ProductsIdRoute
   ProductsIndexRoute: typeof ProductsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/teams': {
       id: '/teams'
       path: '/teams'
@@ -273,6 +293,7 @@ const rootRouteChildren: RootRouteChildren = {
   RoadmapRoute: RoadmapRoute,
   SettingsRoute: SettingsRoute,
   TeamsRoute: TeamsRoute,
+  UsersRoute: UsersRoute,
   ProductsIdRoute: ProductsIdRoute,
   ProductsIndexRoute: ProductsIndexRoute,
 }
