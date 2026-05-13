@@ -74,7 +74,7 @@ function LaunchesList() {
       const { data } = await supabase
         .from("profiles")
         .select("role")
-        .eq("id", user.id)
+        .eq("id", user?.id)
         .single();
       console.log("[RAW launches.index userRole]", data?.role);
       setUserRole(data?.role || null);
