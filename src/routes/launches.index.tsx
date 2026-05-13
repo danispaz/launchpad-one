@@ -4,9 +4,22 @@ import { TopBar } from "@/components/TopBar";
 import { StatusBadge, TeamChip, Avatar } from "@/components/Badges";
 import { type LaunchStatus, teamMap, formatDate, formatLaunchCode, TeamName, TASK_STATUS_DONE } from "@/lib/utils/formatters";
 import { useLaunches } from "@/hooks/useLaunches";
-import { Search, X } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/lib/supabase";
+import { Search, X, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { NewLaunchDialog } from "@/components/launches/NewLaunchDialog";
+import { useLaunchMutations } from "@/hooks/useLaunchMutations";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const STORAGE_KEY = "launchhub_launches_filters";
 
@@ -47,9 +60,29 @@ export const Route = createFileRoute("/launches/")({
 function LaunchesList() {
   console.log('LAUNCHES LIST PAGE MOUNTED');
   const [isNewLaunchOpen, setIsNewLaunchOpen] = useState(false);
+  const [launchToDelete, setLaunchToDelete] = useState<string | null>(null);
+  const { deleteLaunch } = useLaunchMutations();
   const { status, team, q } = useSearch({ from: "/launches/" });
   const navigate = useNavigate({ from: "/launches/" });
   const { launches, loading } = useLaunches();
+  const { user } = useAuth();
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    async function fetchRole() {
+      const { data } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user?.id)
+        .single();
+      console.log("[RAW launches.index userRole]", data?.role);
+      setUserRole(data?.role || null);
+    }
+    fetchRole();
+  }, [user]);
+
+  const canDelete = userRole === "executive" || userRole === "product";
 
   useEffect(() => {
     if (status === "all" && team === "all" && !q) {
@@ -98,6 +131,17 @@ function LaunchesList() {
 
   const clearFilters = () => {
     navigate({ search: { status: "all", team: "all", q: "" } });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!launchToDelete) return;
+    try {
+      await deleteLaunch(launchToDelete);
+      setLaunchToDelete(null);
+      window.location.reload();
+    } catch {
+      setLaunchToDelete(null);
+    }
   };
 
   const hasFilters = status !== "all" || team !== "all" || !!q;
@@ -189,10 +233,12 @@ function LaunchesList() {
               <tr className="border-b border-border bg-slate-50/50 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
                 <th className="px-6 py-4 text-left">Cód.</th>
                 <th className="px-6 py-4 text-left">Nome</th>
+                <th className="px-6 py-4 text-left">Produto</th>
                 <th className="px-6 py-4 text-left">Status</th>
                 <th className="px-6 py-4 text-left">Times</th>
                 <th className="px-6 py-4 text-left">Owner</th>
                 <th className="px-6 py-4 text-right">Prazo</th>
+                <th className="px-6 py-4 text-right w-12"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/40">
@@ -203,6 +249,15 @@ function LaunchesList() {
                     <Link to="/launches/$id" params={{ id: l.id }} className="text-sm font-semibold text-foreground hover:text-primary transition-colors">
                       {l.nome}
                     </Link>
+                  </td>
+                  <td className="px-6 py-5">
+                    {l.product_id ? (
+                      <Link to="/products/$id" params={{ id: l.product_id }} className="text-xs text-muted-foreground hover:text-primary transition-colors">
+                        {l.produto || "—"}
+                      </Link>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">{l.produto || "—"}</span>
+                    )}
                   </td>
                   <td className="px-6 py-5"><StatusBadge status={l.status as any} /></td>
 
@@ -221,11 +276,22 @@ function LaunchesList() {
                   <td className="px-6 py-5 text-right">
                     <span className="text-xs font-medium text-muted-foreground">{formatDate(l.data_lancamento_prevista)}</span>
                   </td>
+                  <td className="px-6 py-5 text-right">
+                    {canDelete && (
+                      <button
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setLaunchToDelete(l.id); }}
+                        className="p-1.5 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-500 transition-colors"
+                        title="Deletar lançamento"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
               {filteredList.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-sm text-muted-foreground italic">
+                  <td colSpan={8} className="px-6 py-12 text-center text-sm text-muted-foreground italic">
                     Nenhum lançamento encontrado com esses filtros.
                   </td>
                 </tr>
@@ -238,6 +304,22 @@ function LaunchesList() {
         open={isNewLaunchOpen} 
         onOpenChange={setIsNewLaunchOpen} 
       />
+      <AlertDialog open={!!launchToDelete} onOpenChange={(open) => !open && setLaunchToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deletar lançamento</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja deletar este lançamento? Todas as tarefas, marcos e riscos associados serão removidos. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-rose-500 hover:bg-rose-600">
+              Deletar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }

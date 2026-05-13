@@ -4,7 +4,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
 import { StatusBadge, TeamChip, ProgressBar, Avatar, PriorityDot } from "@/components/Badges";
 import { formatLaunchCode, teamMap, taskStatusMap, priorityMap, TASK_STATUS_DONE, TASK_STATUS_IN_PROGRESS, TASK_STATUS_TODO, TASK_STATUS_BLOCKED } from "@/lib/utils/formatters";
-import { useLaunchDetail } from "@/hooks/useLaunchDetail";
+import { useLaunchDetail, type Task } from "@/hooks/useLaunchDetail";
 import { 
   ChevronLeft, 
   Calendar, 
@@ -21,7 +21,20 @@ import {
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
+import { TaskFormDialog } from "@/components/launches/TaskFormDialog";
+import { KanbanBoard } from "@/components/launches/KanbanBoard";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useTaskMutations } from "@/hooks/useTaskMutations";
+import type { TaskStatusEnum } from "@/lib/schemas/task-schema";
 export const Route = createFileRoute("/launches/$id")({
   head: () => ({
     meta: [
@@ -35,8 +48,45 @@ function LaunchDetail() {
   const params = Route.useParams();
   const { id } = params;
   console.log('LAUNCH DETAIL PAGE MOUNTED', { id });
-  const { launch, phases, tasks, milestones, risks, loading, error } = useLaunchDetail(id);
+  const { launch, phases, tasks, milestones, risks, loading, error, refresh } = useLaunchDetail(id);
   const [expandedTeams, setExpandedTeams] = useState<string[]>([]);
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+
+  const handleOpenNewTask = () => {
+    setTaskToEdit(null);
+    setIsTaskDialogOpen(true);
+  };
+
+  const handleTaskSuccess = () => {
+    refresh();
+  };
+
+  const { updateTaskStatus, deleteTask } = useTaskMutations();
+
+  const handleTaskClick = (task: any) => {
+    setTaskToEdit(task);
+    setIsTaskDialogOpen(true);
+  };
+
+  const handleStatusChange = async (taskId: string, newStatus: TaskStatusEnum) => {
+    await updateTaskStatus(taskId, newStatus);
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    setTaskToDelete(taskId);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!taskToDelete) return;
+    await deleteTask(taskToDelete);
+    setTaskToDelete(null);
+    refresh();
+  };
+
+// Removendo duplicatas injetadas erroneamente
+
 
   const toggleTeam = (team: string) => {
     setExpandedTeams(prev => 
@@ -90,7 +140,18 @@ function LaunchDetail() {
 
   return (
     <AppLayout>
-      <TopBar title={launch.nome} subtitle={formatLaunchCode(launch.id)} />
+      <TopBar 
+        title={launch.nome} 
+        subtitle={formatLaunchCode(launch.id)}
+        actions={
+          <button 
+            onClick={handleOpenNewTask}
+            className="h-8 px-3 rounded bg-foreground text-background text-xs font-medium hover:opacity-90 transition-opacity"
+          >
+            + Nova tarefa
+          </button>
+        }
+      />
       
       <div className="flex-1 px-8 py-10 max-w-[1200px] mx-auto w-full">
         <Link to="/launches" className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-primary mb-8 font-bold uppercase tracking-wider transition-colors">
@@ -131,6 +192,7 @@ function LaunchDetail() {
             <TabsTrigger value="activities" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Atividades (Kanban)</TabsTrigger>
             <TabsTrigger value="by_team" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Por Time</TabsTrigger>
             <TabsTrigger value="risks" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Riscos</TabsTrigger>
+            <TabsTrigger value="team" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Time</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-12">
@@ -180,43 +242,13 @@ function LaunchDetail() {
           </TabsContent>
 
           <TabsContent value="activities">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 overflow-x-auto pb-4">
-              {Object.entries({
-                todo: { label: 'A Fazer', color: 'bg-slate-100' },
-                in_progress: { label: 'Em Andamento', color: 'bg-blue-50' },
-                blocked: { label: 'Bloqueado', color: 'bg-rose-50' },
-                done: { label: 'Concluído', color: 'bg-emerald-50' }
-              }).map(([statusKey, meta]) => (
-                <div key={status} className="min-w-[280px]">
-                  <div className="flex items-center justify-between mb-4 px-2">
-                    <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-500">
-                      {meta.label} · {(tasksByStatus as any)[statusKey].length}
-                    </h4>
-                  </div>
-                  <div className={`space-y-3 p-3 rounded-2xl border border-slate-100 min-h-[400px] ${meta.color}/30`}>
-                    {(tasksByStatus as any)[statusKey].map((task: any) => (
-                      <div key={task.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
-                        <div className="flex items-center gap-2 mb-2">
-                          <TeamChip team={(task.team as any) || 'product'} />
-                        </div>
-                        <p className="text-sm font-bold text-slate-800 leading-tight mb-3 group-hover:text-primary transition-colors">{task.titulo}</p>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold uppercase">
-                            <Calendar className="w-3 h-3" />
-                            {task.data_entrega ? new Date(task.data_entrega).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : 'S/D'}
-                          </div>
-                          <div className="flex -space-x-1">
-                            <div className="h-5 w-5 rounded-full bg-slate-100 border border-white flex items-center justify-center text-[8px] font-bold text-slate-500" title={task.assignee?.nome || 'N/A'}>
-                              {task.assignee?.nome?.split(' ').map((n: string) => n[0]).join('').substring(0, 2) || '??'}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <KanbanBoard
+              tasks={tasks as any}
+              onTaskClick={handleTaskClick}
+              onStatusChange={handleStatusChange}
+              onTaskDelete={handleDeleteTask}
+              onRefresh={refresh}
+            />
           </TabsContent>
 
           <TabsContent value="by_team" className="space-y-4">
@@ -290,8 +322,40 @@ function LaunchDetail() {
               )}
             </div>
           </TabsContent>
+
+          <TabsContent value="team">
+            <div className="bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-12 text-center">
+              <p className="text-sm text-slate-400 font-medium">Time do lançamento em construção — em breve aqui.</p>
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
+
+      <TaskFormDialog
+        open={isTaskDialogOpen}
+        onOpenChange={setIsTaskDialogOpen}
+        launchId={launch.id}
+        phases={phases}
+        taskToEdit={taskToEdit}
+        onSuccess={handleTaskSuccess}
+      />
+
+      <AlertDialog open={!!taskToDelete} onOpenChange={(open) => !open && setTaskToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deletar tarefa</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja deletar esta tarefa? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-rose-500 hover:bg-rose-600">
+              Deletar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }

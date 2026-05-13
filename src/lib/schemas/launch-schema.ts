@@ -1,4 +1,32 @@
 import { z } from "zod";
+import { FlaskConical, Rocket, Sparkles, RefreshCw } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
+// =========================
+// Tipos de lançamento
+// =========================
+
+export const LAUNCH_TYPES = ["mvp", "release", "feature", "revamp"] as const;
+
+export type LaunchType = (typeof LAUNCH_TYPES)[number];
+
+export const LAUNCH_TYPE_LABELS: Record<LaunchType, string> = {
+  mvp: "MVP",
+  release: "Release",
+  feature: "Feature",
+  revamp: "Revamp",
+};
+
+export const LAUNCH_TYPE_ICONS: Record<LaunchType, LucideIcon> = {
+  mvp: FlaskConical,
+  release: Rocket,
+  feature: Sparkles,
+  revamp: RefreshCw,
+};
+
+// =========================
+// Schema de novo lançamento
+// =========================
 
 export const newLaunchSchema = z
   .object({
@@ -11,10 +39,21 @@ export const newLaunchSchema = z
       .max(500, "A descrição deve ter no máximo 500 caracteres")
       .optional()
       .or(z.literal("")),
+    // produto (texto livre) — DEPRECATED, mantido temporariamente
+    // Será removido na Sprint 7 quando product_id estiver consolidado
     produto: z
       .string()
-      .min(2, "O produto deve ter pelo menos 2 caracteres")
-      .max(100, "O produto deve ter no máximo 100 caracteres"),
+      .max(100, "O produto deve ter no máximo 100 caracteres")
+      .optional()
+      .or(z.literal("")),
+    product_id: z
+      .string()
+      .uuid("Selecione um produto válido"),
+    tipo: z
+      .enum(LAUNCH_TYPES, {
+        errorMap: () => ({ message: "Tipo de lançamento inválido" }),
+      })
+      ,
     data_inicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de início inválida (formato YYYY-MM-DD)"),
     data_lancamento_prevista: z
       .string()

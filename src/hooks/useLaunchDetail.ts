@@ -72,11 +72,11 @@ export function useLaunchDetail(launchId: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (silent: boolean = false) => {
     if (!launchId) return;
 
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
 
       // 1. Busca o launch
@@ -178,7 +178,7 @@ export function useLaunchDetail(launchId: string) {
       console.error('Error fetching launch details:', err);
       setError(err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [launchId]);
 
@@ -186,5 +186,7 @@ export function useLaunchDetail(launchId: string) {
     fetchData();
   }, [fetchData]);
 
-  return { launch, phases, tasks, milestones, risks, loading, error, refresh: fetchData };
+  const refresh = useCallback(() => fetchData(true), [fetchData]);
+
+  return { launch, phases, tasks, milestones, risks, loading, error, refresh };
 }

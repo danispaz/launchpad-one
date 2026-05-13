@@ -2,9 +2,17 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { newLaunchSchema, type NewLaunchInput } from "@/lib/schemas/launch-schema";
+import {
+  newLaunchSchema,
+  type NewLaunchInput,
+  LAUNCH_TYPES,
+  LAUNCH_TYPE_LABELS,
+  LAUNCH_TYPE_ICONS,
+  type LaunchType,
+} from "@/lib/schemas/launch-schema";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfilesForOwner } from "@/hooks/useProfilesForOwner";
+import { useProducts } from "@/hooks/useProducts";
 import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/lib/supabase";
 import {
@@ -37,11 +45,13 @@ import { Button } from "@/components/ui/button";
 interface NewLaunchDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  defaultProductId?: string;
 }
 
-export function NewLaunchDialog({ open, onOpenChange }: NewLaunchDialogProps) {
+export function NewLaunchDialog({ open, onOpenChange, defaultProductId }: NewLaunchDialogProps) {
   const { user } = useAuth();
   const { profiles, loading: loadingProfiles } = useProfilesForOwner();
+  const { products, loading: loadingProducts } = useProducts();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
@@ -51,6 +61,8 @@ export function NewLaunchDialog({ open, onOpenChange }: NewLaunchDialogProps) {
       nome: "",
       descricao: "",
       produto: "",
+      product_id: "",
+      tipo: "release" as LaunchType,
       data_inicio: "",
       data_lancamento_prevista: "",
       prioridade: "média",
@@ -64,18 +76,28 @@ export function NewLaunchDialog({ open, onOpenChange }: NewLaunchDialogProps) {
     }
   }, [user, form]);
 
+  useEffect(() => {
+    if (defaultProductId && !form.getValues("product_id")) {
+      form.setValue("product_id", defaultProductId);
+    }
+  }, [defaultProductId, form]);
+
   const onSubmit = async (data: NewLaunchInput) => {
     console.log("[RAW newLaunch submit]", data);
     setIsSubmitting(true);
 
     try {
-      // Normaliza descrição vazia para null (mais limpo no banco)
+      const selectedProduct = products.find((p) => p.id === data.product_id);
+      const produtoNome = selectedProduct?.nome || "";
+
       const payload = {
         nome: data.nome,
         descricao: data.descricao && data.descricao.trim() !== "" 
           ? data.descricao 
           : null,
-        produto: data.produto,
+        produto: produtoNome,
+        product_id: data.product_id,
+        tipo: data.tipo,
         data_inicio: data.data_inicio,
         data_lancamento_prevista: data.data_lancamento_prevista,
         prioridade: data.prioridade,
@@ -100,20 +122,14 @@ export function NewLaunchDialog({ open, onOpenChange }: NewLaunchDialogProps) {
         throw new Error("Lançamento criado mas ID não foi retornado");
       }
 
-      // Reset do form para próxima abertura limpa
-      form.reset();
-      
-      // Fecha o modal
-      onOpenChange(false);
-
-      // Redireciona para tela de detalhe do lançamento criado
-      navigate({ to: "/launches/$id", params: { id: insertedLaunch.id } });
       toast.success("Lançamento criado com sucesso!");
-
-    } catch (err: any) {
-      console.error("[ERROR newLaunch insert]", err);
+      form.reset();
+      onOpenChange(false);
+      navigate({ to: "/launches/$id", params: { id: insertedLaunch.id } });
+    } catch (err) {
+      console.error("[ERROR newLaunch]", err);
       toast.error("Erro ao criar lançamento", {
-        description: err?.message || "Erro desconhecido. Tente novamente.",
+        description: err instanceof Error ? err.message : "Tente novamente mais tarde",
       });
     } finally {
       setIsSubmitting(false);
@@ -122,11 +138,11 @@ export function NewLaunchDialog({ open, onOpenChange }: NewLaunchDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Novo Lançamento</DialogTitle>
           <DialogDescription>
-            Preencha os campos abaixo para criar um novo lançamento.
+            Crie um novo lançamento estratégico para um produto.
           </DialogDescription>
         </DialogHeader>
 
@@ -137,40 +153,84 @@ export function NewLaunchDialog({ open, onOpenChange }: NewLaunchDialogProps) {
               name="nome"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome</FormLabel>
+                  <FormLabel>Nome do Lançamento</FormLabel>
                   <FormControl>
-                    <Input placeholder="Nome do lançamento" {...field} />
+                    <Input placeholder="Ex: Campanha de Black Friday" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="produto"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Produto</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Produto associado" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="product_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Produto</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={loadingProducts}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={loadingProducts ? "Carregando..." : "Selecione o produto"} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {products.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="tipo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o tipo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {LAUNCH_TYPES.map((t) => {
+                          const Icon = LAUNCH_TYPE_ICONS[t];
+                          return (
+                            <SelectItem key={t} value={t}>
+                              <div className="flex items-center gap-2">
+                                <Icon className="w-4 h-4" />
+                                {LAUNCH_TYPE_LABELS[t]}
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}
               name="descricao"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Descrição</FormLabel>
+                  <FormLabel>Descrição (Opcional)</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="Breve descrição do lançamento (opcional)"
+                    <Textarea 
+                      placeholder="Detalhes sobre o objetivo do lançamento..." 
                       className="resize-none"
-                      {...field}
+                      {...field} 
                     />
                   </FormControl>
                   <FormMessage />
@@ -184,7 +244,7 @@ export function NewLaunchDialog({ open, onOpenChange }: NewLaunchDialogProps) {
                 name="data_inicio"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data de início</FormLabel>
+                    <FormLabel>Data de Início</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -197,7 +257,7 @@ export function NewLaunchDialog({ open, onOpenChange }: NewLaunchDialogProps) {
                 name="data_lancamento_prevista"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data prevista de lançamento</FormLabel>
+                    <FormLabel>Lançamento Previsto</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -217,7 +277,7 @@ export function NewLaunchDialog({ open, onOpenChange }: NewLaunchDialogProps) {
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione a prioridade" />
+                          <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -238,22 +298,16 @@ export function NewLaunchDialog({ open, onOpenChange }: NewLaunchDialogProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Responsável</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      disabled={loadingProfiles}
-                    >
+                    <Select onValueChange={field.onChange} value={field.value} disabled={loadingProfiles}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue
-                            placeholder={loadingProfiles ? "Carregando..." : "Selecione o responsável"}
-                          />
+                          <SelectValue placeholder={loadingProfiles ? "Carregando..." : "Selecione"} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {profiles.map((profile) => (
                           <SelectItem key={profile.id} value={profile.id}>
-                            {profile.nome}
+                            {profile.nome || "Sem nome"}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -264,7 +318,7 @@ export function NewLaunchDialog({ open, onOpenChange }: NewLaunchDialogProps) {
               />
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="pt-4">
               <Button
                 type="button"
                 variant="outline"
@@ -274,7 +328,7 @@ export function NewLaunchDialog({ open, onOpenChange }: NewLaunchDialogProps) {
                 Cancelar
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Salvando..." : "Salvar"}
+                {isSubmitting ? "Criando..." : "Criar Lançamento"}
               </Button>
             </DialogFooter>
           </form>
