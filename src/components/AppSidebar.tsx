@@ -2,7 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { LayoutDashboard, Rocket, Map, Users, AlertTriangle, Settings, ChevronRight, Package, LogOut } from "lucide-react";
+import { LayoutDashboard, Rocket, Map, Users, AlertTriangle, Settings, ChevronRight, ChevronLeft, Package, LogOut } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +23,7 @@ const items = [
 export function AppSidebar() {
   const { user } = useAuth();
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -51,46 +52,58 @@ export function AppSidebar() {
   };
 
   return (
-    <aside className="w-60 shrink-0 border-r border-sidebar-border bg-sidebar flex flex-col">
-      <div className="h-14 flex items-center gap-2 px-4">
-        <div className="h-6 w-6 rounded bg-foreground flex items-center justify-center">
-          <span className="text-[10px] font-bold text-background">LH</span>
+    <aside className={`${collapsed ? "w-14" : "w-60"} shrink-0 border-r border-sidebar-border bg-sidebar flex flex-col transition-all duration-200`}>
+      <div className="h-14 flex items-center justify-between px-4">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="h-6 w-6 rounded bg-foreground flex items-center justify-center shrink-0">
+            <span className="text-[10px] font-bold text-background">LH</span>
+          </div>
+          {!collapsed && <span className="text-sm font-semibold tracking-tight text-sidebar-foreground truncate">LaunchHub</span>}
         </div>
-        <span className="text-sm font-semibold tracking-tight text-sidebar-foreground">LaunchHub</span>
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="h-6 w-6 rounded flex items-center justify-center hover:bg-sidebar-accent/60 transition-colors shrink-0"
+          title={collapsed ? "Expandir menu" : "Recolher menu"}
+        >
+          {collapsed ? <ChevronRight className="h-3.5 w-3.5 text-sidebar-foreground/60" /> : <ChevronLeft className="h-3.5 w-3.5 text-sidebar-foreground/60" />}
+        </button>
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
+      <nav className="flex-1 px-2 py-4 space-y-0.5">
         {visibleItems.map((item) => {
           const active = isActive(item.url);
           return (
             <Link
               key={item.url}
               to={item.url}
+              title={collapsed ? item.title : undefined}
               className={`flex items-center gap-2 rounded px-2 py-1.5 text-sm transition-colors ${
                 active
                   ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                   : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60"
-              }`}
+              } ${collapsed ? "justify-center" : ""}`}
             >
               <item.icon className="w-4 h-4 shrink-0" />
-              <span className="flex-1">{item.title}</span>
-              {active && <ChevronRight className="h-3 w-3 opacity-50" />}
+              {!collapsed && <span className="flex-1">{item.title}</span>}
+              {!collapsed && active && <ChevronRight className="h-3 w-3 opacity-50" />}
             </Link>
           );
         })}
       </nav>
 
-      <div className="p-4 border-t border-sidebar-border">
+      <div className="p-3 border-t border-sidebar-border">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <div className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-sidebar-accent/60 cursor-pointer transition-colors">
-              <div className="h-6 w-6 rounded-full bg-surface-elevated flex items-center justify-center text-[10px] font-bold">
+            <div className={`flex items-center gap-2 px-2 py-1.5 rounded hover:bg-sidebar-accent/60 cursor-pointer transition-colors ${collapsed ? "justify-center" : ""}`}>
+              <div className="h-6 w-6 rounded-full bg-surface-elevated flex items-center justify-center text-[10px] font-bold shrink-0">
                 {user?.email ? user.email.substring(0, 2).toUpperCase() : '??'}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium truncate">{user?.email ? user.email.split('@')[0] : 'Usuário'}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{user?.email || 'Desconectado'}</p>
-              </div>
+              {!collapsed && (
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium truncate">{user?.email ? user.email.split('@')[0] : 'Usuário'}</p>
+                  <p className="text-[10px] text-muted-foreground truncate">{user?.email || 'Desconectado'}</p>
+                </div>
+              )}
             </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" side="top" className="w-56">
