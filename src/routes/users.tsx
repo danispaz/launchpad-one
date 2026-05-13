@@ -4,7 +4,7 @@ import { TopBar } from "@/components/TopBar";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -24,6 +24,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const ROLES = [
   { value: "executive", label: "Executivo" },
@@ -62,6 +72,8 @@ function UsersPage() {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingUser, setEditingUser] = useState<Profile | null>(null);
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
   const [formNome, setFormNome] = useState("");
   const [formEmail, setFormEmail] = useState("");
   const [formPassword, setFormPassword] = useState("");
@@ -132,6 +144,75 @@ function UsersPage() {
     }
   };
 
+  const handleEdit = (profile: Profile) => {
+    setEditingUser(profile);
+    setFormNome(profile.nome || "");
+    setFormEmail(profile.email || "");
+    setFormPassword("");
+    setFormRole(profile.role);
+    setFormTeam(profile.team || "");
+    setIsCreateOpen(true);
+  };
+
+  const handleUpdate = async () => {
+    if (!editingUser) return;
+    if (!formNome || !formEmail || !formRole || !formTeam) {
+      toast.error("Preencha todos os campos obrigatórios");
+      return;
+    }
+    if (formPassword && formPassword.length < 6) {
+      toast.error("A senha precisa ter no mínimo 6 caracteres");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("bright-handler", {
+        body: {
+          action: "update",
+          userId: editingUser.id,
+          email: formEmail,
+          password: formPassword || undefined,
+          nome: formNome,
+          role: formRole,
+          team: formTeam,
+        },
+      });
+      if (error) {
+        toast.error("Erro ao atualizar usuário", { description: error.message });
+      } else if (data?.error) {
+        toast.error("Erro ao atualizar usuário", { description: data.error });
+      } else {
+        toast.success("Usuário atualizado com sucesso");
+        setIsCreateOpen(false);
+        setEditingUser(null);
+        setFormNome(""); setFormEmail(""); setFormPassword(""); setFormRole(""); setFormTeam("");
+        fetchProfiles();
+      }
+    } catch (err: any) {
+      toast.error("Erro ao atualizar usuário", { description: err.message });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!userToDelete) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("bright-handler", {
+        body: { action: "delete", userId: userToDelete },
+      });
+      if (error || data?.error) {
+        toast.error("Erro ao deletar usuário", { description: error?.message || data?.error });
+      } else {
+        toast.success("Usuário deletado");
+        setUserToDelete(null);
+        fetchProfiles();
+      }
+    } catch (err: any) {
+      toast.error("Erro ao deletar usuário", { description: err.message });
+    }
+  };
+
   return (
     <AppLayout>
       <TopBar
@@ -168,10 +249,15 @@ function UsersPage() {
                     <td className="px-6 py-4 text-sm text-muted-foreground">{p.email || "—"}</td>
                     <td className="px-6 py-4 text-xs uppercase font-bold">{ROLES.find((r) => r.value === p.role)?.label || p.role}</td>
                     <td className="px-6 py-4 text-xs uppercase font-bold">{TEAMS.find((t) => t.value === p.team)?.label || p.team || "—"}</td>
-                    <td className="px-6 py-4 text-center">
-                      <button className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-slate-100 rounded-md transition-colors" title="Editar">
-                        <Pencil className="w-4 h-4" />
-                      </button>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => handleEdit(p)} className="p-1.5 rounded hover:bg-slate-100 text-slate-400 hover:text-primary transition-colors" title="Editar">
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => setUserToDelete(p.id)} className="p-1.5 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-500 transition-colors" title="Deletar">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -183,16 +269,16 @@ function UsersPage() {
           </div>
         )}
       </div>
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+      <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) { setEditingUser(null); setFormNome(""); setFormEmail(""); setFormPassword(""); setFormRole(""); setFormTeam(""); } }}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Novo Usuário</DialogTitle>
-            <DialogDescription>Preencha os dados para criar uma conta de acesso.</DialogDescription>
+            <DialogTitle>{editingUser ? "Editar Usuário" : "Novo Usuário"}</DialogTitle>
+            <DialogDescription>{editingUser ? "Edite os dados. Deixe a senha em branco pra manter a atual." : "Preencha os dados para criar uma conta de acesso."}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2"><Label htmlFor="nome">Nome</Label><Input id="nome" value={formNome} onChange={(e) => setFormNome(e.target.value)} placeholder="Nome completo" /></div>
             <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} placeholder="email@empresa.com" /></div>
-            <div className="space-y-2"><Label htmlFor="password">Senha</Label><Input id="password" type="password" value={formPassword} onChange={(e) => setFormPassword(e.target.value)} placeholder="Mínimo 6 caracteres" /></div>
+            <div className="space-y-2"><Label htmlFor="password">{editingUser ? "Nova senha (opcional)" : "Senha"}</Label><Input id="password" type="password" value={formPassword} onChange={(e) => setFormPassword(e.target.value)} placeholder={editingUser ? "Deixe em branco pra manter" : "Mínimo 6 caracteres"} /></div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2"><Label htmlFor="role">Role</Label><Select value={formRole} onValueChange={setFormRole}><SelectTrigger id="role"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent></Select></div>
               <div className="space-y-2"><Label htmlFor="team">Time</Label><Select value={formTeam} onValueChange={setFormTeam}><SelectTrigger id="team"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{TEAMS.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div>
@@ -200,10 +286,26 @@ function UsersPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateOpen(false)} disabled={isSubmitting}>Cancelar</Button>
-            <Button onClick={handleSubmit} disabled={isSubmitting}>{isSubmitting ? "Criando..." : "Criar usuário"}</Button>
+            <Button onClick={editingUser ? handleUpdate : handleSubmit} disabled={isSubmitting}>{isSubmitting ? "Salvando..." : (editingUser ? "Salvar alterações" : "Criar usuário")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deletar usuário</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja deletar este usuário? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-rose-500 hover:bg-rose-600">
+              Deletar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }
