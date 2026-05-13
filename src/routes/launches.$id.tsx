@@ -23,6 +23,16 @@ import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskFormDialog } from "@/components/launches/TaskFormDialog";
 import { KanbanBoard } from "@/components/launches/KanbanBoard";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useTaskMutations } from "@/hooks/useTaskMutations";
 import type { TaskStatusEnum } from "@/lib/schemas/task-schema";
 export const Route = createFileRoute("/launches/$id")({
@@ -42,6 +52,7 @@ function LaunchDetail() {
   const [expandedTeams, setExpandedTeams] = useState<string[]>([]);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
 
   const handleOpenNewTask = () => {
     setTaskToEdit(null);
@@ -64,8 +75,13 @@ function LaunchDetail() {
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    if (!window.confirm("Tem certeza que deseja deletar esta tarefa?")) return;
-    await deleteTask(taskId);
+    setTaskToDelete(taskId);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!taskToDelete) return;
+    await deleteTask(taskToDelete);
+    setTaskToDelete(null);
     refresh();
   };
 
@@ -316,6 +332,23 @@ function LaunchDetail() {
         taskToEdit={taskToEdit}
         onSuccess={handleTaskSuccess}
       />
+
+      <AlertDialog open={!!taskToDelete} onOpenChange={(open) => !open && setTaskToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deletar tarefa</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja deletar esta tarefa? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-rose-500 hover:bg-rose-600">
+              Deletar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }
