@@ -4,7 +4,7 @@ import { TopBar } from "@/components/TopBar";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
-import { Plus } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -137,12 +137,12 @@ function UsersPage() {
       <TopBar
         title="Usuários"
         subtitle="Gerencie os membros da equipe"
-        actions={canCreate ? (
+        actions={canCreate && (
           <button onClick={() => setIsCreateOpen(true)} className="h-8 px-3 rounded bg-foreground text-background text-xs font-medium hover:opacity-90 transition-opacity flex items-center gap-1.5">
             <Plus className="w-3.5 h-3.5" />
-            Novo Usuário
+            Convidar
           </button>
-        ) : null}
+        )}
       />
       <div className="flex-1 px-8 py-10 max-w-[1200px] mx-auto w-full">
         {loading ? (
@@ -158,6 +158,7 @@ function UsersPage() {
                   <th className="px-6 py-4 text-left">Email</th>
                   <th className="px-6 py-4 text-left">Role</th>
                   <th className="px-6 py-4 text-left">Time</th>
+                  <th className="px-6 py-4 text-center">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40">
@@ -167,10 +168,15 @@ function UsersPage() {
                     <td className="px-6 py-4 text-sm text-muted-foreground">{p.email || "—"}</td>
                     <td className="px-6 py-4 text-xs uppercase font-bold">{ROLES.find((r) => r.value === p.role)?.label || p.role}</td>
                     <td className="px-6 py-4 text-xs uppercase font-bold">{TEAMS.find((t) => t.value === p.team)?.label || p.team || "—"}</td>
+                    <td className="px-6 py-4 text-center">
+                      <button className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-slate-100 rounded-md transition-colors" title="Editar">
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                    </td>
                   </tr>
                 ))}
                 {profiles.length === 0 && (
-                  <tr><td colSpan={4} className="px-6 py-12 text-center text-sm text-muted-foreground italic">Nenhum usuário cadastrado.</td></tr>
+                  <tr><td colSpan={5} className="px-6 py-12 text-center text-sm text-muted-foreground italic">Nenhum usuário cadastrado.</td></tr>
                 )}
               </tbody>
             </table>
