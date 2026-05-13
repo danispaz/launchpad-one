@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
 import { Avatar } from "@/components/Badges";
@@ -131,15 +132,37 @@ function ProductDetail() {
           </div>
         </div>
 
-        <BriefingDisplay productId={product.id} />
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="bg-slate-100/50 p-1 mb-10 h-12 w-fit">
+            <TabsTrigger value="overview" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Visão Geral</TabsTrigger>
+            <TabsTrigger value="roadmap" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Roadmap</TabsTrigger>
+            <TabsTrigger value="tasks" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Tarefas</TabsTrigger>
+            <TabsTrigger value="team" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Time</TabsTrigger>
+          </TabsList>
 
-        <div className="mt-8">
-          <ProductLaunchesList productId={product.id} />
-        </div>
+          <TabsContent value="overview" className="space-y-8">
+            <BriefingDisplay productId={product.id} />
+            <LifecycleHistoryDisplay productId={product.id} key={historyRefreshKey} />
+          </TabsContent>
 
-        <div className="mt-8">
-          <LifecycleHistoryDisplay productId={product.id} key={historyRefreshKey} />
-        </div>
+          <TabsContent value="roadmap">
+            <div className="bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-12 text-center">
+              <p className="text-sm text-slate-400 font-medium">Roadmap em construção — em breve aqui.</p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="tasks">
+            <div className="bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-12 text-center">
+              <p className="text-sm text-slate-400 font-medium">Tarefas do produto em construção — em breve aqui.</p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="team">
+            <div className="bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-12 text-center">
+              <p className="text-sm text-slate-400 font-medium">Time do produto em construção — em breve aqui.</p>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       <LifecycleTransitionDialog
