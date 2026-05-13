@@ -192,6 +192,7 @@ function LaunchDetail() {
             <TabsTrigger value="activities" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Atividades (Kanban)</TabsTrigger>
             <TabsTrigger value="by_team" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Por Time</TabsTrigger>
             <TabsTrigger value="risks" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Riscos</TabsTrigger>
+            <TabsTrigger value="team" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Time</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-12">
@@ -319,6 +320,12 @@ function LaunchDetail() {
                   </div>
                 ))
               )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="team">
+            <div className="bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-12 text-center">
+              <p className="text-sm text-slate-400 font-medium">Time do lançamento em construção — em breve aqui.</p>
             </div>
           </TabsContent>
         </Tabs>
