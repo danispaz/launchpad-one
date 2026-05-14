@@ -112,4 +112,163 @@ export function ProductSummary({ productId }: Props) {
   };
 
   const closeModal = () => {
-    setActiveMod
+    setActiveModal(null);
+    setEditMode(false);
+    setEditValue("");
+  };
+
+  const handleSave = async () => {
+    if (!activeModal) return;
+    setSaving(true);
+    try {
+      const newResumo = { ...resumo, [activeModal.id]: editValue };
+      const { error } = await supabase
+        .from("products")
+        .update({ resumo: newResumo })
+        .eq("id", productId);
+      if (error) throw error;
+      setResumo(newResumo);
+      setActiveModal({ ...activeModal, content: editValue });
+      setEditMode(false);
+      toast.success("Salvo com sucesso");
+    } catch (err: any) {
+      toast.error("Erro ao salvar", { description: err.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const currentTab = TABS.find(t => t.id === activeTab)!;
+
+  if (loading) return (
+    <div className="flex items-center justify-center h-24">
+      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-0">
+      {/* Tab navigation */}
+      <div className="flex items-center gap-1 border-b border-slate-100 mb-6 overflow-x-auto pb-0">
+        {TABS.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-all ${
+              activeTab === tab.id
+                ? "border-slate-900 text-slate-900"
+                : "border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-200"
+            }`}
+          >
+            <span>{tab.icon}</span>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Cards grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {currentTab.items.map(item => {
+          const hasContent = !!resumo[item.id];
+          return (
+            <button
+              key={item.id}
+              onClick={() => openModal(item)}
+              className={`text-left p-4 rounded-xl border transition-all group hover:shadow-md ${
+                hasContent
+                  ? "bg-white border-slate-200 hover:border-slate-300"
+                  : "bg-slate-50/50 border-dashed border-slate-200 hover:border-slate-300 hover:bg-white"
+              }`}
+            >
+              <div className="text-2xl mb-3">{item.icon}</div>
+              <p className="text-sm font-semibold text-slate-800 mb-1 leading-tight">{item.title}</p>
+              {hasContent ? (
+                <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                  {resumo[item.id]}
+                </p>
+              ) : (
+                <p className="text-xs text-slate-400 italic">{item.description}</p>
+              )}
+              {hasContent && (
+                <div className="mt-3 flex items-center gap-1">
+                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-400"></div>
+                  <span className="text-[10px] text-emerald-600 font-medium">Preenchido</span>
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Modal */}
+      {activeModal && (
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[600px] max-h-[85vh] flex flex-col overflow-hidden">
+            {/* Modal header */}
+            <div className="flex items-start justify-between p-6 border-b border-slate-100 shrink-0">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{activeModal.icon}</span>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">{activeModal.title}</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">{activeModal.description}</p>
+                </div>
+              </div>
+              <button onClick={closeModal} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal body */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {editMode ? (
+                <Textarea
+                  value={editValue}
+                  onChange={e => setEditValue(e.target.value)}
+                  placeholder={`Preencha: ${activeModal.description}`}
+                  className="resize-none text-sm w-full min-h-[200px]"
+                  autoFocus
+                />
+              ) : (
+                <>
+                  {activeModal.content ? (
+                    <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{activeModal.content}</p>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <span className="text-4xl mb-3">{activeModal.icon}</span>
+                      <p className="text-sm font-medium text-slate-500 mb-1">Ainda não preenchido</p>
+                      <p className="text-xs text-slate-400">{activeModal.description}</p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Modal footer */}
+            <div className="flex items-center justify-between p-4 border-t border-slate-100 shrink-0 bg-slate-50/50">
+              {editMode ? (
+                <>
+                  <Button variant="outline" size="sm" onClick={() => setEditMode(false)} disabled={saving}>Cancelar</Button>
+                  <Button size="sm" onClick={handleSave} disabled={saving}>
+                    <Check className="w-3.5 h-3.5 mr-1.5" />
+                    {saving ? "Salvando..." : "Salvar"}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs text-slate-400">Clique em editar para preencher</p>
+                  <Button size="sm" onClick={() => setEditMode(true)}>
+                    <Pencil className="w-3.5 h-3.5 mr-1.5" />
+                    Editar
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
