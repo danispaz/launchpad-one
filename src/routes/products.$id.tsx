@@ -6,6 +6,7 @@ import { TopBar } from "@/components/TopBar";
 import { Avatar } from "@/components/Badges";
 import { useProductDetail } from "@/hooks/useProductDetail";
 import { BriefingDisplay } from "@/components/products/BriefingDisplay";
+import { ProductSummary } from "@/components/products/ProductSummary";
 import { ProductLaunchesList } from "@/components/products/ProductLaunchesList";
 import { LifecycleTransitionDialog } from "@/components/products/LifecycleTransitionDialog";
 import { LifecycleHistoryDisplay } from "@/components/products/LifecycleHistoryDisplay";
@@ -142,7 +143,7 @@ function ProductDetail() {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-8">
-            <BriefingDisplay productId={product.id} />
+            <ProductSummary productId={product.id} />
             <LifecycleHistoryDisplay productId={product.id} key={historyRefreshKey} />
           </TabsContent>
 

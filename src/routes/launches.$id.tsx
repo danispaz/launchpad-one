@@ -34,6 +34,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useTaskMutations } from "@/hooks/useTaskMutations";
+import { RisksPanel } from "@/components/launches/RisksPanel";
+import { ReleasesPanel } from "@/components/launches/ReleasesPanel";
 import type { TaskStatusEnum } from "@/lib/schemas/task-schema";
 export const Route = createFileRoute("/launches/$id")({
   head: () => ({
@@ -189,6 +191,7 @@ function LaunchDetail() {
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="bg-slate-100/50 p-1 mb-10 h-12 w-fit">
             <TabsTrigger value="overview" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Visão Geral</TabsTrigger>
+            <TabsTrigger value="scope" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Escopo</TabsTrigger>
             <TabsTrigger value="activities" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Atividades (Kanban)</TabsTrigger>
             <TabsTrigger value="by_team" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Por Time</TabsTrigger>
             <TabsTrigger value="risks" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Riscos</TabsTrigger>
@@ -241,6 +244,10 @@ function LaunchDetail() {
             </section>
           </TabsContent>
 
+          <TabsContent value="scope">
+            <ReleasesPanel launchId={launch.id} />
+          </TabsContent>
+
           <TabsContent value="activities">
             <KanbanBoard
               tasks={tasks as any}
@@ -287,40 +294,7 @@ function LaunchDetail() {
           </TabsContent>
 
           <TabsContent value="risks">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {risks.length === 0 ? (
-                <p className="text-sm text-slate-400 font-medium bg-slate-50 p-6 rounded-xl border border-dashed border-slate-200 md:col-span-2">Nenhum risco identificado.</p>
-              ) : (
-                risks.map(risk => (
-                  <div key={risk.id} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm border-l-4 border-l-rose-400">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <AlertOctagon className="w-5 h-5 text-rose-500" />
-                        <h4 className="font-bold text-slate-800">{risk.titulo}</h4>
-                      </div>
-                      <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${
-                        risk.impacto === 'alto' ? 'bg-rose-100 text-rose-600' : 
-                        risk.impacto === 'médio' ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-500'
-                      }`}>
-                        Impacto {risk.impacto}
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-500 mb-6 leading-relaxed">{risk.descricao || 'Sem descrição detalhada.'}</p>
-                    <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-                      <div className="flex items-center gap-2">
-                        <div className="h-6 w-6 rounded-full bg-slate-100 border border-white flex items-center justify-center text-[9px] font-bold text-slate-500">
-                          {risk.owner?.nome?.split(' ').map((n: string) => n[0]).join('').substring(0, 2) || '??'}
-                        </div>
-                        <span className="text-[11px] font-bold text-slate-600">{risk.owner?.nome || 'Responsável não definido'}</span>
-                      </div>
-                      <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                        Prob. {risk.probabilidade}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+            <RisksPanel launchId={launch.id} />
           </TabsContent>
 
           <TabsContent value="team">
