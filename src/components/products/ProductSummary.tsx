@@ -176,7 +176,7 @@ export function ProductSummary({ productId }: Props) {
         })}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {currentTab.items.map(item => {
           const ItemIcon = ITEM_ICONS[item.icon] || Target;
           const hasContent = !!resumo[item.id];
@@ -184,24 +184,28 @@ export function ProductSummary({ productId }: Props) {
             <button
               key={item.id}
               onClick={() => openModal(item)}
-              className={`text-left p-4 rounded-xl border transition-all group hover:shadow-md ${
+              className={`text-left p-6 rounded-2xl border transition-all group hover:shadow-md ${
                 hasContent
                   ? "bg-white border-slate-200 hover:border-slate-300"
                   : "bg-slate-50/50 border-dashed border-slate-200 hover:border-slate-300 hover:bg-white"
               }`}
             >
-              <ItemIcon className="w-5 h-5 text-slate-400 mb-3 group-hover:text-slate-600 transition-colors" />
-              <p className="text-sm font-semibold text-slate-800 mb-1 leading-tight">{item.title}</p>
-              {hasContent ? (
-                <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{resumo[item.id]}</p>
-              ) : (
-                <p className="text-xs text-slate-400 italic">{item.description}</p>
-              )}
-              {hasContent && (
-                <div className="mt-3 flex items-center gap-1">
-                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-400"></div>
-                  <span className="text-[10px] text-emerald-600 font-medium">Preenchido</span>
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-2.5 rounded-xl bg-slate-100 group-hover:bg-slate-200 transition-colors">
+                  <ItemIcon className="w-4 h-4 text-slate-600" />
                 </div>
+                {hasContent && (
+                  <div className="flex items-center gap-1">
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400"></div>
+                    <span className="text-[10px] text-emerald-600 font-medium">Preenchido</span>
+                  </div>
+                )}
+              </div>
+              <p className="text-sm font-bold text-slate-800 mb-2 leading-tight">{item.title}</p>
+              {hasContent ? (
+                <p className="text-sm text-slate-500 line-clamp-3 leading-relaxed">{resumo[item.id]}</p>
+              ) : (
+                <p className="text-xs text-slate-400 italic leading-relaxed">{item.description}</p>
               )}
             </button>
           );
