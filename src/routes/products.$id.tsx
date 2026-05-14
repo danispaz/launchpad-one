@@ -144,7 +144,6 @@ function ProductDetail() {
 
           <TabsContent value="overview" className="space-y-8">
             <ProductSummary productId={product.id} />
-            <BriefingDisplay productId={product.id} />
             <LifecycleHistoryDisplay productId={product.id} key={historyRefreshKey} />
           </TabsContent>
 
