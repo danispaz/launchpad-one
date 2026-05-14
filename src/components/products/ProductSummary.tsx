@@ -1,36 +1,93 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Pencil, X, Check, Target, Lightbulb, Users, Trophy, DollarSign, Handshake, Percent } from "lucide-react";
+import { X, Pencil, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
-interface ResumoData {
-  problema?: string;
-  proposta_valor?: string;
-  icp?: string;
-  diferencial?: string;
-  modelo_receita?: string;
-  parceiros?: string;
-  comissionamento?: string;
+interface ContentItem {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  content?: string;
 }
 
-const FIELDS: { key: keyof ResumoData; label: string; icon: any; placeholder: string }[] = [
-  { key: "problema", label: "Problema que resolve", icon: Target, placeholder: "Qual dor real do cliente esse produto resolve?" },
-  { key: "proposta_valor", label: "Proposta de Valor", icon: Lightbulb, placeholder: "O que o produto entrega de diferente e por que o cliente escolhe?" },
-  { key: "icp", label: "Perfil do Cliente Ideal (ICP)", icon: Users, placeholder: "Quem é o cliente ideal? Cargo, empresa, contexto, dores específicas." },
-  { key: "diferencial", label: "Diferencial Competitivo", icon: Trophy, placeholder: "Como se diferencia da concorrência? O que os concorrentes não fazem?" },
-  { key: "modelo_receita", label: "Modelo de Receita", icon: DollarSign, placeholder: "Como o produto gera receita? Assinatura, licença, uso, etc." },
-  { key: "parceiros", label: "Parceiros e Canais", icon: Handshake, placeholder: "Tipos de parceiro, condições, territórios ou segmentos por canal." },
-  { key: "comissionamento", label: "Comissionamento", icon: Percent, placeholder: "Modelo de comissão, tabela de tiers, prazo de pagamento, regras de chargeback." },
+interface TabConfig {
+  id: string;
+  label: string;
+  icon: string;
+  items: ContentItem[];
+}
+
+const TABS: TabConfig[] = [
+  {
+    id: "produto",
+    label: "Produto",
+    icon: "📦",
+    items: [
+      { id: "problema", title: "Problema que resolve", description: "Qual dor real do cliente esse produto resolve?", icon: "🎯" },
+      { id: "proposta_valor", title: "Proposta de Valor", description: "O que entregamos e por que o cliente escolhe", icon: "💡" },
+      { id: "icp", title: "ICP — Cliente Ideal", description: "Perfil, contexto e o que não é nosso ICP", icon: "👤" },
+      { id: "diferencial", title: "Diferencial Competitivo", description: "Como nos diferenciamos da concorrência", icon: "🏆" },
+      { id: "modulos", title: "Módulos do Produto", description: "Principais funcionalidades e módulos", icon: "🧩" },
+      { id: "limitacoes", title: "Limitações e Fora do Escopo", description: "O que o produto não faz", icon: "⚠️" },
+    ],
+  },
+  {
+    id: "comercial",
+    label: "Comercial",
+    icon: "🏪",
+    items: [
+      { id: "funil", title: "Funil de Aquisição", description: "Jornada do lead até a assinatura", icon: "🔽" },
+      { id: "regras_comerciais", title: "Regras Comerciais", description: "O que pode e não pode ser vendido", icon: "📋" },
+      { id: "objecoes", title: "Objeções e Respostas", description: "Como responder as principais objeções", icon: "💬" },
+      { id: "cancelamento", title: "Cancelamento", description: "Processo, prazo e devolução", icon: "❌" },
+    ],
+  },
+  {
+    id: "planos",
+    label: "Planos e Preços",
+    icon: "💰",
+    items: [
+      { id: "planos_resumo", title: "Resumo dos Planos", description: "O que cada plano inclui", icon: "📊" },
+      { id: "modelo_receita", title: "Modelo de Receita", description: "Como o produto gera receita", icon: "💵" },
+      { id: "comissionamento", title: "Comissionamento", description: "Modelo, tiers e regras de pagamento", icon: "💸" },
+      { id: "parceiros", title: "Parceiros e Canais", description: "Tipos de parceiro e condições", icon: "🤝" },
+    ],
+  },
+  {
+    id: "mercado",
+    label: "Mercado",
+    icon: "🌎",
+    items: [
+      { id: "segmento", title: "Segmento e Vertical", description: "Mercado e nicho de atuação", icon: "🎯" },
+      { id: "concorrentes", title: "Concorrentes", description: "Principais players e análise", icon: "⚔️" },
+      { id: "posicionamento", title: "Posicionamento", description: "Como nos comunicamos com o mercado", icon: "📣" },
+      { id: "regulatorio", title: "Contexto Regulatório", description: "Leis e regulamentações relevantes", icon: "⚖️" },
+    ],
+  },
+  {
+    id: "faq",
+    label: "FAQ por Time",
+    icon: "❓",
+    items: [
+      { id: "faq_marketing", title: "FAQ Marketing", description: "Perguntas frequentes do time de marketing", icon: "📢" },
+      { id: "faq_vendas", title: "FAQ Vendas", description: "Perguntas frequentes do time de vendas", icon: "🛒" },
+      { id: "faq_suporte", title: "FAQ Suporte", description: "Perguntas frequentes do suporte", icon: "🎧" },
+      { id: "faq_tech", title: "FAQ Tecnologia", description: "Perguntas técnicas frequentes", icon: "⚙️" },
+    ],
+  },
 ];
 
 interface Props { productId: string; }
 
 export function ProductSummary({ productId }: Props) {
-  const [resumo, setResumo] = useState<ResumoData>({});
+  const [resumo, setResumo] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
-  const [editingField, setEditingField] = useState<keyof ResumoData | null>(null);
+  const [activeTab, setActiveTab] = useState("produto");
+  const [activeModal, setActiveModal] = useState<ContentItem | null>(null);
+  const [editMode, setEditMode] = useState(false);
   const [editValue, setEditValue] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -42,107 +99,17 @@ export function ProductSummary({ productId }: Props) {
         .select("resumo")
         .eq("id", productId)
         .single();
-      if (!error && data?.resumo) setResumo(data.resumo as ResumoData);
+      if (!error && data?.resumo) setResumo(data.resumo as Record<string, string>);
       setLoading(false);
     }
     fetchResumo();
   }, [productId]);
 
-  const handleEdit = (key: keyof ResumoData) => {
-    setEditingField(key);
-    setEditValue(resumo[key] || "");
+  const openModal = (item: ContentItem) => {
+    setActiveModal({ ...item, content: resumo[item.id] || "" });
+    setEditMode(false);
+    setEditValue(resumo[item.id] || "");
   };
 
-  const handleCancel = () => {
-    setEditingField(null);
-    setEditValue("");
-  };
-
-  const handleSave = async () => {
-    if (!editingField) return;
-    setSaving(true);
-    try {
-      const newResumo = { ...resumo, [editingField]: editValue };
-      const { error } = await supabase
-        .from("products")
-        .update({ resumo: newResumo })
-        .eq("id", productId);
-      if (error) throw error;
-      setResumo(newResumo);
-      setEditingField(null);
-      setEditValue("");
-      toast.success("Salvo com sucesso");
-    } catch (err: any) {
-      toast.error("Erro ao salvar", { description: err.message });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) return (
-    <div className="flex items-center justify-center h-24">
-      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-    </div>
-  );
-
-  return (
-    <div className="space-y-3 mb-8">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-slate-800">Resumo do Produto</h3>
-        <p className="text-xs text-slate-400">Clique em qualquer campo para editar</p>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {FIELDS.map(({ key, label, icon: Icon, placeholder }) => {
-          const value = resumo[key];
-          const isEditing = editingField === key;
-          return (
-            <div
-              key={key}
-              className={`bg-white rounded-xl border transition-all ${isEditing ? "border-primary shadow-sm md:col-span-2" : "border-slate-100 shadow-sm hover:border-slate-200 cursor-pointer group"}`}
-            >
-              {isEditing ? (
-                <div className="p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Icon className="w-4 h-4 text-primary shrink-0" />
-                    <p className="text-xs font-bold uppercase tracking-widest text-slate-500">{label}</p>
-                  </div>
-                  <Textarea
-                    value={editValue}
-                    onChange={e => setEditValue(e.target.value)}
-                    placeholder={placeholder}
-                    className="resize-none text-sm"
-                    rows={4}
-                    autoFocus
-                  />
-                  <div className="flex items-center justify-end gap-2">
-                    <Button variant="outline" size="sm" onClick={handleCancel} disabled={saving}>
-                      <X className="w-3.5 h-3.5 mr-1" /> Cancelar
-                    </Button>
-                    <Button size="sm" onClick={handleSave} disabled={saving}>
-                      <Check className="w-3.5 h-3.5 mr-1" /> {saving ? "Salvando..." : "Salvar"}
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="p-4 h-full" onClick={() => handleEdit(key)}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Icon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
-                    </div>
-                    <Pencil className="w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                  {value ? (
-                    <p className="text-sm text-slate-700 leading-relaxed line-clamp-4 whitespace-pre-wrap">{value}</p>
-                  ) : (
-                    <p className="text-xs text-slate-300 italic">{placeholder}</p>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+  const closeModal = () => {
+    setActiveMod
