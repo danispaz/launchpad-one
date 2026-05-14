@@ -156,14 +156,14 @@ export function ProductSummary({ productId }: Props) {
 
   return (
     <div className="space-y-0">
-      <div className="flex items-center gap-1 border-b border-slate-100 mb-6 overflow-x-auto">
+      <div className="flex items-center gap-1 border-b border-slate-100 mb-6 overflow-x-auto scrollbar-none -mx-4 px-4 md:mx-0 md:px-0">
         {TABS.map(tab => {
           const TabIcon = TAB_ICONS[tab.icon] || Package;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-all ${
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-all shrink-0 ${
                 activeTab === tab.id
                   ? "border-slate-900 text-slate-900"
                   : "border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-200"
@@ -184,7 +184,7 @@ export function ProductSummary({ productId }: Props) {
             <button
               key={item.id}
               onClick={() => openModal(item)}
-              className={`text-left p-6 rounded-2xl border transition-all group hover:shadow-md ${
+              className={`text-left p-5 md:p-6 rounded-2xl border transition-all group hover:shadow-md ${
                 hasContent
                   ? "bg-white border-slate-200 hover:border-slate-300"
                   : "bg-slate-50/50 border-dashed border-slate-200 hover:border-slate-300 hover:bg-white"
