@@ -1,7 +1,6 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts, useNavigate, useLocation } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
@@ -35,6 +34,12 @@ export const Route = createRootRoute({
       { name: "description", content: "A fonte única da verdade para coordenar lançamentos entre Marketing, Vendas, Dev, Produto e Diretoria." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:title", content: "LaunchHub — Painel de lançamentos de produto" },
+      { name: "twitter:title", content: "LaunchHub — Painel de lançamentos de produto" },
+      { property: "og:description", content: "A fonte única da verdade para coordenar lançamentos entre Marketing, Vendas, Dev, Produto e Diretoria." },
+      { name: "twitter:description", content: "A fonte única da verdade para coordenar lançamentos entre Marketing, Vendas, Dev, Produto e Diretoria." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/9cca7194-c815-4227-833b-0c398cf26b5f/id-preview-b01acf36--b85004d3-de1e-42b4-a6d7-64a79cfb0d72.lovable.app-1778727659322.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/9cca7194-c815-4227-833b-0c398cf26b5f/id-preview-b01acf36--b85004d3-de1e-42b4-a6d7-64a79cfb0d72.lovable.app-1778727659322.png" },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -93,10 +98,5 @@ function RootComponent() {
     );
   }
 
-  return (
-    <>
-      <Outlet />
-      <Toaster />
-    </>
-  );
+  return <Outlet />;
 }
