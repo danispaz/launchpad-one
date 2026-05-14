@@ -203,7 +203,7 @@ export function EditProductDialog({ open, onOpenChange, product, updateProduct }
                       <SelectItem value="none">Nenhum</SelectItem>
                       {profiles?.map((profile) => (
                         <SelectItem key={profile.id} value={profile.id}>
-                          {profile.full_name || profile.username || "Sem nome"}
+                          {profile.nome || "Sem nome"}
                         </SelectItem>
                       ))}
                     </SelectContent>
