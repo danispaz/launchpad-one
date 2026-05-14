@@ -15,15 +15,17 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { NewProductDialog } from "@/components/products/NewProductDialog";
+import { EditProductDialog } from "@/components/products/EditProductDialog";
 
 export const Route = createFileRoute("/products/")({
   component: ProductsList,
 });
 
 function ProductsList() {
-  const { products, loading, error, createProduct, deleteProduct } = useProducts();
+  const { products, loading, error, createProduct, updateProduct, deleteProduct } = useProducts();
   const [isNewProductOpen, setIsNewProductOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
+  const [productToEdit, setProductToEdit] = useState<Product | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
@@ -120,7 +122,7 @@ function ProductsList() {
       <div className="flex-1 px-8 py-10 max-w-[1200px] mx-auto w-full">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {products.map((p) => (
-            <ProductCard key={p.id} product={p} canEdit={userRole === "executive" || userRole === "product"} onDelete={() => setProductToDelete(p.id)} />
+            <ProductCard key={p.id} product={p} canEdit={userRole === "executive" || userRole === "product"} onDelete={() => setProductToDelete(p.id)} onEdit={() => setProductToEdit(p)} />
           ))}
         </div>
       </div>
@@ -136,12 +138,13 @@ function ProductsList() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <EditProductDialog open={!!productToEdit} onOpenChange={(open) => !open && setProductToEdit(null)} product={productToEdit} updateProduct={updateProduct} />
       <NewProductDialog open={isNewProductOpen} onOpenChange={setIsNewProductOpen} createProduct={createProduct} />
     </AppLayout>
   );
 }
 
-function ProductCard({ product, canEdit, onDelete }: { product: Product; canEdit?: boolean; onDelete?: () => void }) {
+function ProductCard({ product, canEdit, onDelete, onEdit }: { product: Product; canEdit?: boolean; onDelete?: () => void; onEdit?: () => void }) {
   const healthColor =
     product.status_saude === "saudavel"
       ? "bg-green-500"
@@ -164,7 +167,7 @@ function ProductCard({ product, canEdit, onDelete }: { product: Product; canEdit
     <div className="bg-white border border-border rounded-xl shadow-sm p-5 flex flex-col gap-4 hover:shadow-md transition-shadow group relative">
       {canEdit && (
         <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} className="p-1.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors" title="Editar">
+          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEdit?.(); }} className="p-1.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors" title="Editar">
             <Pencil className="w-3.5 h-3.5" />
           </button>
           <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete?.(); }} className="p-1.5 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-500 transition-colors" title="Excluir">
