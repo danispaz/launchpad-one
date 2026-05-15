@@ -95,7 +95,7 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
       setPrioridade(task.prioridade || "média");
       setTeam(task.team || "");
       setAssigneeId(task.assignee_id || "");
-      setSelectedLaunchId(task.launch_id || launchId || "");
+      setSelectedLaunchId(task.launch_id || launchId || (launches[0]?.id || ""));
       setDataInicio(task.data_inicio || "");
       setDataEntrega(task.data_entrega || "");
       setColaboradores(task.colaboradores || []);
@@ -105,7 +105,7 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
       setAnexos(task.anexos || []);
     } else {
       setTitulo(""); setDescricao(""); setStatus("todo"); setPrioridade("média");
-      setTeam(""); setAssigneeId(""); setSelectedLaunchId(launchId || "");
+      setTeam(""); setAssigneeId(""); setSelectedLaunchId(launchId || launches[0]?.id || "");
       setDataInicio(""); setDataEntrega(""); setColaboradores([]);
       setSeguidores([]); setChecklist([]); setPrecisaAprovacao(false); setAnexos([]);
     }
@@ -156,7 +156,8 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
   const handleSave = async (keepOpen = false) => {
     const newErrors: Record<string, string> = {};
     if (!titulo.trim()) newErrors.titulo = "Título é obrigatório";
-    if (!selectedLaunchId) newErrors.launch = "Selecione um lançamento";
+    const finalLaunchId = selectedLaunchId || launchId || launches[0]?.id || "";
+    if (!finalLaunchId) newErrors.launch = "Selecione um lançamento";
     if (!team) newErrors.team = "Selecione o time";
     if (!assigneeId || assigneeId === "none") newErrors.assignee = "Selecione o responsável";
     if (!dataEntrega) newErrors.dataEntrega = "Informe a data de entrega";
@@ -174,7 +175,7 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
         prioridade,
         team: team && team !== "none" ? team : null,
         assignee_id: assigneeId && assigneeId !== "none" ? assigneeId : null,
-        launch_id: selectedLaunchId,
+        launch_id: finalLaunchId,
         data_inicio: dataInicio || null,
         data_entrega: dataEntrega || null,
         colaboradores,
@@ -342,7 +343,7 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Data de início</Label>
-                  <Input type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)} />
+                  <Input type="date" value={dataInicio || ""} onChange={e => setDataInicio(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Data de término <span className="text-rose-500">*</span></Label>
