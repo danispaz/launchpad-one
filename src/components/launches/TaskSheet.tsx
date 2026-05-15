@@ -244,11 +244,12 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
                 <input
                   type="text"
                   value={titulo}
-                  onChange={e => setTitulo(e.target.value)}
+                  onChange={e => { setTitulo(e.target.value); setErrors(prev => ({ ...prev, titulo: "" })); }}
                   placeholder="Nome da tarefa"
-                  className="w-full text-xl font-bold text-slate-900 placeholder:text-slate-300 border-0 outline-none bg-transparent"
+                  className={`w-full text-xl font-bold text-slate-900 placeholder:text-slate-300 border-0 outline-none bg-transparent ${errors.titulo ? "placeholder:text-rose-300" : ""}`}
                   autoFocus
                 />
+                {errors.titulo && <p className="text-xs text-rose-500 mt-1">{errors.titulo}</p>}
               </div>
 
               {/* Descrição */}
