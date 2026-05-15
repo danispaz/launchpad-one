@@ -346,7 +346,8 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Data de término <span className="text-rose-500">*</span></Label>
-                  <Input type="date" value={dataEntrega} onChange={e => setDataEntrega(e.target.value)} />
+                  <Input type="date" value={dataEntrega} onChange={e => { setDataEntrega(e.target.value); setErrors(prev => ({ ...prev, dataEntrega: "" })); }} className={errors.dataEntrega ? "border-rose-400" : ""} />
+                  {errors.dataEntrega && <p className="text-xs text-rose-500 mt-1">{errors.dataEntrega}</p>}
                 </div>
               </div>
 
