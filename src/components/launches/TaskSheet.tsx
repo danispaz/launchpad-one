@@ -155,7 +155,9 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
   const handleSave = async (keepOpen = false) => {
     if (!titulo.trim()) { toast.error("Título é obrigatório"); return; }
     if (!selectedLaunchId) { toast.error("Selecione um lançamento"); return; }
-    setSaving(true);
+    if (!team) { toast.error("Selecione o time responsável"); return; }
+    if (!assigneeId || assigneeId === "none") { toast.error("Selecione o responsável pela tarefa"); return; }
+    if (!dataEntrega) { toast.error("Informe a data de entrega"); return; }
     try {
       const payload = {
         titulo: titulo.trim(),
