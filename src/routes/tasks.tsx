@@ -155,6 +155,8 @@ function TasksPage() {
   };
 
   const handleComplete = async (task: Task) => {
+    const confirmed = window.confirm(`Marcar "${task.titulo}" como concluída?`);
+    if (!confirmed) return;
     try {
       await supabase.from("tasks").update({ status: "concluído" }).eq("id", task.id);
       setTasks(prev => prev.filter(t => t.id !== task.id));
@@ -283,8 +285,9 @@ function TaskRow({ task, onComplete, onEdit }: { task: Task; onComplete: (t: Tas
 
   return (
     <div className="flex items-center gap-3 px-6 py-3 hover:bg-slate-50/80 group transition-colors">
-      <button onClick={() => onComplete(task)} className="shrink-0 text-slate-300 hover:text-emerald-500 transition-colors">
-        <Square className="w-4 h-4" />
+      <button onClick={() => onComplete(task)} title="Marcar como concluída" className="shrink-0 text-slate-300 hover:text-emerald-500 transition-colors group/check">
+        <Square className="w-4 h-4 group-hover/check:hidden" />
+        <CheckSquare className="w-4 h-4 hidden group-hover/check:block text-emerald-500" />
       </button>
 
       <button onClick={onEdit} className="flex-1 text-left min-w-0">
