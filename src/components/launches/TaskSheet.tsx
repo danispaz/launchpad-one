@@ -440,18 +440,6 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
                 </div>
               </div>
 
-              {/* Time */}
-              <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Time</Label>
-                <Select value={team || "none"} onValueChange={v => setTeam(v === "none" ? "" : v)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione o time" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhum</SelectItem>
-                    {TIMES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-
               {/* Lançamento */}
               {launches.length > 0 && (
                 <div className="space-y-2">
