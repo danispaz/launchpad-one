@@ -154,11 +154,18 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
   };
 
   const handleSave = async (keepOpen = false) => {
-    if (!titulo.trim()) { toast.error("Título é obrigatório"); return; }
-    if (!selectedLaunchId) { toast.error("Selecione um lançamento"); return; }
-    if (!team) { toast.error("Selecione o time responsável"); return; }
-    if (!assigneeId || assigneeId === "none") { toast.error("Selecione o responsável pela tarefa"); return; }
-    if (!dataEntrega) { toast.error("Informe a data de entrega"); return; }
+    const newErrors: Record<string, string> = {};
+    if (!titulo.trim()) newErrors.titulo = "Título é obrigatório";
+    if (!selectedLaunchId) newErrors.launch = "Selecione um lançamento";
+    if (!team) newErrors.team = "Selecione o time";
+    if (!assigneeId || assigneeId === "none") newErrors.assignee = "Selecione o responsável";
+    if (!dataEntrega) newErrors.dataEntrega = "Informe a data de entrega";
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast.error("Preencha os campos obrigatórios");
+      return;
+    }
+    setErrors({});
     try {
       const payload = {
         titulo: titulo.trim(),
