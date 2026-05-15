@@ -274,6 +274,7 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
                     {profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.nome || p.email}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                {errors.assignee && <p className="text-xs text-rose-500 mt-1">{errors.assignee}</p>}
               </div>
 
               {/* Time */}
