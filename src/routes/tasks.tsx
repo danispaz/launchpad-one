@@ -22,13 +22,12 @@ interface Task {
   launch_id: string;
   assignee_id: string | null;
   assignee?: { nome: string | null } | null;
-  launch?: { titulo: string; codigo: string } | null;
+  launch?: { nome: string } | null;
 }
 
 interface Launch {
   id: string;
-  titulo: string;
-  codigo: string;
+  nome: string;
 }
 
 type Filter = "all" | "today" | "tomorrow" | "no_date" | string;
@@ -84,13 +83,13 @@ function TasksPage() {
 
       const { data: launchesRaw, error: lErr } = await supabase
         .from("launches")
-        .select("id, titulo, codigo")
-        .order("titulo");
+        .select("id, nome")
+        .order("nome");
       if (lErr) throw lErr;
 
       setLaunches(launchesRaw || []);
 
-      const launchMap = Object.fromEntries((launchesRaw || []).map(l => [l.id, l]));
+      const launchMap = Object.fromEntries((launchesRaw || []).map((l: Launch) => [l.id, l]));
 
       const assigneeIds = [...new Set((tasksRaw || []).map(t => t.assignee_id).filter(Boolean))];
       let profileMap: Record<string, { nome: string }> = {};
@@ -190,7 +189,7 @@ function TasksPage() {
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-2 mb-2">Lançamentos</p>
               <div className="space-y-0.5">
                 {launches.map(l => (
-                  <SideItem key={l.id} icon={<Rocket className="w-4 h-4" />} label={l.titulo} count={countFilter(l.id)} active={activeFilter === l.id} onClick={() => setActiveFilter(l.id)} />
+                  <SideItem key={l.id} icon={<Rocket className="w-4 h-4" />} label={l.nome} count={countFilter(l.id)} active={activeFilter === l.id} onClick={() => setActiveFilter(l.id)} />
                 ))}
               </div>
             </div>
@@ -293,7 +292,7 @@ function TaskRow({ task, onComplete, onEdit }: { task: Task; onComplete: (t: Tas
       <button onClick={onEdit} className="flex-1 text-left min-w-0">
         <p className="text-sm font-medium text-slate-800 group-hover:text-slate-900 truncate">{task.titulo}</p>
         {task.launch && (
-          <p className="text-[11px] text-slate-400 mt-0.5 truncate">{task.launch.codigo} · {task.launch.titulo}</p>
+          <p className="text-[11px] text-slate-400 mt-0.5 truncate">{task.launch.nome}</p>
         )}
       </button>
 
