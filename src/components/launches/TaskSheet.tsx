@@ -267,8 +267,8 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
               {/* Responsável */}
               <div className="space-y-2">
                 <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Responsável <span className="text-rose-500">*</span></Label>
-                <Select value={assigneeId} onValueChange={setAssigneeId}>
-                  <SelectTrigger><SelectValue placeholder="Selecione o responsável" /></SelectTrigger>
+                <Select value={assigneeId} onValueChange={v => { setAssigneeId(v); setErrors(prev => ({ ...prev, assignee: "" })); }}>
+                  <SelectTrigger className={errors.assignee ? "border-rose-400" : ""}><SelectValue placeholder="Selecione o responsável" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Nenhum</SelectItem>
                     {profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.nome || p.email}</SelectItem>)}
