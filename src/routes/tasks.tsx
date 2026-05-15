@@ -165,7 +165,125 @@ function TasksPage() {
       toast.error("Erro", { description: err.message });
     }
   };
-...
+
+  const todayCount = countFilter("today");
+
+  return (
+    <AppLayout>
+      <TopBar title="Tarefas" subtitle="Painel global" actions={
+        <button onClick={() => setIsDialogOpen(true)} className="h-8 px-3 rounded bg-foreground text-background text-xs font-medium hover:opacity-90 transition-opacity flex items-center gap-1.5">
+          <Plus className="w-3.5 h-3.5" /> Nova Tarefa
+        </button>
+      } />
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <div className="w-56 shrink-0 border-r border-slate-100 bg-slate-50/50 overflow-y-auto py-4 px-3">
+          <div className="space-y-0.5">
+            <SideItem icon={<AlignLeft className="w-4 h-4" />} label="Todos" count={countFilter("all")} active={activeFilter === "all"} onClick={() => setActiveFilter("all")} />
+            <SideItem icon={<Star className="w-4 h-4" />} label="Hoje" count={todayCount} active={activeFilter === "today"} onClick={() => setActiveFilter("today")} badge={todayCount > 0} />
+            <SideItem icon={<Sun className="w-4 h-4" />} label="Amanhã" count={countFilter("tomorrow")} active={activeFilter === "tomorrow"} onClick={() => setActiveFilter("tomorrow")} />
+            <SideItem icon={<Clock className="w-4 h-4" />} label="Sem data" count={countFilter("no_date")} active={activeFilter === "no_date"} onClick={() => setActiveFilter("no_date")} />
+          </div>
+
+          {launches.length > 0 && (
+            <div className="mt-6">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-2 mb-2">Lançamentos</p>
+              <div className="space-y-0.5">
+                {launches.map(l => (
+                  <SideItem key={l.id} icon={<Rocket className="w-4 h-4" />} label={l.nome} count={countFilter(l.id)} active={activeFilter === l.id} onClick={() => setActiveFilter(l.id)} />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Main */}
+        <div className="flex-1 overflow-y-auto">
+          {/* Quick create */}
+          <div className="sticky top-0 bg-white border-b border-slate-100 px-6 py-3 flex items-center gap-3 z-10">
+            <input
+              type="text"
+              value={quickTitle}
+              onChange={e => setQuickTitle(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleQuickCreate()}
+              placeholder="Digite uma nova tarefa e pressione Enter..."
+              className="flex-1 text-sm bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 outline-none focus:border-slate-400 focus:bg-white transition-all placeholder:text-slate-400"
+            />
+            <button
+              onClick={handleQuickCreate}
+              disabled={creating || !quickTitle.trim()}
+              className="h-9 px-4 rounded-lg bg-foreground text-background text-xs font-medium hover:opacity-90 disabled:opacity-40 transition-opacity"
+            >
+              {creating ? "..." : "Criar"}
+            </button>
+          </div>
+
+          {/* Task list */}
+          {loading ? (
+            <div className="flex items-center justify-center h-40">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            </div>
+          ) : filteredTasks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-60 text-center">
+              <CheckSquare className="w-10 h-10 text-slate-200 mb-3" />
+              <p className="text-sm font-medium text-slate-400">Nenhuma tarefa aqui</p>
+              <p className="text-xs text-slate-300 mt-1">Crie uma tarefa acima ou mude o filtro</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-50">
+              {filteredTasks.map(task => (
+                <TaskRow key={task.id} task={task} onComplete={handleComplete} onEdit={() => { setEditingTask(task); setIsDialogOpen(true); }} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <TaskSheet
+        open={isDialogOpen}
+        onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingTask(null); }}
+        launchId={editingTask?.launch_id || launches[0]?.id || ""}
+        launches={launches}
+        task={editingTask as any}
+        onSuccess={() => { fetchData(); setIsDialogOpen(false); setEditingTask(null); }}
+      />
+    </AppLayout>
+  );
+}
+
+function SideItem({ icon, label, count, active, onClick, badge }: {
+  icon: React.ReactNode; label: string; count: number; active: boolean; onClick: () => void; badge?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-left transition-all ${active ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"}`}
+    >
+      <span className={active ? "text-white" : "text-slate-400"}>{icon}</span>
+      <span className="flex-1 text-xs font-medium truncate">{label}</span>
+      {count > 0 && (
+        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${badge ? "bg-rose-500 text-white" : active ? "bg-white/20 text-white" : "bg-slate-200 text-slate-500"}`}>
+          {count}
+        </span>
+      )}
+    </button>
+  );
+}
+
+function TaskRow({ task, onComplete, onEdit }: { task: Task; onComplete: (t: Task) => void; onEdit: () => void }) {
+  const overdue = isOverdue(task.data_entrega) && !isToday(task.data_entrega);
+  const todayTask = isToday(task.data_entrega);
+  const initials = task.assignee?.nome?.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() || "??";
+
+  const formatDate = (d: string | null) => {
+    if (!d) return null;
+    if (isToday(d)) return "Hoje";
+    if (isTomorrow(d)) return "Amanhã";
+    return new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+  };
+
+  return (
     <div className="flex items-center gap-3 px-6 py-3 hover:bg-slate-50/80 group transition-colors">
       <button onClick={() => onComplete(task)} title="Marcar como concluída" className="shrink-0 text-slate-300 hover:text-emerald-500 transition-colors group/check">
         <Square className="w-4 h-4 group-hover/check:hidden" />
