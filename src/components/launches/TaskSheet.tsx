@@ -155,7 +155,9 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
   const handleSave = async (keepOpen = false) => {
     if (!titulo.trim()) { toast.error("Título é obrigatório"); return; }
     if (!selectedLaunchId) { toast.error("Selecione um lançamento"); return; }
-    setSaving(true);
+    if (!team) { toast.error("Selecione o time responsável"); return; }
+    if (!assigneeId || assigneeId === "none") { toast.error("Selecione o responsável pela tarefa"); return; }
+    if (!dataEntrega) { toast.error("Informe a data de entrega"); return; }
     try {
       const payload = {
         titulo: titulo.trim(),
@@ -255,12 +257,23 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
 
               {/* Responsável */}
               <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Responsável</Label>
+                <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Responsável <span className="text-rose-500">*</span></Label>
                 <Select value={assigneeId} onValueChange={setAssigneeId}>
                   <SelectTrigger><SelectValue placeholder="Selecione o responsável" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Nenhum</SelectItem>
                     {profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.nome || p.email}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Time */}
+              <div className="space-y-2">
+                <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Time <span className="text-rose-500">*</span></Label>
+                <Select value={team} onValueChange={setTeam}>
+                  <SelectTrigger><SelectValue placeholder="Selecione o time (obrigatório)" /></SelectTrigger>
+                  <SelectContent>
+                    {TIMES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -322,7 +335,7 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
                   <Input type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Data de término</Label>
+                  <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Data de término <span className="text-rose-500">*</span></Label>
                   <Input type="date" value={dataEntrega} onChange={e => setDataEntrega(e.target.value)} />
                 </div>
               </div>
@@ -425,18 +438,6 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
                     <SelectContent>{PRIORIDADES.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-              </div>
-
-              {/* Time */}
-              <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Time</Label>
-                <Select value={team || "none"} onValueChange={v => setTeam(v === "none" ? "" : v)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione o time" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhum</SelectItem>
-                    {TIMES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
               </div>
 
               {/* Lançamento */}
