@@ -324,7 +324,7 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
                   <Input type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Data de término</Label>
+                  <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Data de término <span className="text-rose-500">*</span></Label>
                   <Input type="date" value={dataEntrega} onChange={e => setDataEntrega(e.target.value)} />
                 </div>
               </div>
