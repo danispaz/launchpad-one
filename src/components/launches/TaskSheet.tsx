@@ -83,6 +83,7 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
   const [precisaAprovacao, setPrecisaAprovacao] = useState(false);
   const [anexos, setAnexos] = useState<Anexo[]>([]);
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
   const [activeTab, setActiveTab] = useState<"principal" | "outros">("principal");
 
@@ -153,11 +154,18 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
   };
 
   const handleSave = async (keepOpen = false) => {
-    if (!titulo.trim()) { toast.error("Título é obrigatório"); return; }
-    if (!selectedLaunchId) { toast.error("Selecione um lançamento"); return; }
-    if (!team) { toast.error("Selecione o time responsável"); return; }
-    if (!assigneeId || assigneeId === "none") { toast.error("Selecione o responsável pela tarefa"); return; }
-    if (!dataEntrega) { toast.error("Informe a data de entrega"); return; }
+    const newErrors: Record<string, string> = {};
+    if (!titulo.trim()) newErrors.titulo = "Título é obrigatório";
+    if (!selectedLaunchId) newErrors.launch = "Selecione um lançamento";
+    if (!team) newErrors.team = "Selecione o time";
+    if (!assigneeId || assigneeId === "none") newErrors.assignee = "Selecione o responsável";
+    if (!dataEntrega) newErrors.dataEntrega = "Informe a data de entrega";
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast.error("Preencha os campos obrigatórios");
+      return;
+    }
+    setErrors({});
     try {
       const payload = {
         titulo: titulo.trim(),
@@ -236,11 +244,12 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
                 <input
                   type="text"
                   value={titulo}
-                  onChange={e => setTitulo(e.target.value)}
+                  onChange={e => { setTitulo(e.target.value); setErrors(prev => ({ ...prev, titulo: "" })); }}
                   placeholder="Nome da tarefa"
-                  className="w-full text-xl font-bold text-slate-900 placeholder:text-slate-300 border-0 outline-none bg-transparent"
+                  className={`w-full text-xl font-bold text-slate-900 placeholder:text-slate-300 border-0 outline-none bg-transparent ${errors.titulo ? "placeholder:text-rose-300" : ""}`}
                   autoFocus
                 />
+                {errors.titulo && <p className="text-xs text-rose-500 mt-1">{errors.titulo}</p>}
               </div>
 
               {/* Descrição */}
@@ -258,13 +267,14 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
               {/* Responsável */}
               <div className="space-y-2">
                 <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Responsável <span className="text-rose-500">*</span></Label>
-                <Select value={assigneeId} onValueChange={setAssigneeId}>
-                  <SelectTrigger><SelectValue placeholder="Selecione o responsável" /></SelectTrigger>
+                <Select value={assigneeId} onValueChange={v => { setAssigneeId(v); setErrors(prev => ({ ...prev, assignee: "" })); }}>
+                  <SelectTrigger className={errors.assignee ? "border-rose-400" : ""}><SelectValue placeholder="Selecione o responsável" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Nenhum</SelectItem>
                     {profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.nome || p.email}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                {errors.assignee && <p className="text-xs text-rose-500 mt-1">{errors.assignee}</p>}
               </div>
 
               {/* Time */}
@@ -336,7 +346,8 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Data de término <span className="text-rose-500">*</span></Label>
-                  <Input type="date" value={dataEntrega} onChange={e => setDataEntrega(e.target.value)} />
+                  <Input type="date" value={dataEntrega} onChange={e => { setDataEntrega(e.target.value); setErrors(prev => ({ ...prev, dataEntrega: "" })); }} className={errors.dataEntrega ? "border-rose-400" : ""} />
+                  {errors.dataEntrega && <p className="text-xs text-rose-500 mt-1">{errors.dataEntrega}</p>}
                 </div>
               </div>
 
