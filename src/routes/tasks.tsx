@@ -244,7 +244,8 @@ function TasksPage() {
           open={isDialogOpen}
           onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingTask(null); }}
           launchId={editingTask?.launch_id || launches[0]?.id || ""}
-          task={editingTask as any}
+          phases={[]}
+          taskToEdit={editingTask as any}
           onSuccess={() => { fetchData(); setIsDialogOpen(false); setEditingTask(null); }}
         />
       )}

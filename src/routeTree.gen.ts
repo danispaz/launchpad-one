@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as TeamsRouteImport } from './routes/teams'
+import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RoadmapRouteImport } from './routes/roadmap'
 import { Route as RisksRouteImport } from './routes/risks'
@@ -31,6 +32,11 @@ const UsersRoute = UsersRouteImport.update({
 const TeamsRoute = TeamsRouteImport.update({
   id: '/teams',
   path: '/teams',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TasksRoute = TasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -97,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/risks': typeof RisksRoute
   '/roadmap': typeof RoadmapRoute
   '/settings': typeof SettingsRoute
+  '/tasks': typeof TasksRoute
   '/teams': typeof TeamsRoute
   '/users': typeof UsersRoute
   '/launches/$id': typeof LaunchesIdRoute
@@ -111,6 +118,7 @@ export interface FileRoutesByTo {
   '/risks': typeof RisksRoute
   '/roadmap': typeof RoadmapRoute
   '/settings': typeof SettingsRoute
+  '/tasks': typeof TasksRoute
   '/teams': typeof TeamsRoute
   '/users': typeof UsersRoute
   '/launches/$id': typeof LaunchesIdRoute
@@ -127,6 +135,7 @@ export interface FileRoutesById {
   '/risks': typeof RisksRoute
   '/roadmap': typeof RoadmapRoute
   '/settings': typeof SettingsRoute
+  '/tasks': typeof TasksRoute
   '/teams': typeof TeamsRoute
   '/users': typeof UsersRoute
   '/launches/$id': typeof LaunchesIdRoute
@@ -144,6 +153,7 @@ export interface FileRouteTypes {
     | '/risks'
     | '/roadmap'
     | '/settings'
+    | '/tasks'
     | '/teams'
     | '/users'
     | '/launches/$id'
@@ -158,6 +168,7 @@ export interface FileRouteTypes {
     | '/risks'
     | '/roadmap'
     | '/settings'
+    | '/tasks'
     | '/teams'
     | '/users'
     | '/launches/$id'
@@ -173,6 +184,7 @@ export interface FileRouteTypes {
     | '/risks'
     | '/roadmap'
     | '/settings'
+    | '/tasks'
     | '/teams'
     | '/users'
     | '/launches/$id'
@@ -189,6 +201,7 @@ export interface RootRouteChildren {
   RisksRoute: typeof RisksRoute
   RoadmapRoute: typeof RoadmapRoute
   SettingsRoute: typeof SettingsRoute
+  TasksRoute: typeof TasksRoute
   TeamsRoute: typeof TeamsRoute
   UsersRoute: typeof UsersRoute
   ProductsIdRoute: typeof ProductsIdRoute
@@ -209,6 +222,13 @@ declare module '@tanstack/react-router' {
       path: '/teams'
       fullPath: '/teams'
       preLoaderRoute: typeof TeamsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tasks': {
+      id: '/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof TasksRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -313,6 +333,7 @@ const rootRouteChildren: RootRouteChildren = {
   RisksRoute: RisksRoute,
   RoadmapRoute: RoadmapRoute,
   SettingsRoute: SettingsRoute,
+  TasksRoute: TasksRoute,
   TeamsRoute: TeamsRoute,
   UsersRoute: UsersRoute,
   ProductsIdRoute: ProductsIdRoute,
