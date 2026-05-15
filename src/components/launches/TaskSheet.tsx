@@ -83,6 +83,7 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
   const [precisaAprovacao, setPrecisaAprovacao] = useState(false);
   const [anexos, setAnexos] = useState<Anexo[]>([]);
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
   const [activeTab, setActiveTab] = useState<"principal" | "outros">("principal");
 
