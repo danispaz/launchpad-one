@@ -26,10 +26,10 @@ const PRIORIDADES = [
 
 const TIMES = [
   { value: "marketing", label: "Marketing" },
-  { value: "vendas", label: "Vendas" },
-  { value: "produto", label: "Produto" },
-  { value: "tecnologia", label: "Tecnologia" },
-  { value: "operações", label: "Operações" },
+  { value: "sales", label: "Vendas" },
+  { value: "product", label: "Produto" },
+  { value: "engineering", label: "Tecnologia" },
+  { value: "executive", label: "Diretoria" },
 ];
 
 interface ChecklistItem { id: string; texto: string; concluido: boolean; }
