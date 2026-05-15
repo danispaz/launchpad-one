@@ -267,6 +267,17 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
                 </Select>
               </div>
 
+              {/* Time */}
+              <div className="space-y-2">
+                <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Time <span className="text-rose-500">*</span></Label>
+                <Select value={team} onValueChange={setTeam}>
+                  <SelectTrigger><SelectValue placeholder="Selecione o time (obrigatório)" /></SelectTrigger>
+                  <SelectContent>
+                    {TIMES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Colaboradores */}
               <div className="space-y-2">
                 <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Colaboradores</Label>
