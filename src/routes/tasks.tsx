@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Plus, Calendar, CheckSquare, Square, Inbox, Star, Sun, AlignLeft, Clock, ChevronRight, Rocket } from "lucide-react";
-import { TaskFormDialog } from "@/components/launches/TaskFormDialog";
+import { TaskSheet } from "@/components/launches/TaskSheet";
 
 export const Route = createFileRoute("/tasks")({
   head: () => ({ meta: [{ title: "Tarefas — LaunchHub" }] }),
@@ -238,16 +238,14 @@ function TasksPage() {
         </div>
       </div>
 
-      {isDialogOpen && (
-        <TaskFormDialog
-          open={isDialogOpen}
-          onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingTask(null); }}
-          launchId={editingTask?.launch_id || launches[0]?.id || ""}
-          phases={[]}
-          taskToEdit={editingTask as any}
-          onSuccess={() => { fetchData(); setIsDialogOpen(false); setEditingTask(null); }}
-        />
-      )}
+      <TaskSheet
+        open={isDialogOpen}
+        onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingTask(null); }}
+        launchId={editingTask?.launch_id || launches[0]?.id || ""}
+        launches={launches}
+        task={editingTask as any}
+        onSuccess={() => { fetchData(); setIsDialogOpen(false); setEditingTask(null); }}
+      />
     </AppLayout>
   );
 }
