@@ -278,8 +278,6 @@ function TasksPage() {
           )}
         </div>
       </div>
-
-      </div>
       {/* Barra de seleção flutuante */}
       {selected.size > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-slate-900 text-white rounded-2xl shadow-2xl px-4 py-3">
