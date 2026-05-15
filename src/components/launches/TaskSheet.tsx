@@ -257,7 +257,7 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
 
               {/* Responsável */}
               <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Responsável</Label>
+                <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Responsável <span className="text-rose-500">*</span></Label>
                 <Select value={assigneeId} onValueChange={setAssigneeId}>
                   <SelectTrigger><SelectValue placeholder="Selecione o responsável" /></SelectTrigger>
                   <SelectContent>
