@@ -21,7 +21,6 @@ export function useProfilesForOwner() {
         const { data, error: supabaseError } = await supabase
           .from('profiles')
           .select('id, nome, email, role')
-          .in('role', ['executive', 'product', 'marketing', 'operation', 'sales', 'growth', 'tech', 'legal', 'finance'])
           .order('nome', { ascending: true });
 
         console.log('[RAW useProfilesForOwner]', data);
