@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Plus, Calendar, CheckSquare, Square, Star, Sun, AlignLeft, Clock, Rocket, Copy, Trash2, ArrowRight, Download, X, Check } from "lucide-react";
 import { TaskSheet } from "@/components/launches/TaskSheet";
+import { TaskKanban } from "@/components/tasks/TaskKanban";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -64,6 +65,7 @@ function TasksPage() {
   const [creating, setCreating] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [view, setView] = useState<"list" | "kanban">("list");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [moveStatus, setMoveStatus] = useState("");
@@ -181,12 +183,21 @@ function TasksPage() {
   return (
     <AppLayout>
       <TopBar title="Tarefas" subtitle="Painel global" actions={
-        <button onClick={() => { setEditingTask(null); setIsSheetOpen(true); }} className="h-8 px-3 rounded bg-foreground text-background text-xs font-medium hover:opacity-90 transition-opacity flex items-center gap-1.5">
-          <Plus className="w-3.5 h-3.5" /> Nova Tarefa
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center bg-slate-100 rounded-lg p-0.5">
+            <button onClick={() => setView("list")} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${view === "list" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>Lista</button>
+            <button onClick={() => setView("kanban")} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${view === "kanban" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>Kanban</button>
+          </div>
+          <button onClick={() => { setEditingTask(null); setIsSheetOpen(true); }} className="h-8 px-3 rounded bg-foreground text-background text-xs font-medium hover:opacity-90 transition-opacity flex items-center gap-1.5">
+            <Plus className="w-3.5 h-3.5" /> Nova Tarefa
+          </button>
+        </div>
       } />
 
-      <div className="flex flex-1 overflow-hidden">
+      {view === "kanban" ? (
+        <TaskKanban launches={launches} onRefresh={fetchData} />
+      ) : null}
+      <div className={`flex flex-1 overflow-hidden ${view === "kanban" ? "hidden" : ""}`}>
         {/* Sidebar */}
         <div className="w-56 shrink-0 border-r border-slate-100 bg-slate-50/50 overflow-y-auto py-4 px-3">
           <div className="space-y-0.5">
@@ -267,7 +278,6 @@ function TasksPage() {
           )}
         </div>
       </div>
-
       {/* Barra de seleção flutuante */}
       {selected.size > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-slate-900 text-white rounded-2xl shadow-2xl px-4 py-3">
