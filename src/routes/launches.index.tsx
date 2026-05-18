@@ -110,7 +110,7 @@ function LaunchesList() {
 
   if (loading) return (
     <AppLayout>
-      <TopBar title="Lançamentos" subtitle="Base de dados central" />
+      <TopBar title="Projetos" subtitle="Base de dados central" />
       <div className="flex items-center justify-center h-[50vh]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
@@ -120,7 +120,7 @@ function LaunchesList() {
   return (
     <AppLayout>
       <TopBar
-        title="Lançamentos"
+        title="Projetos"
         subtitle="Base de dados central"
         actions={
           <button onClick={() => setIsNewOpen(true)} className="h-8 px-4 rounded-lg bg-foreground text-background text-xs font-semibold hover:opacity-90 transition-opacity flex items-center gap-1.5">
@@ -165,7 +165,7 @@ function LaunchesList() {
               ))}
             </div>
 
-            <span className="text-xs text-slate-400 ml-auto">{filtered.length} lançamento{filtered.length !== 1 ? "s" : ""}</span>
+            <span className="text-xs text-slate-400 ml-auto">{filtered.length} Projetos{filtered.length !== 1 ? "s" : ""}</span>
           </div>
         )}
 
@@ -189,7 +189,7 @@ function LaunchesList() {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {filtered.length === 0 ? (
-                <tr><td colSpan={9} className="text-center py-16 text-sm text-slate-300">Nenhum lançamento encontrado</td></tr>
+                <tr><td colSpan={9} className="text-center py-16 text-sm text-slate-300">Nenhum projeto encontrado</td></tr>
               ) : filtered.map(l => {
                 const daysLeft = getDaysLeft(l.data_lancamento_prevista);
                 const overdue = isOverdue(l.data_lancamento_prevista);
@@ -262,7 +262,7 @@ function LaunchesList() {
       <AlertDialog open={!!launchToDelete} onOpenChange={open => !open && setLaunchToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Deletar lançamento</AlertDialogTitle>
+            <AlertDialogTitle>Deletar projeto</AlertDialogTitle>
             <AlertDialogDescription>Tem certeza? Todas as tarefas, marcos e riscos associados serão removidos. Esta ação não pode ser desfeita.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

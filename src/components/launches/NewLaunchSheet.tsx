@@ -69,7 +69,7 @@ export function NewLaunchSheet({ open, onOpenChange, defaultProductId }: Props) 
   const handleSave = async () => {
     const newErrors: Record<string, string> = {};
     if (!nome.trim()) newErrors.nome = "Nome é obrigatório";
-    if (!dataLancamento) newErrors.dataLancamento = "Data de lançamento é obrigatória";
+    if (!dataLancamento) newErrors.dataLancamento = "Data de projeto é obrigatória";
     if (!ownerId) newErrors.owner = "Selecione o responsável";
     if (Object.keys(newErrors).length > 0) { setErrors(newErrors); toast.error("Preencha os campos obrigatórios"); return; }
     setErrors({});
@@ -91,11 +91,11 @@ export function NewLaunchSheet({ open, onOpenChange, defaultProductId }: Props) 
 
       const { data: inserted, error } = await supabase.from("launches").insert(payload).select("id").single();
       if (error) throw error;
-      toast.success("Lançamento criado!");
+      toast.success("Projeto criado!");
       onOpenChange(false);
       navigate({ to: "/launches/$id", params: { id: inserted.id } });
     } catch (err: any) {
-      toast.error("Erro ao criar lançamento", { description: err.message });
+      toast.error("Erro ao criar projeto", { description: err.message });
     } finally { setSaving(false); }
   };
 
@@ -149,7 +149,7 @@ export function NewLaunchSheet({ open, onOpenChange, defaultProductId }: Props) 
           {/* Descrição */}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium">Descrição</Label>
-            <Textarea value={descricao} onChange={e => setDescricao(e.target.value)} placeholder="Detalhes sobre o objetivo do lançamento..." className="resize-none min-h-[120px]" rows={5} />
+            <Textarea value={descricao} onChange={e => setDescricao(e.target.value)} placeholder="Detalhes sobre o objetivo do projeto..." className="resize-none min-h-[120px]" rows={5} />
           </div>
 
           {/* Produto e Responsável */}
