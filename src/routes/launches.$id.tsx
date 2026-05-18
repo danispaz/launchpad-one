@@ -107,7 +107,6 @@ function LaunchDetail() {
 
   const tasksByTeam = useMemo(() => {
     return tasks.reduce((acc, task) => {
-      // Usar o campo team da própria tarefa, com fallback para 'outros'
       const team = (task.team as string) || 'outros';
       if (!acc[team]) acc[team] = [];
       acc[team].push(task);
@@ -133,7 +132,7 @@ function LaunchDetail() {
         <div className="flex flex-col items-center justify-center h-[50vh] space-y-4">
           <p className="text-destructive font-bold">Erro ao carregar projeto</p>
           <Link to="/launches" className="text-primary hover:underline flex items-center gap-1">
-            <ChevronLeft className="h-4 w-4" /> Voltar para projeto
+            <ChevronLeft className="h-4 w-4" /> Voltar para projetos
           </Link>
         </div>
       </AppLayout>
@@ -157,7 +156,7 @@ function LaunchDetail() {
       
       <div className="flex-1 px-8 py-10 max-w-[1200px] mx-auto w-full">
         <Link to="/launches" className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-primary mb-8 font-bold uppercase tracking-wider transition-colors">
-          <ChevronLeft className="h-3 w-3" /> Projeto
+          <ChevronLeft className="h-3 w-3" /> Projetos
         </Link>
 
         <header className="mb-12">
