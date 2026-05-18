@@ -40,7 +40,7 @@ import type { TaskStatusEnum } from "@/lib/schemas/task-schema";
 export const Route = createFileRoute("/launches/$id")({
   head: () => ({
     meta: [
-      { title: "LaunchHub — Detalhes do Lançamento" },
+      { title: "LaunchHub — Detalhes do Projeto" },
     ],
   }),
   component: LaunchDetail,
@@ -131,9 +131,9 @@ function LaunchDetail() {
     return (
       <AppLayout>
         <div className="flex flex-col items-center justify-center h-[50vh] space-y-4">
-          <p className="text-destructive font-bold">Erro ao carregar lançamento</p>
+          <p className="text-destructive font-bold">Erro ao carregar projeto</p>
           <Link to="/launches" className="text-primary hover:underline flex items-center gap-1">
-            <ChevronLeft className="h-4 w-4" /> Voltar para lançamentos
+            <ChevronLeft className="h-4 w-4" /> Voltar para projeto
           </Link>
         </div>
       </AppLayout>
@@ -157,7 +157,7 @@ function LaunchDetail() {
       
       <div className="flex-1 px-8 py-10 max-w-[1200px] mx-auto w-full">
         <Link to="/launches" className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-primary mb-8 font-bold uppercase tracking-wider transition-colors">
-          <ChevronLeft className="h-3 w-3" /> Lançamentos
+          <ChevronLeft className="h-3 w-3" /> Projeto
         </Link>
 
         <header className="mb-12">
@@ -230,7 +230,7 @@ function LaunchDetail() {
               <div className="space-y-8">
                 <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
                   <Users className="w-5 h-5 text-primary" />
-                  Fases do Lançamento
+                  Fases do Projeto
                 </h3>
                 <div className="space-y-3">
                   {phases.map((p, idx) => (
@@ -299,7 +299,7 @@ function LaunchDetail() {
 
           <TabsContent value="team">
             <div className="bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-12 text-center">
-              <p className="text-sm text-slate-400 font-medium">Time do lançamento em construção — em breve aqui.</p>
+              <p className="text-sm text-slate-400 font-medium">Time do projeto em construção — em breve aqui.</p>
             </div>
           </TabsContent>
         </Tabs>
