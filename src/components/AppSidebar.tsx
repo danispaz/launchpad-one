@@ -12,7 +12,7 @@ import {
 const items = [
   { title: "Visão geral", url: "/", icon: LayoutDashboard },
   { title: "Produtos", url: "/products", icon: Package },
-  { title: "Lançamentos", url: "/launches", icon: Rocket },
+  { title: "Projetos", url: "/launches", icon: Rocket },
   { title: "Tarefas", url: "/tasks", icon: CheckSquare },
   { title: "Times", url: "/teams", icon: Users },
   { title: "Configurações", url: "/settings", icon: Settings, requiredRoles: ["executive"] },
