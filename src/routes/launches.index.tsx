@@ -1,14 +1,12 @@
-import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
-import { StatusBadge, TeamChip, Avatar } from "@/components/Badges";
-import { type LaunchStatus, teamMap, formatDate, formatLaunchCode, TeamName, TASK_STATUS_DONE } from "@/lib/utils/formatters";
 import { useLaunches } from "@/hooks/useLaunches";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
-import { Search, X, Trash2 } from "lucide-react";
+import { Search, Trash2, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
-import { NewLaunchDialog } from "@/components/launches/NewLaunchDialog";
+import { NewLaunchSheet } from "@/components/launches/NewLaunchSheet";
 import { useLaunchMutations } from "@/hooks/useLaunchMutations";
 import {
   AlertDialog,
@@ -21,117 +19,85 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-const STORAGE_KEY = "launchhub_launches_filters";
-
-type LaunchesSearch = {
-  status?: LaunchStatus | "all";
-  team?: TeamName | "all";
-  q?: string;
+const STATUS_LABELS: Record<string, string> = {
+  "em_andamento": "Ativo",
+  "planejamento": "Planejamento",
+  "em_risco": "Em risco",
+  "atrasado": "Atrasado",
+  "concluido": "Concluído",
 };
 
-const statusFilters: { key: LaunchStatus | "all"; label: string }[] = [
-  { key: "all", label: "Todos Status" },
-  { key: "em_andamento", label: "Execução" },
-  { key: "planejamento", label: "Planejamento" },
-  { key: "em_risco", label: "Risco" },
-  { key: "atrasado", label: "Atrasado" },
-  { key: "concluido", label: "Concluído" },
-];
+const STATUS_COLORS: Record<string, string> = {
+  "em_andamento": "bg-emerald-100 text-emerald-700",
+  "planejamento": "bg-blue-100 text-blue-700",
+  "em_risco": "bg-orange-100 text-orange-700",
+  "atrasado": "bg-rose-100 text-rose-700",
+  "concluido": "bg-slate-100 text-slate-500",
+};
 
-const teamKeys = Object.keys(teamMap) as TeamName[];
+const PRIORIDADE_COLORS: Record<string, string> = {
+  "crítica": "bg-rose-100 text-rose-700",
+  "alta": "bg-orange-100 text-orange-700",
+  "média": "bg-yellow-100 text-yellow-600",
+  "baixa": "bg-slate-100 text-slate-500",
+};
+
+type TabType = "lista" | "arquivados";
 
 export const Route = createFileRoute("/launches/")({
-  validateSearch: (search: Record<string, unknown>): LaunchesSearch => {
-    return {
-      status: (search.status as LaunchStatus) || "all",
-      team: (search.team as TeamName) || "all",
-      q: (search.q as string) || "",
-    };
-  },
-  loaderDeps: ({ search }) => search,
-  loader: ({ deps }) => {
-    if (typeof window !== 'undefined' && Object.keys(deps).length > 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(deps));
-    }
-  },
   component: LaunchesList,
 });
 
 function LaunchesList() {
-  console.log('LAUNCHES LIST PAGE MOUNTED');
-  const [isNewLaunchOpen, setIsNewLaunchOpen] = useState(false);
+  const [isNewOpen, setIsNewOpen] = useState(false);
   const [launchToDelete, setLaunchToDelete] = useState<string | null>(null);
+  const [tab, setTab] = useState<TabType>("lista");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const { deleteLaunch } = useLaunchMutations();
-  const { status, team, q } = useSearch({ from: "/launches/" });
-  const navigate = useNavigate({ from: "/launches/" });
   const { launches, loading } = useLaunches();
   const { user } = useAuth();
   const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
-    async function fetchRole() {
-      const { data } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user?.id)
-        .single();
-      console.log("[RAW launches.index userRole]", data?.role);
-      setUserRole(data?.role || null);
-    }
-    fetchRole();
+    supabase.from("profiles").select("role").eq("id", user.id).single()
+      .then(({ data }) => setUserRole(data?.role || null));
   }, [user]);
 
   const canDelete = userRole === "executive" || userRole === "product";
 
-  useEffect(() => {
-    if (status === "all" && team === "all" && !q) {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          navigate({ search: parsed, replace: true });
-        } catch (e) {
-          // ignore
-        }
-      }
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+
+  const isOverdue = (dateStr: string | null) => {
+    if (!dateStr) return false;
+    const d = new Date(dateStr); d.setHours(0, 0, 0, 0);
+    return d.getTime() < today.getTime();
+  };
+
+  const getDaysLeft = (dateStr: string | null) => {
+    if (!dateStr) return null;
+    const d = new Date(dateStr); d.setHours(0, 0, 0, 0);
+    const diff = Math.ceil((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    return diff;
+  };
+
+  const formatDate = (d: string | null) => {
+    if (!d) return "—";
+    return new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  };
+
+  const filtered = (launches || []).filter(l => {
+    const isArchived = l.status === "concluido";
+    if (tab === "arquivados") return isArchived;
+    if (tab === "lista") {
+      if (isArchived) return false;
+      if (statusFilter !== "all" && l.status !== statusFilter) return false;
+      if (search && !l.nome.toLowerCase().includes(search.toLowerCase()) && !(l.produto || "").toLowerCase().includes(search.toLowerCase())) return false;
+      return true;
     }
-  }, []);
-
-  useEffect(() => {
-    if (status !== "all" || team !== "all" || q) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ status, team, q }));
-    }
-  }, [status, team, q]);
-
-  const filteredList = (launches || []).filter((l) => {
-    const statusMatch = status === "all" || l.status === status;
-    const teamMatch = team === "all" || l.teams.includes(team as TeamName);
-    
-    const searchLower = (q || "").toLowerCase();
-    const qMatch = !q || 
-      l.nome.toLowerCase().includes(searchLower) || 
-      formatLaunchCode(l.id).toLowerCase().includes(searchLower) || 
-      l.owner?.nome.toLowerCase().includes(searchLower);
-
-    return statusMatch && teamMatch && qMatch;
+    return true;
   });
-
-  const setStatusFilter = (newStatus: LaunchStatus | "all") => {
-    navigate({ search: (prev: LaunchesSearch) => ({ ...prev, status: newStatus }) });
-  };
-
-  const setTeamFilter = (newTeam: TeamName | "all") => {
-    navigate({ search: (prev: LaunchesSearch) => ({ ...prev, team: newTeam }) });
-  };
-
-  const setQuery = (newQ: string) => {
-    navigate({ search: (prev: LaunchesSearch) => ({ ...prev, q: newQ || undefined }) });
-  };
-
-  const clearFilters = () => {
-    navigate({ search: { status: "all", team: "all", q: "" } });
-  };
 
   const handleConfirmDelete = async () => {
     if (!launchToDelete) return;
@@ -139,184 +105,169 @@ function LaunchesList() {
       await deleteLaunch(launchToDelete);
       setLaunchToDelete(null);
       window.location.reload();
-    } catch {
-      setLaunchToDelete(null);
-    }
+    } catch { setLaunchToDelete(null); }
   };
 
-  const hasFilters = status !== "all" || team !== "all" || !!q;
-
-  if (loading) {
-    return (
-      <AppLayout>
-        <TopBar title="Lançamentos" subtitle="Base de dados central" />
-        <div className="flex items-center justify-center h-[50vh]">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      </AppLayout>
-    );
-  }
+  if (loading) return (
+    <AppLayout>
+      <TopBar title="Lançamentos" subtitle="Base de dados central" />
+      <div className="flex items-center justify-center h-[50vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    </AppLayout>
+  );
 
   return (
     <AppLayout>
-      <TopBar 
-        title="Lançamentos" 
+      <TopBar
+        title="Lançamentos"
         subtitle="Base de dados central"
         actions={
-          <button 
-            onClick={() => setIsNewLaunchOpen(true)}
-            className="h-8 px-3 rounded bg-foreground text-background text-xs font-medium hover:opacity-90 transition-opacity"
-          >
-            + Novo Lançamento
+          <button onClick={() => setIsNewOpen(true)} className="h-8 px-4 rounded-lg bg-foreground text-background text-xs font-semibold hover:opacity-90 transition-opacity flex items-center gap-1.5">
+            + Criar
           </button>
         }
       />
 
-      <div className="flex-1 px-8 py-10 max-w-[1200px] mx-auto w-full">
-        <div className="flex flex-col gap-6 mb-8">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="relative flex-1 min-w-[300px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Buscar por nome, código ou responsável..."
-                className="w-full bg-white border border-border/50 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/20 transition-shadow"
-                value={q || ''}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <select 
-                className="bg-white border border-border/50 rounded-lg px-3 py-2 text-[11px] font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary/20"
-                value={team}
-                onChange={(e) => setTeamFilter(e.target.value as TeamName | "all")}
-              >
-                <option value="all">Todos os Times</option>
-                {teamKeys.map(tk => (
-                  <option key={tk} value={tk}>{teamMap[tk]}</option>
-                ))}
-              </select>
-
-              {hasFilters && (
-                <button 
-                  onClick={clearFilters}
-                  className="flex items-center gap-1.5 px-3 py-2 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <X className="w-3 h-3" />
-                  Limpar
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1 p-1 bg-surface rounded-lg border border-border/50 w-fit">
-            {statusFilters.map((f) => (
-              <button
-                key={f.key}
-                onClick={() => setStatusFilter(f.key)}
-                className={`px-3 py-1.5 rounded-md text-[11px] font-medium transition-all ${
-                  status === f.key 
-                    ? "bg-white text-foreground shadow-sm ring-1 ring-border/50" 
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
+      <div className="flex flex-col flex-1 overflow-hidden">
+        {/* Abas */}
+        <div className="flex items-center gap-0 border-b border-slate-200 px-6 bg-white shrink-0">
+          {(["lista", "arquivados"] as TabType[]).map(t => (
+            <button key={t} onClick={() => setTab(t)}
+              className={`px-4 py-3 text-sm font-medium border-b-2 transition-all capitalize ${tab === t ? "border-slate-900 text-slate-900" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
+              {t === "lista" ? "Lista" : "Arquivados"}
+            </button>
+          ))}
         </div>
 
-        <div className="w-full overflow-x-auto bg-white rounded-xl border border-border shadow-sm">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b border-border bg-slate-50/50 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
-                <th className="px-6 py-4 text-left">Cód.</th>
-                <th className="px-6 py-4 text-left">Nome</th>
-                <th className="px-6 py-4 text-left">Produto</th>
-                <th className="px-6 py-4 text-left">Status</th>
-                <th className="px-6 py-4 text-left">Times</th>
-                <th className="px-6 py-4 text-left">Owner</th>
-                <th className="px-6 py-4 text-right">Prazo</th>
-                <th className="px-6 py-4 text-right w-12"></th>
+        {/* Toolbar */}
+        {tab === "lista" && (
+          <div className="flex items-center gap-3 px-6 py-3 border-b border-slate-100 bg-white shrink-0">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+              <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+                placeholder="Pesquisar..."
+                className="pl-9 pr-4 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-slate-400 focus:bg-white transition-all w-56 placeholder:text-slate-400" />
+            </div>
+
+            <div className="flex items-center gap-1">
+              {[
+                { key: "all", label: "Todos" },
+                { key: "em_andamento", label: "Ativo" },
+                { key: "planejamento", label: "Planejamento" },
+                { key: "em_risco", label: "Em risco" },
+                { key: "atrasado", label: "Atrasado" },
+              ].map(f => (
+                <button key={f.key} onClick={() => setStatusFilter(f.key)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${statusFilter === f.key ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"}`}>
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            <span className="text-xs text-slate-400 ml-auto">{filtered.length} lançamento{filtered.length !== 1 ? "s" : ""}</span>
+          </div>
+        )}
+
+        {/* Tabela */}
+        <div className="flex-1 overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-white border-b border-slate-200 z-10">
+              <tr>
+                <th className="text-left px-6 py-3 w-8">
+                  <input type="checkbox" className="rounded" />
+                </th>
+                <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">Projeto</th>
+                <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">Status</th>
+                <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">Produto</th>
+                <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">Data de início</th>
+                <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">Antes da data de término</th>
+                <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">Prioridade</th>
+                <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">Gerente</th>
+                <th className="w-10"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/40">
-              {filteredList.map((l) => (
-                <tr key={l.id} className="group hover:bg-slate-50/50 transition-colors">
-                  <td className="px-6 py-5 text-xs font-mono text-muted-foreground">{formatLaunchCode(l.id)}</td>
-                  <td className="px-6 py-5">
-                    <Link to="/launches/$id" params={{ id: l.id }} className="text-sm font-semibold text-foreground hover:text-primary transition-colors">
-                      {l.nome}
-                    </Link>
-                  </td>
-                  <td className="px-6 py-5">
-                    {l.product_id ? (
-                      <Link to="/products/$id" params={{ id: l.product_id }} className="text-xs text-muted-foreground hover:text-primary transition-colors">
-                        {l.produto || "—"}
+            <tbody className="divide-y divide-slate-50">
+              {filtered.length === 0 ? (
+                <tr><td colSpan={9} className="text-center py-16 text-sm text-slate-300">Nenhum lançamento encontrado</td></tr>
+              ) : filtered.map(l => {
+                const daysLeft = getDaysLeft(l.data_lancamento_prevista);
+                const overdue = isOverdue(l.data_lancamento_prevista);
+                return (
+                  <tr key={l.id} className="hover:bg-slate-50 transition-colors group">
+                    <td className="px-6 py-3">
+                      <input type="checkbox" className="rounded" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <Link to="/launches/$id" params={{ id: l.id }}
+                        className="font-semibold text-slate-800 hover:text-slate-900 transition-colors">
+                        {l.nome}
                       </Link>
-                    ) : (
-                      <span className="text-xs text-muted-foreground italic">{l.produto || "—"}</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-5"><StatusBadge status={l.status as any} /></td>
-
-                  <td className="px-6 py-5">
-                    <div className="flex flex-wrap gap-1">
-                      {l.teams.slice(0, 3).map((t) => <TeamChip key={t} team={t as any} />)}
-                      {l.teams.length > 3 && <span className="text-[10px] text-muted-foreground self-center ml-1">+{l.teams.length - 3}</span>}
-                    </div>
-                  </td>
-                  <td className="px-6 py-5">
-                    <div className="flex items-center gap-2">
-                      <Avatar initials={l.owner?.initials || '??'} />
-                      <span className="text-xs text-muted-foreground">{l.owner?.nome || 'N/A'}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-5 text-right">
-                    <span className="text-xs font-medium text-muted-foreground">{formatDate(l.data_lancamento_prevista)}</span>
-                  </td>
-                  <td className="px-6 py-5 text-right">
-                    {canDelete && (
-                      <button
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setLaunchToDelete(l.id); }}
-                        className="p-1.5 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-500 transition-colors"
-                        title="Deletar lançamento"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {filteredList.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-sm text-muted-foreground italic">
-                    Nenhum lançamento encontrado com esses filtros.
-                  </td>
-                </tr>
-              )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${STATUS_COLORS[l.status] || "bg-slate-100 text-slate-500"}`}>
+                        {STATUS_LABELS[l.status] || l.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-xs text-slate-500">{l.produto || "—"}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-xs text-slate-500">{formatDate(l.data_inicio)}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {daysLeft !== null ? (
+                        <span className={`text-xs font-medium ${overdue ? "text-rose-500" : daysLeft <= 7 ? "text-amber-500" : "text-slate-500"}`}>
+                          {overdue ? `${Math.abs(daysLeft)} dias atrás` : daysLeft === 0 ? "Hoje" : `${daysLeft} dias`}
+                        </span>
+                      ) : <span className="text-xs text-slate-300">—</span>}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${PRIORIDADE_COLORS[l.prioridade] || "bg-slate-100 text-slate-500"}`}>
+                        {l.prioridade}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-6 w-6 rounded-full bg-slate-200 flex items-center justify-center text-[9px] font-bold text-slate-500">
+                          {l.owner?.initials || "??"}
+                        </div>
+                        <span className="text-xs text-slate-500 truncate max-w-[100px]">{l.owner?.nome || "—"}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {canDelete && (
+                          <button onClick={e => { e.preventDefault(); setLaunchToDelete(l.id); }}
+                            className="p-1.5 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-500 transition-colors">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        <Link to="/launches/$id" params={{ id: l.id }}
+                          className="p-1.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </div>
-      <NewLaunchDialog 
-        open={isNewLaunchOpen} 
-        onOpenChange={setIsNewLaunchOpen} 
-      />
-      <AlertDialog open={!!launchToDelete} onOpenChange={(open) => !open && setLaunchToDelete(null)}>
+
+      <NewLaunchSheet open={isNewOpen} onOpenChange={setIsNewOpen} />
+
+      <AlertDialog open={!!launchToDelete} onOpenChange={open => !open && setLaunchToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Deletar lançamento</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja deletar este lançamento? Todas as tarefas, marcos e riscos associados serão removidos. Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Tem certeza? Todas as tarefas, marcos e riscos associados serão removidos. Esta ação não pode ser desfeita.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete} className="bg-rose-500 hover:bg-rose-600">
-              Deletar
-            </AlertDialogAction>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-rose-500 hover:bg-rose-600">Deletar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
