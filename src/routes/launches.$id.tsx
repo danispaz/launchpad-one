@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TaskFormDialog } from "@/components/launches/TaskFormDialog";
+import { TaskSheet } from "@/components/launches/TaskSheet";
 import { KanbanBoard } from "@/components/launches/KanbanBoard";
 import {
   AlertDialog,
@@ -37,6 +37,7 @@ import { useTaskMutations } from "@/hooks/useTaskMutations";
 import { RisksPanel } from "@/components/launches/RisksPanel";
 import { ReleasesPanel } from "@/components/launches/ReleasesPanel";
 import type { TaskStatusEnum } from "@/lib/schemas/task-schema";
+
 export const Route = createFileRoute("/launches/$id")({
   head: () => ({
     meta: [
@@ -49,16 +50,15 @@ export const Route = createFileRoute("/launches/$id")({
 function LaunchDetail() {
   const params = Route.useParams();
   const { id } = params;
-  console.log('LAUNCH DETAIL PAGE MOUNTED', { id });
   const { launch, phases, tasks, milestones, risks, loading, error, refresh } = useLaunchDetail(id);
   const [expandedTeams, setExpandedTeams] = useState<string[]>([]);
-  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [isTaskSheetOpen, setIsTaskSheetOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
 
   const handleOpenNewTask = () => {
     setTaskToEdit(null);
-    setIsTaskDialogOpen(true);
+    setIsTaskSheetOpen(true);
   };
 
   const handleTaskSuccess = () => {
@@ -69,7 +69,7 @@ function LaunchDetail() {
 
   const handleTaskClick = (task: any) => {
     setTaskToEdit(task);
-    setIsTaskDialogOpen(true);
+    setIsTaskSheetOpen(true);
   };
 
   const handleStatusChange = async (taskId: string, newStatus: TaskStatusEnum) => {
@@ -86,9 +86,6 @@ function LaunchDetail() {
     setTaskToDelete(null);
     refresh();
   };
-
-// Removendo duplicatas injetadas erroneamente
-
 
   const toggleTeam = (team: string) => {
     setExpandedTeams(prev => 
@@ -113,8 +110,6 @@ function LaunchDetail() {
       return acc;
     }, {} as Record<string, typeof tasks>);
   }, [tasks]);
-
-  console.log('DEBUG TASKS BY TEAM:', Object.keys(tasksByTeam).map(t => `${t}: ${tasksByTeam[t].length}`));
 
   if (loading) {
     return (
@@ -304,12 +299,12 @@ function LaunchDetail() {
         </Tabs>
       </div>
 
-      <TaskFormDialog
-        open={isTaskDialogOpen}
-        onOpenChange={setIsTaskDialogOpen}
+      <TaskSheet
+        open={isTaskSheetOpen}
+        onOpenChange={setIsTaskSheetOpen}
         launchId={launch.id}
-        phases={phases}
-        taskToEdit={taskToEdit}
+        launches={[{ id: launch.id, nome: launch.nome }]}
+        task={taskToEdit as any}
         onSuccess={handleTaskSuccess}
       />
 

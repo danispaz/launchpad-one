@@ -32,7 +32,7 @@ const COLUMN_COLORS: Record<TaskStatusEnum, string> = {
 function Column({ status, label, color, count, children }: { status: TaskStatusEnum; label: string; color: string; count: number; children: ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   return (
-    <div className="min-w-0">
+    <div className="flex-shrink-0 w-72">
       <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-500 px-2 mb-4">{label} · {count}</h4>
       <div ref={setNodeRef} className={`space-y-3 p-3 rounded-2xl border min-h-[400px] transition-colors ${isOver ? `${color} border-primary` : `${color}/30 border-slate-100`}`}>
         {children}
@@ -88,7 +88,7 @@ export function KanbanBoard({ tasks, onTaskClick, onStatusChange, onTaskDelete, 
   };
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-      <div className="grid grid-cols-5 gap-4 pb-4 min-w-0">
+      <div className="flex gap-4 pb-4 overflow-x-auto">
         {TASK_STATUSES.map((status) => (
           <Column key={status} status={status} label={TASK_STATUS_LABELS[status]} color={COLUMN_COLORS[status]} count={tasksByStatus[status].length}>
             {tasksByStatus[status].map((task) => <Card key={task.id} task={task} onClick={() => onTaskClick(task)} onDelete={(e) => { e.stopPropagation(); onTaskDelete(task.id); }} />)}
