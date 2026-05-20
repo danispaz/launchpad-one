@@ -73,12 +73,10 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Mode
   const [mode, setMode] = useState<"view" | "edit">("view");
   const [activeTab, setActiveTab] = useState<"comments" | "history">("comments");
   const [showActions, setShowActions] = useState(false);
 
-  // Form fields
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [status, setStatus] = useState("todo");
@@ -92,13 +90,14 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
   const [seguidores, setSeguidores] = useState<string[]>([]);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [newCheckItem, setNewCheckItem] = useState("");
+  const [editingCheckId, setEditingCheckId] = useState<string | null>(null);
+  const [editingCheckText, setEditingCheckText] = useState("");
   const [precisaAprovacao, setPrecisaAprovacao] = useState(false);
   const [anexos, setAnexos] = useState<Anexo[]>([]);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Comments & History
   const [comments, setComments] = useState<Comment[]>([]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -185,6 +184,20 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
   const toggleCheckItem = (id: string) => setChecklist(prev => prev.map(i => i.id === id ? { ...i, concluido: !i.concluido } : i));
   const removeCheckItem = (id: string) => setChecklist(prev => prev.filter(i => i.id !== id));
 
+  const startEditCheckItem = (item: ChecklistItem) => {
+    setEditingCheckId(item.id);
+    setEditingCheckText(item.texto);
+  };
+
+  const saveEditCheckItem = () => {
+    if (!editingCheckId) return;
+    if (editingCheckText.trim()) {
+      setChecklist(prev => prev.map(i => i.id === editingCheckId ? { ...i, texto: editingCheckText.trim() } : i));
+    }
+    setEditingCheckId(null);
+    setEditingCheckText("");
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -208,7 +221,7 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
     const newErrors: Record<string, string> = {};
     if (!titulo.trim()) newErrors.titulo = "Título é obrigatório";
     const finalLaunchId = selectedLaunchId || launchId || launches[0]?.id || "";
-    if (!finalLaunchId) newErrors.launch = "Selecione um lançamento";
+    if (!finalLaunchId) newErrors.launch = "Selecione um projeto";
     if (!team) newErrors.team = "Selecione o time";
     if (!assigneeId || assigneeId === "none") newErrors.assignee = "Selecione o responsável";
     if (!dataEntrega) newErrors.dataEntrega = "Informe a data de entrega";
@@ -229,7 +242,6 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
         const { error } = await supabase.from("tasks").update(payload).eq("id", task.id);
         if (error) throw error;
 
-        // Registrar histórico de alterações
         const historyEntries: any[] = [];
         if (oldTask?.status !== status) historyEntries.push({ task_id: task.id, user_id: user?.id, acao: "alterou", campo: "status", valor_antes: oldTask?.status || null, valor_depois: status });
         if (oldTask?.prioridade !== prioridade) historyEntries.push({ task_id: task.id, user_id: user?.id, acao: "alterou", campo: "prioridade", valor_antes: oldTask?.prioridade || null, valor_depois: prioridade });
@@ -243,7 +255,6 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
       } else {
         const { data: newTask, error } = await supabase.from("tasks").insert(payload).select().single();
         if (error) throw error;
-        // Registrar criação no histórico
         await supabase.from("task_history").insert({ task_id: newTask.id, user_id: user?.id, acao: "criou", campo: null, valor_antes: null, valor_depois: null });
         toast.success("Tarefa criada");
         if (!keepOpen) { onSuccess?.(); onOpenChange(false); }
@@ -331,13 +342,12 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
           </div>
         </div>
 
-        {/* Body — duas colunas */}
+        {/* Body */}
         <div className="flex flex-1 overflow-hidden">
 
           {/* Coluna esquerda */}
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 border-r border-slate-100">
 
-            {/* Título */}
             {mode === "edit" ? (
               <div>
                 <input type="text" value={titulo} onChange={e => { setTitulo(e.target.value); setErrors(prev => ({ ...prev, titulo: "" })); }}
@@ -349,25 +359,17 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
               <h2 className="text-xl font-bold text-slate-900">{titulo}</h2>
             )}
 
-            {/* Status */}
             <div className="flex items-center gap-3">
               {mode === "edit" ? (
                 <Select value={status} onValueChange={setStatus}>
-                  <SelectTrigger className="w-44 h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                  </SelectContent>
+                  <SelectTrigger className="w-44 h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>{STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
                 </Select>
               ) : (
-                <span className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold border ${currentStatus.color}`}>
-                  {currentStatus.label}
-                </span>
+                <span className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold border ${currentStatus.color}`}>{currentStatus.label}</span>
               )}
             </div>
 
-            {/* Descrição */}
             <div className="space-y-2">
               <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Descrição</Label>
               {mode === "edit" ? (
@@ -394,22 +396,35 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
                     <button onClick={() => toggleCheckItem(item.id)} className={`shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-colors ${item.concluido ? "bg-emerald-500 border-emerald-500" : "border-slate-300 hover:border-slate-400"}`}>
                       {item.concluido && <Check className="w-2.5 h-2.5 text-white" />}
                     </button>
-                    <span className={`flex-1 text-sm ${item.concluido ? "line-through text-slate-400" : "text-slate-700"}`}>{item.texto}</span>
-                    {mode === "edit" && (
-                      <button onClick={() => removeCheckItem(item.id)} className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-500 transition-all">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                    {editingCheckId === item.id ? (
+                      <input
+                        type="text"
+                        value={editingCheckText}
+                        onChange={e => setEditingCheckText(e.target.value)}
+                        onBlur={saveEditCheckItem}
+                        onKeyDown={e => { if (e.key === "Enter") saveEditCheckItem(); if (e.key === "Escape") setEditingCheckId(null); }}
+                        autoFocus
+                        className="flex-1 text-sm border border-slate-300 rounded px-2 py-0.5 outline-none focus:border-slate-400"
+                      />
+                    ) : (
+                      <span
+                        onClick={() => startEditCheckItem(item)}
+                        className={`flex-1 text-sm cursor-text ${item.concluido ? "line-through text-slate-400" : "text-slate-700"} hover:text-slate-900`}
+                      >
+                        {item.texto}
+                      </span>
                     )}
+                    <button onClick={() => removeCheckItem(item.id)} className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-500 transition-all">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 ))}
               </div>
-              {mode === "edit" && (
-                <div className="flex items-center gap-2">
-                  <input type="text" value={newCheckItem} onChange={e => setNewCheckItem(e.target.value)} onKeyDown={e => e.key === "Enter" && addCheckItem()}
-                    placeholder="Adicionar item..." className="flex-1 text-sm border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-slate-400 transition-colors" />
-                  <Button variant="outline" size="sm" onClick={addCheckItem} disabled={!newCheckItem.trim()}><Plus className="w-3.5 h-3.5" /></Button>
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                <input type="text" value={newCheckItem} onChange={e => setNewCheckItem(e.target.value)} onKeyDown={e => e.key === "Enter" && addCheckItem()}
+                  placeholder="Adicionar item..." className="flex-1 text-sm border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-slate-400 transition-colors" />
+                <Button variant="outline" size="sm" onClick={addCheckItem} disabled={!newCheckItem.trim()}><Plus className="w-3.5 h-3.5" /></Button>
+              </div>
             </div>
 
             {/* Anexos */}
@@ -433,7 +448,6 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
               </Button>
             </div>
 
-            {/* Aprovação */}
             {mode === "edit" && (
               <div className="flex items-center gap-3 py-2">
                 <input type="checkbox" id="aprovacao" checked={precisaAprovacao} onChange={e => setPrecisaAprovacao(e.target.checked)} className="w-4 h-4 rounded accent-slate-900" />
@@ -446,7 +460,6 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
               </div>
             )}
 
-            {/* Comentários & Histórico */}
             {task?.id && (
               <div className="space-y-4">
                 <div className="flex gap-4 border-b border-slate-100">
@@ -460,7 +473,6 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
 
                 {activeTab === "comments" && (
                   <div className="space-y-4">
-                    {/* Campo de comentário */}
                     <div className="flex gap-3">
                       <div className="h-8 w-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-500 shrink-0">
                         {profiles.find(p => p.id === user?.id)?.nome ? initials(profiles.find(p => p.id === user?.id)!.nome!) : "??"}
@@ -476,8 +488,6 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
                         </div>
                       </div>
                     </div>
-
-                    {/* Lista de comentários */}
                     {loadingComments ? (
                       <div className="text-center py-4 text-sm text-slate-400">Carregando...</div>
                     ) : comments.length === 0 ? (
@@ -530,10 +540,9 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
             )}
           </div>
 
-          {/* Coluna direita — metadados */}
+          {/* Coluna direita */}
           <div className="w-64 shrink-0 overflow-y-auto px-4 py-6 space-y-5 bg-slate-50/30">
 
-            {/* Progresso checklist */}
             {checklist.length > 0 && (
               <div className="space-y-2">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Progresso</p>
@@ -546,7 +555,6 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
               </div>
             )}
 
-            {/* Responsável */}
             <MetaField label="Responsável">
               {mode === "edit" ? (
                 <Select value={assigneeId} onValueChange={v => { setAssigneeId(v); setErrors(prev => ({ ...prev, assignee: "" })); }}>
@@ -567,7 +575,6 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
               {errors.assignee && <p className="text-xs text-rose-500">{errors.assignee}</p>}
             </MetaField>
 
-            {/* Time */}
             <MetaField label={<>Time <span className="text-rose-500">*</span></>}>
               {mode === "edit" ? (
                 <Select value={team} onValueChange={setTeam}>
@@ -578,7 +585,6 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
               {errors.team && <p className="text-xs text-rose-500">{errors.team}</p>}
             </MetaField>
 
-            {/* Prioridade */}
             <MetaField label="Prioridade">
               {mode === "edit" ? (
                 <Select value={prioridade} onValueChange={setPrioridade}>
@@ -588,20 +594,17 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
               ) : <span className="text-xs text-slate-700">{PRIORIDADES.find(p => p.value === prioridade)?.label}</span>}
             </MetaField>
 
-            {/* Data de início */}
             <MetaField label="Data de início">
               {mode === "edit" ? <Input type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)} className="h-8 text-xs" />
                 : <span className="text-xs text-slate-700">{formatDate(dataInicio) || <span className="text-slate-400 italic">Não definida</span>}</span>}
             </MetaField>
 
-            {/* Data de término */}
             <MetaField label={<>Data de término <span className="text-rose-500">*</span></>}>
               {mode === "edit" ? <Input type="date" value={dataEntrega} onChange={e => { setDataEntrega(e.target.value); setErrors(prev => ({ ...prev, dataEntrega: "" })); }} className={`h-8 text-xs ${errors.dataEntrega ? "border-rose-400" : ""}`} />
                 : <span className="text-xs text-slate-700">{formatDate(dataEntrega) || <span className="text-slate-400 italic">Não definida</span>}</span>}
               {errors.dataEntrega && <p className="text-xs text-rose-500">{errors.dataEntrega}</p>}
             </MetaField>
 
-            {/* Colaboradores */}
             <MetaField label="Colaboradores">
               {mode === "edit" ? (
                 <div className="space-y-1">
@@ -626,7 +629,6 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
               )}
             </MetaField>
 
-            {/* Seguidores */}
             <MetaField label="Seguidores">
               {mode === "edit" ? (
                 <div className="space-y-1">
@@ -651,8 +653,7 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
               )}
             </MetaField>
 
-            {/* Lançamento */}
-            <MetaField label="Lançamento">
+            <MetaField label="Projeto">
               {mode === "edit" && launches.length > 0 ? (
                 <Select value={selectedLaunchId} onValueChange={setSelectedLaunchId}>
                   <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecionar" /></SelectTrigger>
@@ -661,7 +662,6 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
               ) : <span className="text-xs text-slate-700">{launch?.nome || <span className="text-slate-400 italic">Não definido</span>}</span>}
             </MetaField>
 
-            {/* Datas de sistema */}
             {task?.created_at && (
               <MetaField label="Criado em">
                 <span className="text-xs text-slate-500">{formatDateTime(task.created_at)}</span>
@@ -675,7 +675,6 @@ export function TaskSheet({ open, onOpenChange, launchId, launches = [], task, o
           </div>
         </div>
 
-        {/* Footer — só aparece em modo edição */}
         {mode === "edit" && (
           <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 shrink-0 bg-slate-50/50">
             <Button variant="outline" onClick={() => task?.id ? setMode("view") : onOpenChange(false)} disabled={saving}>Cancelar</Button>
