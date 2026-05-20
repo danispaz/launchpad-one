@@ -22,7 +22,7 @@ const PRIORIDADES = [
   { value: "baixa", label: "Baixa" },
   { value: "média", label: "Média" },
   { value: "alta", label: "Alta" },
-  { value: "urgente", label: "Urgente" },
+  { value: "crítica", label: "Crítica" },
 ];
 
 const TIMES = [
