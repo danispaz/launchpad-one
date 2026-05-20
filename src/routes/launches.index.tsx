@@ -213,7 +213,7 @@ function LaunchesList() {
                       <span className="text-xs text-slate-500">{l.produto || "—"}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-xs text-slate-500">{formatDate(l.data_inicio)}</span>
+                      <span className="text-xs text-slate-500">{formatDate(l.data_lancamento_prevista)}</span>
                     </td>
                     <td className="px-4 py-3">
                       {daysLeft !== null ? (
