@@ -105,7 +105,10 @@ function ProductDetail() {
             </button>
           </div>
           <h2 className="text-4xl font-black tracking-tight text-slate-800 mb-4">{product.nome}</h2>
-          <p className="text-lg text-slate-500 max-w-2xl leading-relaxed">{product.descricao || "Sem descrição."}</p>
+          <div 
+            className="text-lg text-slate-500 max-w-2xl leading-relaxed prose prose-slate prose-sm"
+            dangerouslySetInnerHTML={{ __html: product.descricao || "Sem descrição." }}
+          />
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
