@@ -4,45 +4,31 @@ import { TopBar } from "@/components/TopBar";
 import { useLaunches } from "@/hooks/useLaunches";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
-import { Search, Trash2, ChevronRight } from "lucide-react";
+import { Search, Trash2, ChevronRight, ChevronLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { NewLaunchSheet } from "@/components/launches/NewLaunchSheet";
 import { useLaunchMutations } from "@/hooks/useLaunchMutations";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
 const STATUS_LABELS: Record<string, string> = {
-  "em_andamento": "Ativo",
-  "planejamento": "Planejamento",
-  "em_risco": "Em risco",
-  "atrasado": "Atrasado",
-  "concluido": "Concluído",
+  "em_andamento": "Ativo", "planejamento": "Planejamento",
+  "em_risco": "Em risco", "atrasado": "Atrasado", "concluido": "Concluído",
 };
-
 const STATUS_COLORS: Record<string, string> = {
-  "em_andamento": "bg-emerald-100 text-emerald-700",
-  "planejamento": "bg-blue-100 text-blue-700",
-  "em_risco": "bg-orange-100 text-orange-700",
-  "atrasado": "bg-rose-100 text-rose-700",
+  "em_andamento": "bg-emerald-100 text-emerald-700", "planejamento": "bg-blue-100 text-blue-700",
+  "em_risco": "bg-orange-100 text-orange-700", "atrasado": "bg-rose-100 text-rose-700",
   "concluido": "bg-slate-100 text-slate-500",
 };
-
 const PRIORIDADE_COLORS: Record<string, string> = {
-  "crítica": "bg-rose-100 text-rose-700",
-  "alta": "bg-orange-100 text-orange-700",
-  "média": "bg-yellow-100 text-yellow-600",
-  "baixa": "bg-slate-100 text-slate-500",
+  "crítica": "bg-rose-100 text-rose-700", "alta": "bg-orange-100 text-orange-700",
+  "média": "bg-yellow-100 text-yellow-600", "baixa": "bg-slate-100 text-slate-500",
 };
 
 type TabType = "lista" | "arquivados";
+const PAGE_SIZE = 50;
 
 export const Route = createFileRoute("/launches/")({
   component: LaunchesList,
@@ -54,6 +40,7 @@ function LaunchesList() {
   const [tab, setTab] = useState<TabType>("lista");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [page, setPage] = useState(1);
   const { deleteLaunch } = useLaunchMutations();
   const { launches, loading } = useLaunches();
   const { user } = useAuth();
@@ -65,8 +52,9 @@ function LaunchesList() {
       .then(({ data }) => setUserRole(data?.role || null));
   }, [user]);
 
-  const canDelete = userRole === "executive" || userRole === "product";
+  useEffect(() => { setPage(1); }, [search, statusFilter, tab]);
 
+  const canDelete = userRole === "executive" || userRole === "product";
   const today = new Date(); today.setHours(0, 0, 0, 0);
 
   const isOverdue = (dateStr: string | null) => {
@@ -78,8 +66,7 @@ function LaunchesList() {
   const getDaysLeft = (dateStr: string | null) => {
     if (!dateStr) return null;
     const d = new Date(dateStr); d.setHours(0, 0, 0, 0);
-    const diff = Math.ceil((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    return diff;
+    return Math.ceil((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   };
 
   const formatDate = (d: string | null) => {
@@ -90,14 +77,14 @@ function LaunchesList() {
   const filtered = (launches || []).filter(l => {
     const isArchived = l.status === "concluido";
     if (tab === "arquivados") return isArchived;
-    if (tab === "lista") {
-      if (isArchived) return false;
-      if (statusFilter !== "all" && l.status !== statusFilter) return false;
-      if (search && !l.nome.toLowerCase().includes(search.toLowerCase()) && !(l.produto || "").toLowerCase().includes(search.toLowerCase())) return false;
-      return true;
-    }
+    if (isArchived) return false;
+    if (statusFilter !== "all" && l.status !== statusFilter) return false;
+    if (search && !l.nome.toLowerCase().includes(search.toLowerCase()) && !(l.produto || "").toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const handleConfirmDelete = async () => {
     if (!launchToDelete) return;
@@ -149,13 +136,10 @@ function LaunchesList() {
                 placeholder="Pesquisar..."
                 className="pl-9 pr-4 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-slate-400 focus:bg-white transition-all w-56 placeholder:text-slate-400" />
             </div>
-
             <div className="flex items-center gap-1">
               {[
-                { key: "all", label: "Todos" },
-                { key: "em_andamento", label: "Ativo" },
-                { key: "planejamento", label: "Planejamento" },
-                { key: "em_risco", label: "Em risco" },
+                { key: "all", label: "Todos" }, { key: "em_andamento", label: "Ativo" },
+                { key: "planejamento", label: "Planejamento" }, { key: "em_risco", label: "Em risco" },
                 { key: "atrasado", label: "Atrasado" },
               ].map(f => (
                 <button key={f.key} onClick={() => setStatusFilter(f.key)}
@@ -164,8 +148,7 @@ function LaunchesList() {
                 </button>
               ))}
             </div>
-
-            <span className="text-xs text-slate-400 ml-auto">{filtered.length} Projetos{filtered.length !== 1 ? "s" : ""}</span>
+            <span className="text-xs text-slate-400 ml-auto">{filtered.length} projeto{filtered.length !== 1 ? "s" : ""}</span>
           </div>
         )}
 
@@ -174,9 +157,7 @@ function LaunchesList() {
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-white border-b border-slate-200 z-10">
               <tr>
-                <th className="text-left px-6 py-3 w-8">
-                  <input type="checkbox" className="rounded" />
-                </th>
+                <th className="text-left px-6 py-3 w-8"><input type="checkbox" className="rounded" /></th>
                 <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">Projeto</th>
                 <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">Status</th>
                 <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">Produto</th>
@@ -188,19 +169,16 @@ function LaunchesList() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filtered.length === 0 ? (
+              {paginated.length === 0 ? (
                 <tr><td colSpan={9} className="text-center py-16 text-sm text-slate-300">Nenhum projeto encontrado</td></tr>
-              ) : filtered.map(l => {
+              ) : paginated.map(l => {
                 const daysLeft = getDaysLeft(l.data_lancamento_prevista);
                 const overdue = isOverdue(l.data_lancamento_prevista);
                 return (
                   <tr key={l.id} className="hover:bg-slate-50 transition-colors group">
-                    <td className="px-6 py-3">
-                      <input type="checkbox" className="rounded" />
-                    </td>
+                    <td className="px-6 py-3"><input type="checkbox" className="rounded" /></td>
                     <td className="px-4 py-3">
-                      <Link to="/launches/$id" params={{ id: l.id }}
-                        className="font-semibold text-slate-800 hover:text-slate-900 transition-colors">
+                      <Link to="/launches/$id" params={{ id: l.id }} className="font-semibold text-slate-800 hover:text-slate-900 transition-colors">
                         {l.nome}
                       </Link>
                     </td>
@@ -209,12 +187,8 @@ function LaunchesList() {
                         {STATUS_LABELS[l.status] || l.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className="text-xs text-slate-500">{l.produto || "—"}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-xs text-slate-500">{formatDate(l.data_lancamento_prevista)}</span>
-                    </td>
+                    <td className="px-4 py-3"><span className="text-xs text-slate-500">{l.produto || "—"}</span></td>
+                    <td className="px-4 py-3"><span className="text-xs text-slate-500">{formatDate(l.data_inicio)}</span></td>
                     <td className="px-4 py-3">
                       {daysLeft !== null ? (
                         <span className={`text-xs font-medium ${overdue ? "text-rose-500" : daysLeft <= 7 ? "text-amber-500" : "text-slate-500"}`}>
@@ -255,6 +229,26 @@ function LaunchesList() {
             </tbody>
           </table>
         </div>
+
+        {/* Paginação */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-6 py-3 border-t border-slate-100 bg-white shrink-0">
+            <span className="text-xs text-slate-400">
+              Exibindo {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} de {filtered.length}
+            </span>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                <ChevronLeft className="w-4 h-4 text-slate-500" />
+              </button>
+              <span className="text-xs text-slate-600 font-medium">{page} / {totalPages}</span>
+              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                <ChevronRight className="w-4 h-4 text-slate-500" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <NewLaunchSheet open={isNewOpen} onOpenChange={setIsNewOpen} />
