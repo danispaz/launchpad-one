@@ -3,12 +3,12 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfilesForOwner } from "@/hooks/useProfilesForOwner";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import {
   PRODUCT_CATEGORIES,
   PRODUCT_LIFECYCLE_STAGES,
@@ -150,22 +150,18 @@ export function NewProductSheet({ open, onOpenChange, createProduct }: Props) {
     setSaving(true);
     try {
       const metadata = {
-        // Principal
         descricao_curta: descricaoCurta, problema_resolve: problemaResolve,
         proposta_valor: propostaValor, beneficio_principal: beneficioPrincipal,
         diferenciais, publico_alvo: publicoAlvo, perfil_nao_indicado: perfilNaoIndicado,
         objecoes_comuns: objecoesComuns, argumento_comercial: argumentoComercial,
-        // Escopo
         incluso, nao_incluso: naoIncluso, prerequisitos, limites_uso: limitesUso,
         servicos_adicionais: servicosAdicionais, dependencias_internas: dependenciasInternas,
         dependencias_externas: dependenciasExternas, criterios_elegibilidade: criteriosElegibilidade,
         criterios_recusa: criteriosRecusa, condicoes_especiais: condicoesEspeciais,
-        // Comercial
         modelo_cobranca: modeloCobranca, preco_base: precoBase, setup_implantacao: setupImplantacao,
         adicionais, faixas_preco: faixasPreco, politica_desconto: politicaDesconto,
         aprovacao_desconto: aprovacaoDesconto, regras_cancelamento: regrasCancelamento,
         reajuste, comissao, custo_estimado: custoEstimado, margem_esperada: margemEsperada,
-        // Entrega
         forma_entrega: formaEntrega, frequencia, entregaveis, prazo_ativacao: prazoAtivacao,
         prazo_entrega: prazoEntrega, sla_atendimento: slaAtendimento,
         canal_atendimento: canalAtendimento, responsavel_execucao: responsavelExecucao,
@@ -173,7 +169,6 @@ export function NewProductSheet({ open, onOpenChange, createProduct }: Props) {
         criterio_conclusao: criterioConclusao, documentos_necessarios: documentosNecessarios,
       };
 
-      // Salva campos extras diretamente no Supabase
       const basePayload: NewProductInput = {
         nome: nome.trim(),
         descricao: descricaoCompleta.trim() || "",
@@ -182,10 +177,8 @@ export function NewProductSheet({ open, onOpenChange, createProduct }: Props) {
         owner_id: ownerId,
       };
 
-      // Cria produto base
       await createProduct(basePayload);
 
-      // Atualiza com campos extras
       const { data: latest } = await supabase
         .from("products")
         .select("id")
@@ -214,9 +207,8 @@ export function NewProductSheet({ open, onOpenChange, createProduct }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex">
       <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={() => onOpenChange(false)} />
-      <div className="w-full max-w-[640px] bg-white flex flex-col h-full shadow-2xl">
+      <div className="w-full max-w-[680px] bg-white flex flex-col h-full shadow-2xl">
 
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
           <h2 className="text-base font-bold text-slate-900">Adicionar um produto</h2>
           <button onClick={() => onOpenChange(false)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
@@ -224,7 +216,6 @@ export function NewProductSheet({ open, onOpenChange, createProduct }: Props) {
           </button>
         </div>
 
-        {/* Abas */}
         <div className="flex border-b border-slate-100 px-6 shrink-0 overflow-x-auto">
           {TABS.map(({ key, label }) => (
             <button key={key} onClick={() => setTab(key)}
@@ -234,17 +225,16 @@ export function NewProductSheet({ open, onOpenChange, createProduct }: Props) {
           ))}
         </div>
 
-        {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
 
-          {/* ABA PRINCIPAL */}
           {tab === "principal" && (
             <>
               <SectionTitle>Dados gerais</SectionTitle>
 
               <Field label="Nome" required error={errors.nome}>
-                <Input value={nome} onChange={e => { setNome(e.target.value); setErrors(p => ({ ...p, nome: "" })); }}
-                  placeholder="Nome do produto" autoFocus className={errors.nome ? "border-rose-400" : ""} />
+                <input type="text" value={nome} onChange={e => { setNome(e.target.value); setErrors(p => ({ ...p, nome: "" })); }}
+                  placeholder="Nome do produto" autoFocus
+                  className={`w-full text-sm border rounded-lg px-3 py-2 outline-none focus:border-slate-400 transition-colors ${errors.nome ? "border-rose-400" : "border-slate-200"}`} />
               </Field>
 
               <div className="grid grid-cols-2 gap-4">
@@ -317,95 +307,92 @@ export function NewProductSheet({ open, onOpenChange, createProduct }: Props) {
               </Field>
 
               <Field label="Descrição completa">
-                <Textarea value={descricaoCompleta} onChange={e => setDescricaoCompleta(e.target.value)} placeholder="Explicação detalhada..." className="resize-none min-h-[80px]" rows={3} />
+                <RichTextEditor value={descricaoCompleta} onChange={setDescricaoCompleta} placeholder="Explicação detalhada..." />
               </Field>
 
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Problema que resolve">
-                  <Textarea value={problemaResolve} onChange={e => setProblemaResolve(e.target.value)} placeholder="Dor principal do cliente" className="resize-none" rows={3} />
-                </Field>
-                <Field label="Proposta de valor">
-                  <Textarea value={propostaValor} onChange={e => setPropostaValor(e.target.value)} placeholder="Valor entregue ao cliente" className="resize-none" rows={3} />
-                </Field>
-              </div>
+              <Field label="Problema que resolve">
+                <RichTextEditor value={problemaResolve} onChange={setProblemaResolve} placeholder="Dor principal do cliente" minHeight="80px" />
+              </Field>
+
+              <Field label="Proposta de valor">
+                <RichTextEditor value={propostaValor} onChange={setPropostaValor} placeholder="Valor entregue ao cliente" minHeight="80px" />
+              </Field>
 
               <Field label="Benefício principal">
                 <Input value={beneficioPrincipal} onChange={e => setBeneficioPrincipal(e.target.value)} placeholder="Resultado esperado para o cliente" />
               </Field>
 
               <Field label="Diferenciais">
-                <Textarea value={diferenciais} onChange={e => setDiferenciais(e.target.value)} placeholder="O que torna esse produto melhor ou específico" className="resize-none" rows={2} />
+                <RichTextEditor value={diferenciais} onChange={setDiferenciais} placeholder="O que torna esse produto melhor ou específico" minHeight="80px" />
               </Field>
 
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Público-alvo">
-                  <Textarea value={publicoAlvo} onChange={e => setPublicoAlvo(e.target.value)} placeholder="Para quem foi criado" className="resize-none" rows={2} />
+                  <RichTextEditor value={publicoAlvo} onChange={setPublicoAlvo} placeholder="Para quem foi criado" minHeight="80px" />
                 </Field>
                 <Field label="Perfil não indicado">
-                  <Textarea value={perfilNaoIndicado} onChange={e => setPerfilNaoIndicado(e.target.value)} placeholder="Para quem não deve ser vendido" className="resize-none" rows={2} />
+                  <RichTextEditor value={perfilNaoIndicado} onChange={setPerfilNaoIndicado} placeholder="Para quem não deve ser vendido" minHeight="80px" />
                 </Field>
               </div>
 
               <Field label="Principais objeções">
-                <Textarea value={objecoesComuns} onChange={e => setObjecoesComuns(e.target.value)} placeholder="Dúvidas ou resistências comuns" className="resize-none" rows={2} />
+                <RichTextEditor value={objecoesComuns} onChange={setObjecoesComuns} placeholder="Dúvidas ou resistências comuns" minHeight="80px" />
               </Field>
 
               <Field label="Argumento comercial">
-                <Textarea value={argumentoComercial} onChange={e => setArgumentoComercial(e.target.value)} placeholder="Como o time deve defender a venda" className="resize-none" rows={2} />
+                <RichTextEditor value={argumentoComercial} onChange={setArgumentoComercial} placeholder="Como o time deve defender a venda" minHeight="80px" />
               </Field>
             </>
           )}
 
-          {/* ABA ESCOPO */}
           {tab === "escopo" && (
             <>
               <SectionTitle>Escopo do produto</SectionTitle>
 
               <Field label="O que está incluso">
-                <Textarea value={incluso} onChange={e => setIncluso(e.target.value)} placeholder="Tudo que faz parte da entrega" className="resize-none" rows={3} />
+                <RichTextEditor value={incluso} onChange={setIncluso} placeholder="Tudo que faz parte da entrega" />
               </Field>
 
               <Field label="O que não está incluso">
-                <Textarea value={naoIncluso} onChange={e => setNaoIncluso(e.target.value)} placeholder="Limites claros do produto" className="resize-none" rows={3} />
+                <RichTextEditor value={naoIncluso} onChange={setNaoIncluso} placeholder="Limites claros do produto" />
               </Field>
 
               <Field label="Pré-requisitos">
-                <Textarea value={prerequisitos} onChange={e => setPrerequisitos(e.target.value)} placeholder="O que precisa existir antes da contratação" className="resize-none" rows={2} />
+                <RichTextEditor value={prerequisitos} onChange={setPrerequisitos} placeholder="O que precisa existir antes da contratação" minHeight="80px" />
               </Field>
 
               <Field label="Limites de uso">
-                <Textarea value={limitesUso} onChange={e => setLimitesUso(e.target.value)} placeholder="Volume, quantidade, faixa, regras ou restrições" className="resize-none" rows={2} />
+                <RichTextEditor value={limitesUso} onChange={setLimitesUso} placeholder="Volume, quantidade, faixa, regras ou restrições" minHeight="80px" />
               </Field>
 
               <Field label="Serviços adicionais">
-                <Textarea value={servicosAdicionais} onChange={e => setServicosAdicionais(e.target.value)} placeholder="Itens que podem ser cobrados à parte" className="resize-none" rows={2} />
+                <RichTextEditor value={servicosAdicionais} onChange={setServicosAdicionais} placeholder="Itens que podem ser cobrados à parte" minHeight="80px" />
               </Field>
 
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Dependências internas">
-                  <Textarea value={dependenciasInternas} onChange={e => setDependenciasInternas(e.target.value)} placeholder="Áreas envolvidas para entregar" className="resize-none" rows={3} />
+                  <RichTextEditor value={dependenciasInternas} onChange={setDependenciasInternas} placeholder="Áreas envolvidas para entregar" minHeight="80px" />
                 </Field>
                 <Field label="Dependências externas">
-                  <Textarea value={dependenciasExternas} onChange={e => setDependenciasExternas(e.target.value)} placeholder="Fornecedores, APIs, parceiros" className="resize-none" rows={3} />
+                  <RichTextEditor value={dependenciasExternas} onChange={setDependenciasExternas} placeholder="Fornecedores, APIs, parceiros" minHeight="80px" />
                 </Field>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Critérios de elegibilidade">
-                  <Textarea value={criteriosElegibilidade} onChange={e => setCriteriosElegibilidade(e.target.value)} placeholder="Quem pode contratar" className="resize-none" rows={3} />
+                  <RichTextEditor value={criteriosElegibilidade} onChange={setCriteriosElegibilidade} placeholder="Quem pode contratar" minHeight="80px" />
                 </Field>
                 <Field label="Critérios de recusa">
-                  <Textarea value={criteriosRecusa} onChange={e => setCriteriosRecusa(e.target.value)} placeholder="Quando não deve ser contratado" className="resize-none" rows={3} />
+                  <RichTextEditor value={criteriosRecusa} onChange={setCriteriosRecusa} placeholder="Quando não deve ser contratado" minHeight="80px" />
                 </Field>
               </div>
 
               <Field label="Condições especiais">
-                <Textarea value={condicoesEspeciais} onChange={e => setCondicoesEspeciais(e.target.value)} placeholder="Exceções aprovadas, regras específicas" className="resize-none" rows={2} />
+                <RichTextEditor value={condicoesEspeciais} onChange={setCondicoesEspeciais} placeholder="Exceções aprovadas, regras específicas" minHeight="80px" />
               </Field>
             </>
           )}
 
-          {/* ABA COMERCIAL */}
           {tab === "comercial" && (
             <>
               <SectionTitle>Precificação</SectionTitle>
@@ -436,30 +423,30 @@ export function NewProductSheet({ open, onOpenChange, createProduct }: Props) {
               </Field>
 
               <Field label="Faixas de preço">
-                <Textarea value={faixasPreco} onChange={e => setFaixasPreco(e.target.value)} placeholder="Por faturamento, volume, plano, usuários etc." className="resize-none" rows={3} />
+                <RichTextEditor value={faixasPreco} onChange={setFaixasPreco} placeholder="Por faturamento, volume, plano, usuários etc." />
               </Field>
 
               <Field label="Adicionais">
-                <Textarea value={adicionais} onChange={e => setAdicionais(e.target.value)} placeholder="Cobranças extras previstas" className="resize-none" rows={2} />
+                <RichTextEditor value={adicionais} onChange={setAdicionais} placeholder="Cobranças extras previstas" minHeight="80px" />
               </Field>
 
               <SectionTitle>Política comercial</SectionTitle>
 
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Política de desconto">
-                  <Textarea value={politicaDesconto} onChange={e => setPoliticaDesconto(e.target.value)} placeholder="Regras e limites" className="resize-none" rows={3} />
+                  <RichTextEditor value={politicaDesconto} onChange={setPoliticaDesconto} placeholder="Regras e limites" minHeight="80px" />
                 </Field>
                 <Field label="Aprovação de desconto">
-                  <Textarea value={aprovacaoDesconto} onChange={e => setAprovacaoDesconto(e.target.value)} placeholder="Quem aprova exceções" className="resize-none" rows={3} />
+                  <RichTextEditor value={aprovacaoDesconto} onChange={setAprovacaoDesconto} placeholder="Quem aprova exceções" minHeight="80px" />
                 </Field>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Regra de cancelamento">
-                  <Textarea value={regrasCancelamento} onChange={e => setRegrasCancelamento(e.target.value)} placeholder="Como funciona a saída" className="resize-none" rows={3} />
+                  <RichTextEditor value={regrasCancelamento} onChange={setRegrasCancelamento} placeholder="Como funciona a saída" minHeight="80px" />
                 </Field>
                 <Field label="Reajuste">
-                  <Textarea value={reajuste} onChange={e => setReajuste(e.target.value)} placeholder="Periodicidade e índice" className="resize-none" rows={3} />
+                  <RichTextEditor value={reajuste} onChange={setReajuste} placeholder="Periodicidade e índice" minHeight="80px" />
                 </Field>
               </div>
 
@@ -469,7 +456,6 @@ export function NewProductSheet({ open, onOpenChange, createProduct }: Props) {
             </>
           )}
 
-          {/* ABA ENTREGA */}
           {tab === "entrega" && (
             <>
               <SectionTitle>Operação e entrega</SectionTitle>
@@ -490,7 +476,7 @@ export function NewProductSheet({ open, onOpenChange, createProduct }: Props) {
               </div>
 
               <Field label="Entregáveis">
-                <Textarea value={entregaveis} onChange={e => setEntregaveis(e.target.value)} placeholder="O que o cliente recebe na prática" className="resize-none" rows={3} />
+                <RichTextEditor value={entregaveis} onChange={setEntregaveis} placeholder="O que o cliente recebe na prática" />
               </Field>
 
               <div className="grid grid-cols-2 gap-4">
@@ -525,21 +511,20 @@ export function NewProductSheet({ open, onOpenChange, createProduct }: Props) {
 
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Critério de início">
-                  <Textarea value={criterioInicio} onChange={e => setCriterioInicio(e.target.value)} placeholder="O que dispara a entrega" className="resize-none" rows={2} />
+                  <RichTextEditor value={criterioInicio} onChange={setCriterioInicio} placeholder="O que dispara a entrega" minHeight="80px" />
                 </Field>
                 <Field label="Critério de conclusão">
-                  <Textarea value={criterioConclusao} onChange={e => setCriterioConclusao(e.target.value)} placeholder="Quando é considerado entregue" className="resize-none" rows={2} />
+                  <RichTextEditor value={criterioConclusao} onChange={setCriterioConclusao} placeholder="Quando é considerado entregue" minHeight="80px" />
                 </Field>
               </div>
 
               <Field label="Documentos necessários">
-                <Textarea value={documentosNecessarios} onChange={e => setDocumentosNecessarios(e.target.value)} placeholder="Lista de documentos para contratação/operação" className="resize-none" rows={3} />
+                <RichTextEditor value={documentosNecessarios} onChange={setDocumentosNecessarios} placeholder="Lista de documentos para contratação/operação" />
               </Field>
             </>
           )}
         </div>
 
-        {/* Footer */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 shrink-0 bg-slate-50/50">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
           <Button onClick={handleSave} disabled={saving}>{saving ? "Salvando..." : "Salvar"}</Button>
