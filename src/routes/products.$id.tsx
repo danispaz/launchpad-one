@@ -1,40 +1,39 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
-import { Avatar } from "@/components/Badges";
 import { useProductDetail } from "@/hooks/useProductDetail";
-import { BriefingDisplay } from "@/components/products/BriefingDisplay";
-import { ProductSummary } from "@/components/products/ProductSummary";
-import { ProductLaunchesList } from "@/components/products/ProductLaunchesList";
 import { LifecycleTransitionDialog } from "@/components/products/LifecycleTransitionDialog";
 import { LifecycleHistoryDisplay } from "@/components/products/LifecycleHistoryDisplay";
-import {
-  CATEGORY_LABELS,
-  LIFECYCLE_LABELS,
-  LIFECYCLE_ICONS,
-} from "@/lib/schemas/product-schema";
-import { ChevronLeft, Heart, User, Tag, ArrowRightLeft } from "lucide-react";
 import { ProductRoadmap } from "@/components/products/ProductRoadmap";
+import { CATEGORY_LABELS, LIFECYCLE_LABELS, LIFECYCLE_ICONS } from "@/lib/schemas/product-schema";
+import { ChevronLeft, ArrowRightLeft, Package, Users, ListTodo } from "lucide-react";
 
 export const Route = createFileRoute("/products/$id")({
-  head: () => ({
-    meta: [{ title: "LaunchHub — Detalhes do Produto" }],
-  }),
+  head: () => ({ meta: [{ title: "LaunchHub — Detalhes do Produto" }] }),
   component: ProductDetail,
 });
 
+const TABS = [
+  { key: "overview", label: "Visão Geral" },
+  { key: "escopo", label: "Escopo" },
+  { key: "comercial", label: "Comercial" },
+  { key: "entrega", label: "Entrega" },
+  { key: "roadmap", label: "Roadmap" },
+  { key: "tasks", label: "Tarefas" },
+  { key: "team", label: "Time" },
+];
+
 function ProductDetail() {
   const { id } = Route.useParams();
-  console.log("PRODUCT DETAIL PAGE MOUNTED", { id });
   const { product, loading, error, refetch } = useProductDetail(id);
   const [isTransitionDialogOpen, setIsTransitionDialogOpen] = useState(false);
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+  const [activeTab, setActiveTab] = useState("overview");
 
   const handleTransitionComplete = () => {
     refetch();
-    setHistoryRefreshKey((k) => k + 1);
+    setHistoryRefreshKey(k => k + 1);
   };
 
   if (loading) {
@@ -60,112 +59,177 @@ function ProductDetail() {
     );
   }
 
-  const healthColor =
-    product.status_saude === "saudavel"
-      ? "bg-green-500"
-      : product.status_saude === "atencao"
-      ? "bg-yellow-500"
-      : "bg-red-500";
-
-  const ownerInitials = product.owner_nome
-    ? product.owner_nome.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase()
-    : "??";
-
+  const p = product as any;
+  const m = p.metadata || {};
   const StageIcon = LIFECYCLE_ICONS[product.estagio_atual];
+  const isAtivo = p.ativo !== false;
+
+  const healthColor = product.status_saude === "saudavel" ? "text-emerald-600 bg-emerald-50" :
+    product.status_saude === "atencao" ? "text-amber-600 bg-amber-50" : "text-rose-600 bg-rose-50";
 
   return (
     <AppLayout>
       <TopBar title={product.nome} subtitle="Detalhes do produto" />
-      <div className="flex-1 px-8 py-10 max-w-[1200px] mx-auto w-full">
-        <Link to="/products" className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-primary mb-8 font-bold uppercase tracking-wider transition-colors">
-          <ChevronLeft className="h-3 w-3" /> Produtos
-        </Link>
 
-        <header className="mb-12">
-          <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center px-2 py-1 rounded-md bg-surface text-[10px] font-medium text-muted-foreground border border-border/50">
-                {CATEGORY_LABELS[product.categoria]}
-              </span>
-              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-surface text-[10px] font-medium text-foreground border border-border/50">
-                <StageIcon className="w-3 h-3" />
-                {LIFECYCLE_LABELS[product.estagio_atual]}
-              </span>
-              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-surface text-[10px] font-medium text-muted-foreground border border-border/50">
-                <div className={`h-2 w-2 rounded-full ${healthColor}`}></div>
-                {product.score_saude}/100
-              </span>
+      <div className="flex-1 overflow-auto">
+        <div className="max-w-[1100px] mx-auto px-8 py-8">
+
+          {/* Breadcrumb */}
+          <Link to="/products" className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 mb-6 transition-colors">
+            <ChevronLeft className="h-3 w-3" /> Produtos
+          </Link>
+
+          {/* Header */}
+          <div className="flex items-start justify-between gap-4 mb-8">
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold ${isAtivo ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+                  {isAtivo ? "Ativo" : "Inativo"}
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600">
+                  <StageIcon className="w-3 h-3" />
+                  {LIFECYCLE_LABELS[product.estagio_atual]}
+                </span>
+                {p.tipo && (
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700">
+                    {p.tipo}
+                  </span>
+                )}
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold ${healthColor}`}>
+                  {product.score_saude}/100
+                </span>
+              </div>
+              <h1 className="text-3xl font-black text-slate-900 mb-2">{product.nome}</h1>
+              {m.descricao_curta && <p className="text-base text-slate-500 leading-relaxed">{m.descricao_curta}</p>}
             </div>
-            <button
-              onClick={() => setIsTransitionDialogOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-foreground text-background hover:opacity-90 transition-opacity"
-            >
-              <ArrowRightLeft className="w-3 h-3" />
-              Mudar estágio
+            <button onClick={() => setIsTransitionDialogOpen(true)}
+              className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-foreground text-background hover:opacity-90 transition-opacity">
+              <ArrowRightLeft className="w-3.5 h-3.5" /> Mudar estágio
             </button>
           </div>
-          <h2 className="text-4xl font-black tracking-tight text-slate-800 mb-4">{product.nome}</h2>
-          <div 
-            className="text-lg text-slate-500 max-w-2xl leading-relaxed prose prose-slate prose-sm"
-            dangerouslySetInnerHTML={{ __html: product.descricao || "Sem descrição." }}
-          />
-        </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-            <Meta icon={StageIcon} label="Estágio" value={LIFECYCLE_LABELS[product.estagio_atual]} />
+          {/* Cards de info */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+            <InfoCard label="Categoria" value={CATEGORY_LABELS[product.categoria]} />
+            <InfoCard label="Responsável" value={product.owner_nome || "—"} />
+            {p.codigo && <InfoCard label="Código" value={p.codigo} mono />}
+            {p.versao && <InfoCard label="Versão" value={p.versao} />}
+            {p.subcategoria && <InfoCard label="Subcategoria" value={p.subcategoria} />}
+            {p.area_executora && <InfoCard label="Área executora" value={p.area_executora} />}
           </div>
-          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-            <Meta icon={Heart} label="Saúde" value={`${product.score_saude}/100`} />
+
+          {/* Abas */}
+          <div className="flex items-center gap-0 border-b border-slate-200 mb-8 overflow-x-auto">
+            {TABS.map(tab => (
+              <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+                className={`px-5 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${activeTab === tab.key ? "border-slate-900 text-slate-900" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
+                {tab.label}
+              </button>
+            ))}
           </div>
-          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
-              <User className="h-3.5 w-3.5" />
-              Responsável
-            </div>
-            {product.owner_nome ? (
-              <div className="flex items-center gap-2">
-                <Avatar initials={ownerInitials} />
-                <p className="text-sm font-black text-slate-700">{product.owner_nome}</p>
+
+          {/* Conteúdo das abas */}
+          {activeTab === "overview" && (
+            <div className="space-y-8">
+              {/* Descrição completa */}
+              {product.descricao && (
+                <Section title="Descrição completa">
+                  <div className="prose prose-sm max-w-none text-slate-600" dangerouslySetInnerHTML={{ __html: product.descricao }} />
+                </Section>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <RichField label="Problema que resolve" value={m.problema_resolve} />
+                <RichField label="Proposta de valor" value={m.proposta_valor} />
+                <RichField label="Benefício principal" value={m.beneficio_principal} plain />
+                <RichField label="Diferenciais" value={m.diferenciais} />
+                <RichField label="Público-alvo" value={m.publico_alvo} />
+                <RichField label="Perfil não indicado" value={m.perfil_nao_indicado} />
+                <RichField label="Principais objeções" value={m.objecoes_comuns} />
+                <RichField label="Argumento comercial" value={m.argumento_comercial} />
               </div>
-            ) : (
-              <p className="text-sm font-black text-slate-400">Sem responsável</p>
-            )}
-          </div>
-          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-            <Meta icon={Tag} label="Categoria" value={CATEGORY_LABELS[product.categoria]} />
-          </div>
-        </div>
 
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="bg-slate-100/50 p-1 mb-10 h-12 w-fit">
-            <TabsTrigger value="overview" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Visão Geral</TabsTrigger>
-            <TabsTrigger value="roadmap" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Roadmap</TabsTrigger>
-            <TabsTrigger value="tasks" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Tarefas</TabsTrigger>
-            <TabsTrigger value="team" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Time</TabsTrigger>
-          </TabsList>
+              <LifecycleHistoryDisplay productId={product.id} key={historyRefreshKey} />
+            </div>
+          )}
 
-          <TabsContent value="overview" className="space-y-8">
-            <ProductSummary productId={product.id} />
-            <LifecycleHistoryDisplay productId={product.id} key={historyRefreshKey} />
-          </TabsContent>
+          {activeTab === "escopo" && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <RichField label="O que está incluso" value={m.incluso} />
+                <RichField label="O que não está incluso" value={m.nao_incluso} />
+                <RichField label="Pré-requisitos" value={m.prerequisitos} />
+                <RichField label="Limites de uso" value={m.limites_uso} />
+                <RichField label="Serviços adicionais" value={m.servicos_adicionais} />
+                <RichField label="Condições especiais" value={m.condicoes_especiais} />
+                <RichField label="Dependências internas" value={m.dependencias_internas} />
+                <RichField label="Dependências externas" value={m.dependencias_externas} />
+                <RichField label="Critérios de elegibilidade" value={m.criterios_elegibilidade} />
+                <RichField label="Critérios de recusa" value={m.criterios_recusa} />
+              </div>
+            </div>
+          )}
 
-          <TabsContent value="roadmap">
+          {activeTab === "comercial" && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                {m.modelo_cobranca && <InfoCard label="Modelo de cobrança" value={m.modelo_cobranca} />}
+                {m.preco_base && <InfoCard label="Preço base" value={m.preco_base} />}
+                {m.setup_implantacao && <InfoCard label="Setup" value={m.setup_implantacao} />}
+                {m.margem_esperada && <InfoCard label="Margem esperada" value={m.margem_esperada} />}
+                {m.custo_estimado && <InfoCard label="Custo estimado" value={m.custo_estimado} />}
+                {m.comissao && <InfoCard label="Comissão" value={m.comissao} />}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <RichField label="Faixas de preço" value={m.faixas_preco} />
+                <RichField label="Adicionais" value={m.adicionais} />
+                <RichField label="Política de desconto" value={m.politica_desconto} />
+                <RichField label="Aprovação de desconto" value={m.aprovacao_desconto} />
+                <RichField label="Regra de cancelamento" value={m.regras_cancelamento} />
+                <RichField label="Reajuste" value={m.reajuste} />
+              </div>
+            </div>
+          )}
+
+          {activeTab === "entrega" && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                {m.forma_entrega && <InfoCard label="Forma de entrega" value={m.forma_entrega} />}
+                {m.frequencia && <InfoCard label="Frequência" value={m.frequencia} />}
+                {m.prazo_ativacao && <InfoCard label="Prazo de ativação" value={m.prazo_ativacao} />}
+                {m.prazo_entrega && <InfoCard label="Prazo de entrega" value={m.prazo_entrega} />}
+                {m.sla_atendimento && <InfoCard label="SLA" value={m.sla_atendimento} />}
+                {m.canal_atendimento && <InfoCard label="Canal" value={m.canal_atendimento} />}
+                {m.responsavel_execucao && <InfoCard label="Resp. execução" value={m.responsavel_execucao} />}
+                {m.responsavel_acompanhamento && <InfoCard label="Resp. acompanhamento" value={m.responsavel_acompanhamento} />}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <RichField label="Entregáveis" value={m.entregaveis} />
+                <RichField label="Critério de início" value={m.criterio_inicio} />
+                <RichField label="Critério de conclusão" value={m.criterio_conclusao} />
+                <RichField label="Documentos necessários" value={m.documentos_necessarios} />
+              </div>
+            </div>
+          )}
+
+          {activeTab === "roadmap" && (
             <ProductRoadmap productId={product.id} />
-          </TabsContent>
+          )}
 
-          <TabsContent value="tasks">
-            <div className="bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-12 text-center">
-              <p className="text-sm text-slate-400 font-medium">Tarefas do produto em construção — em breve aqui.</p>
+          {activeTab === "tasks" && (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <ListTodo className="w-12 h-12 text-slate-200 mb-4" />
+              <p className="text-sm text-slate-400 font-medium">Tarefas do produto em construção</p>
             </div>
-          </TabsContent>
+          )}
 
-          <TabsContent value="team">
-            <div className="bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-12 text-center">
-              <p className="text-sm text-slate-400 font-medium">Time do produto em construção — em breve aqui.</p>
+          {activeTab === "team" && (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <Users className="w-12 h-12 text-slate-200 mb-4" />
+              <p className="text-sm text-slate-400 font-medium">Time do produto em construção</p>
             </div>
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       </div>
 
       <LifecycleTransitionDialog
@@ -179,14 +243,34 @@ function ProductDetail() {
   );
 }
 
-function Meta({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+function InfoCard({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm">
+      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">{label}</p>
+      <p className={`text-sm font-semibold text-slate-800 truncate ${mono ? "font-mono" : ""}`}>{value}</p>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
-        <Icon className="h-3.5 w-3.5" />
-        {label}
-      </div>
-      <p className="text-sm font-black text-slate-700">{value}</p>
+      <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">{title}</h3>
+      {children}
+    </div>
+  );
+}
+
+function RichField({ label, value, plain }: { label: string; value?: string; plain?: boolean }) {
+  if (!value) return null;
+  return (
+    <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">{label}</p>
+      {plain ? (
+        <p className="text-sm text-slate-700 leading-relaxed">{value}</p>
+      ) : (
+        <div className="prose prose-sm max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: value }} />
+      )}
     </div>
   );
 }
