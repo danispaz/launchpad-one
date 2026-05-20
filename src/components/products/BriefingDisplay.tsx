@@ -77,9 +77,10 @@ export function BriefingDisplay({ productId }: BriefingDisplayProps) {
                 </div>
 
                 {conteudo ? (
-                  <div className="whitespace-pre-wrap text-sm text-slate-700 leading-relaxed">
-                    {conteudo}
-                  </div>
+                  <div 
+                    className="prose prose-slate prose-sm max-w-none text-slate-700 leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: conteudo }}
+                  />
                 ) : (
                   <p className="text-sm text-muted-foreground italic">
                     Esta área ainda não foi preenchida. Clique em Editar pra começar.
