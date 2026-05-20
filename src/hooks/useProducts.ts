@@ -22,6 +22,15 @@ export interface Product {
   owner_id: string | null;
   created_at: string;
   updated_at: string;
+  // Campos extras
+  tipo?: string | null;
+  codigo?: string | null;
+  ativo?: boolean;
+  versao?: string | null;
+  subcategoria?: string | null;
+  area_executora?: string | null;
+  metadata?: Record<string, any> | null;
+  // Joins
   owner_nome?: string;
   owner_email?: string;
 }
@@ -43,8 +52,6 @@ export function useProducts() {
 
       if (productsError) throw productsError;
 
-      console.log("[RAW useProducts]", productsData);
-
       const ownerIds = ((productsData ?? []) as Product[])
         .map((p: Product) => p.owner_id)
         .filter((id): id is string => Boolean(id));
@@ -58,8 +65,6 @@ export function useProducts() {
           .in("id", ownerIds);
 
         if (profilesError) throw profilesError;
-
-        console.log("[RAW useProducts profiles]", profilesData);
 
         ((profilesData ?? []) as { id: string; nome: string; email: string }[]).forEach((p) => {
           profileMap.set(p.id, { nome: p.nome, email: p.email });
@@ -77,8 +82,7 @@ export function useProducts() {
 
       setProducts(enriched);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Erro ao carregar produtos";
+      const message = err instanceof Error ? err.message : "Erro ao carregar produtos";
       console.error("[ERROR useProducts]", err);
       setError(message);
     } finally {
@@ -97,7 +101,6 @@ export function useProducts() {
 
       if (error) throw error;
 
-      console.log("[RAW useProducts createProduct]", data);
       toast.success("Produto criado com sucesso");
       await fetchProducts();
     } catch (err) {
@@ -121,7 +124,6 @@ export function useProducts() {
 
       if (error) throw error;
 
-      console.log("[RAW useProducts updateProduct]", data);
       toast.success("Produto atualizado");
       await fetchProducts();
     } catch (err) {
@@ -142,7 +144,6 @@ export function useProducts() {
 
       if (error) throw error;
 
-      console.log("[RAW useProducts deleteProduct]", id);
       toast.success("Produto excluído");
       await fetchProducts();
     } catch (err) {
