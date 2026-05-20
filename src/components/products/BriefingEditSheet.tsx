@@ -13,7 +13,7 @@ import {
   SheetFooter,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/RichTextEditor";
 
 interface BriefingEditSheetProps {
   open: boolean;
@@ -65,12 +65,11 @@ export function BriefingEditSheet({
         </SheetHeader>
 
         <div className="flex-1 py-4">
-          <Textarea
+          <RichTextEditor
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={(val) => setContent(val)}
             placeholder={`Escreva o briefing de ${BRIEFING_AREA_LABELS[area]}...`}
-            className="resize-none h-full min-h-[400px]"
-            maxLength={10000}
+            minHeight="400px"
           />
           <p className="text-xs text-muted-foreground mt-2 text-right">
             {content.length}/10000

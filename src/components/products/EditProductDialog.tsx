@@ -30,7 +30,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import {
   Select,
   SelectContent,
@@ -118,10 +118,11 @@ export function EditProductDialog({ open, onOpenChange, product, updateProduct }
                 <FormItem>
                   <FormLabel>Descrição (Opcional)</FormLabel>
                   <FormControl>
-                    <Textarea 
+                    <RichTextEditor 
+                      value={field.value}
+                      onChange={field.onChange}
                       placeholder="Breve descrição do propósito do produto" 
-                      className="resize-none min-h-[100px]"
-                      {...field} 
+                      minHeight="120px"
                     />
                   </FormControl>
                   <FormMessage />

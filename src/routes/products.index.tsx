@@ -162,7 +162,11 @@ function ProductCard({ product, canEdit, onDelete, onEdit }: { product: Product;
       <Link to="/products/$id" params={{ id: product.id }} className="flex flex-col gap-4 flex-1">
         <div>
           <h3 className="text-base font-semibold text-foreground mb-1">{product.nome}</h3>
-          {product.descricao && <p className="text-xs text-muted-foreground line-clamp-2">{product.descricao}</p>}
+          {product.descricao && (
+            <p className="text-xs text-muted-foreground line-clamp-2">
+              {product.descricao.replace(/<[^>]*>/g, '')}
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap gap-2">
           <span className="inline-flex items-center px-2 py-1 rounded-md bg-surface text-[10px] font-medium text-muted-foreground border border-border/50">
