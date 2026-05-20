@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { NewProductSheet } from "@/components/products/NewProductSheet";
-import { EditProductDialog } from "@/components/products/EditProductDialog";
+import { EditProductSheet } from "@/components/products/EditProductSheet";
 
 export const Route = createFileRoute("/products/")({
   component: ProductsList,
@@ -130,7 +130,7 @@ function ProductsList() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <EditProductDialog open={!!productToEdit} onOpenChange={(open) => !open && setProductToEdit(null)} product={productToEdit} updateProduct={updateProduct} />
+      <EditProductSheet open={!!productToEdit} onOpenChange={(open) => !open && setProductToEdit(null)} product={productToEdit} updateProduct={updateProduct} />
       <NewProductSheet open={isNewProductOpen} onOpenChange={setIsNewProductOpen} createProduct={createProduct} />
     </AppLayout>
   );
