@@ -4,7 +4,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
 import { useProducts, type Product } from "@/hooks/useProducts";
 import { CATEGORY_LABELS, LIFECYCLE_LABELS, LIFECYCLE_ICONS } from "@/lib/schemas/product-schema";
-import { Package, Pencil, Trash2, Search, SlidersHorizontal, Check, ChevronRight } from "lucide-react";
+import { Package, Pencil, Trash2, Search, SlidersHorizontal, Check, ChevronRight, ChevronLeft } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/lib/supabase";
 import { NewProductSheet } from "@/components/products/NewProductSheet";
@@ -29,6 +29,7 @@ const ALL_COLUMNS = [
 ];
 
 const DEFAULT_VISIBLE = ["nome", "ativo", "tipo", "categoria", "codigo", "owner_nome"];
+const PAGE_SIZE = 50;
 
 function ProductsList() {
   const { products, loading, error, createProduct, updateProduct, deleteProduct } = useProducts();
@@ -42,6 +43,7 @@ function ProductsList() {
   const [filterCategoria, setFilterCategoria] = useState("");
   const [visibleCols, setVisibleCols] = useState<string[]>(DEFAULT_VISIBLE);
   const [showColConfig, setShowColConfig] = useState(false);
+  const [page, setPage] = useState(1);
   const colConfigRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -63,8 +65,10 @@ function ProductsList() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  const canEdit = userRole === "executive" || userRole === "product";
+  // Reset page when filters change
+  useEffect(() => { setPage(1); }, [search, filterAtivo, filterTipo, filterCategoria]);
 
+  const canEdit = userRole === "executive" || userRole === "product";
   const tiposDisponiveis = [...new Set(products.map(p => (p as any).tipo).filter(Boolean))];
   const categoriasDisponiveis = [...new Set(products.map(p => p.categoria).filter(Boolean))];
 
@@ -76,6 +80,9 @@ function ProductsList() {
     if (filterCategoria && p.categoria !== filterCategoria) return false;
     return true;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const toggleCol = (key: string) => {
     setVisibleCols(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
@@ -121,7 +128,6 @@ function ProductsList() {
 
         {/* Toolbar */}
         <div className="flex items-center gap-3 px-6 py-3 border-b border-slate-100 bg-white shrink-0 flex-wrap">
-          {/* Pesquisa */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
             <input type="text" value={search} onChange={e => setSearch(e.target.value)}
@@ -129,7 +135,6 @@ function ProductsList() {
               className="pl-9 pr-4 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-slate-400 focus:bg-white transition-all w-52 placeholder:text-slate-400" />
           </div>
 
-          {/* Filtro Ativo */}
           <div className="flex items-center gap-1">
             {[{ key: "all", label: "Todos" }, { key: "ativo", label: "Ativo" }, { key: "inativo", label: "Inativo" }].map(f => (
               <button key={f.key} onClick={() => setFilterAtivo(f.key as any)}
@@ -139,7 +144,6 @@ function ProductsList() {
             ))}
           </div>
 
-          {/* Filtro Tipo */}
           {tiposDisponiveis.length > 0 && (
             <select value={filterTipo} onChange={e => setFilterTipo(e.target.value)}
               className="text-xs border border-slate-200 rounded-lg px-3 py-1.5 bg-white outline-none text-slate-600">
@@ -148,7 +152,6 @@ function ProductsList() {
             </select>
           )}
 
-          {/* Filtro Categoria */}
           {categoriasDisponiveis.length > 0 && (
             <select value={filterCategoria} onChange={e => setFilterCategoria(e.target.value)}
               className="text-xs border border-slate-200 rounded-lg px-3 py-1.5 bg-white outline-none text-slate-600">
@@ -159,7 +162,6 @@ function ProductsList() {
 
           <span className="text-xs text-slate-400 ml-auto">{filtered.length} produto{filtered.length !== 1 ? "s" : ""}</span>
 
-          {/* Config de colunas */}
           <div className="relative" ref={colConfigRef}>
             <button onClick={() => setShowColConfig(!showColConfig)}
               className={`p-1.5 rounded-lg border transition-colors ${showColConfig ? "bg-slate-100 border-slate-300" : "border-slate-200 hover:bg-slate-50"}`}
@@ -205,21 +207,17 @@ function ProductsList() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {filtered.map(p => {
+                {paginated.map(p => {
                   const StageIcon = LIFECYCLE_ICONS[p.estagio_atual];
                   const isAtivo = (p as any).ativo !== false;
                   return (
                     <tr key={p.id} className="hover:bg-slate-50 transition-colors group">
                       <td className="px-6 py-3"><input type="checkbox" className="rounded" /></td>
-
-                      {visibleCols.includes("nome") || true ? (
-                        <td className="px-4 py-3">
-                          <Link to="/products/$id" params={{ id: p.id }} className="font-semibold text-slate-800 hover:text-slate-900 transition-colors">
-                            {p.nome}
-                          </Link>
-                        </td>
-                      ) : null}
-
+                      <td className="px-4 py-3">
+                        <Link to="/products/$id" params={{ id: p.id }} className="font-semibold text-slate-800 hover:text-slate-900 transition-colors">
+                          {p.nome}
+                        </Link>
+                      </td>
                       {visibleCols.includes("ativo") && (
                         <td className="px-4 py-3">
                           {isAtivo
@@ -227,25 +225,15 @@ function ProductsList() {
                             : <span className="text-[11px] text-slate-400">Inativo</span>}
                         </td>
                       )}
-
                       {visibleCols.includes("tipo") && (
-                        <td className="px-4 py-3">
-                          <span className="text-xs text-slate-600">{(p as any).tipo || "—"}</span>
-                        </td>
+                        <td className="px-4 py-3"><span className="text-xs text-slate-600">{(p as any).tipo || "—"}</span></td>
                       )}
-
                       {visibleCols.includes("categoria") && (
-                        <td className="px-4 py-3">
-                          <span className="text-xs text-slate-600">{CATEGORY_LABELS[p.categoria] || p.categoria}</span>
-                        </td>
+                        <td className="px-4 py-3"><span className="text-xs text-slate-600">{CATEGORY_LABELS[p.categoria] || p.categoria}</span></td>
                       )}
-
                       {visibleCols.includes("subcategoria") && (
-                        <td className="px-4 py-3">
-                          <span className="text-xs text-slate-500">{(p as any).subcategoria || "—"}</span>
-                        </td>
+                        <td className="px-4 py-3"><span className="text-xs text-slate-500">{(p as any).subcategoria || "—"}</span></td>
                       )}
-
                       {visibleCols.includes("estagio_atual") && (
                         <td className="px-4 py-3">
                           <span className="inline-flex items-center gap-1 text-xs text-slate-600">
@@ -253,31 +241,18 @@ function ProductsList() {
                           </span>
                         </td>
                       )}
-
                       {visibleCols.includes("codigo") && (
-                        <td className="px-4 py-3">
-                          <span className="text-xs font-mono text-slate-500">{(p as any).codigo || "—"}</span>
-                        </td>
+                        <td className="px-4 py-3"><span className="text-xs font-mono text-slate-500">{(p as any).codigo || "—"}</span></td>
                       )}
-
                       {visibleCols.includes("versao") && (
-                        <td className="px-4 py-3">
-                          <span className="text-xs text-slate-500">{(p as any).versao || "—"}</span>
-                        </td>
+                        <td className="px-4 py-3"><span className="text-xs text-slate-500">{(p as any).versao || "—"}</span></td>
                       )}
-
                       {visibleCols.includes("area_executora") && (
-                        <td className="px-4 py-3">
-                          <span className="text-xs text-slate-500">{(p as any).area_executora || "—"}</span>
-                        </td>
+                        <td className="px-4 py-3"><span className="text-xs text-slate-500">{(p as any).area_executora || "—"}</span></td>
                       )}
-
                       {visibleCols.includes("owner_nome") && (
-                        <td className="px-4 py-3">
-                          <span className="text-xs text-slate-600">{p.owner_nome || "—"}</span>
-                        </td>
+                        <td className="px-4 py-3"><span className="text-xs text-slate-600">{p.owner_nome || "—"}</span></td>
                       )}
-
                       {visibleCols.includes("score_saude") && (
                         <td className="px-4 py-3">
                           <span className={`text-xs font-semibold ${p.score_saude >= 80 ? "text-emerald-600" : p.score_saude >= 50 ? "text-amber-500" : "text-rose-500"}`}>
@@ -285,7 +260,6 @@ function ProductsList() {
                           </span>
                         </td>
                       )}
-
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           {canEdit && (
@@ -310,6 +284,26 @@ function ProductsList() {
             </table>
           )}
         </div>
+
+        {/* Paginação */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-6 py-3 border-t border-slate-100 bg-white shrink-0">
+            <span className="text-xs text-slate-400">
+              Exibindo {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} de {filtered.length}
+            </span>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                <ChevronLeft className="w-4 h-4 text-slate-500" />
+              </button>
+              <span className="text-xs text-slate-600 font-medium">{page} / {totalPages}</span>
+              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                <ChevronRight className="w-4 h-4 text-slate-500" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <AlertDialog open={!!productToDelete} onOpenChange={(open) => !open && setProductToDelete(null)}>
