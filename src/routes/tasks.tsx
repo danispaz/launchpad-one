@@ -5,13 +5,12 @@ import { TopBar } from "@/components/TopBar";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Plus, Calendar, CheckSquare, Square, Star, Sun, AlignLeft, Clock, Rocket, Copy, Trash2, ArrowRight, Download, X, Check } from "lucide-react";
+import { Plus, Calendar, CheckSquare, Square, Star, Sun, AlignLeft, Clock, Rocket, Copy, Trash2, ArrowRight, Download, X, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { TaskSheet } from "@/components/launches/TaskSheet";
 import { TaskKanban } from "@/components/tasks/TaskKanban";
 import { TaskGantt } from "@/components/tasks/TaskGantt";
 import { TaskList } from "@/components/tasks/TaskList";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/tasks")({
   head: () => ({ meta: [{ title: "Tarefas — LaunchHub" }] }),
@@ -50,6 +49,8 @@ const STATUSES = [
   { value: "concluído", label: "Concluído" },
 ];
 
+const PAGE_SIZE = 50;
+
 const today = new Date(); today.setHours(0, 0, 0, 0);
 const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
 
@@ -70,8 +71,8 @@ function TasksPage() {
   const [view, setView] = useState<"list" | "kanban" | "gantt" | "list_table">("list");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleteConfirm, setDeleteConfirm] = useState(false);
-  const [moveStatus, setMoveStatus] = useState("");
   const [showMoveSelect, setShowMoveSelect] = useState(false);
+  const [page, setPage] = useState(1);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -93,6 +94,7 @@ function TasksPage() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { setPage(1); }, [activeFilter, view]);
 
   const filteredTasks = tasks.filter(t => {
     if (activeFilter === "all") return true;
@@ -101,6 +103,9 @@ function TasksPage() {
     if (activeFilter === "no_date") return !t.data_entrega;
     return t.launch_id === activeFilter;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredTasks.length / PAGE_SIZE));
+  const paginatedTasks = filteredTasks.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const countFilter = (f: Filter) => {
     if (f === "all") return tasks.length;
@@ -118,7 +123,7 @@ function TasksPage() {
 
   const handleQuickCreate = async () => {
     if (!quickTitle.trim()) return;
-    if (!launches[0]) { toast.error("Crie um lançamento primeiro"); return; }
+    if (!launches[0]) { toast.error("Crie um projeto primeiro"); return; }
     setCreating(true);
     try {
       const launchId = activeFilter !== "all" && activeFilter !== "today" && activeFilter !== "tomorrow" && activeFilter !== "no_date" ? activeFilter : launches[0].id;
@@ -163,7 +168,7 @@ function TasksPage() {
 
   const handleExportSelected = () => {
     const selectedTasks = tasks.filter(t => selected.has(t.id));
-    const csv = ["Título,Status,Time,Responsável,Data Entrega,Lançamento",
+    const csv = ["Título,Status,Time,Responsável,Data Entrega,Projeto",
       ...selectedTasks.map(t => `"${t.titulo}","${t.status}","${t.team || ""}","${t.assignee?.nome || ""}","${t.data_entrega || ""}","${t.launch?.nome || ""}"`)
     ].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -180,7 +185,7 @@ function TasksPage() {
   };
 
   const todayCount = countFilter("today");
-  const allSelected = filteredTasks.length > 0 && filteredTasks.every(t => selected.has(t.id));
+  const allSelected = paginatedTasks.length > 0 && paginatedTasks.every(t => selected.has(t.id));
 
   return (
     <AppLayout>
@@ -190,7 +195,7 @@ function TasksPage() {
             <button onClick={() => setView("list")} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${view === "list" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>Lista</button>
             <button onClick={() => setView("kanban")} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${view === "kanban" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>Kanban</button>
             <button onClick={() => setView("gantt")} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${view === "gantt" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>Gantt</button>
-            <button onClick={() => setView("list_table")} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${view === "list_table" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>Lista</button>
+            <button onClick={() => setView("list_table")} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${view === "list_table" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>Tabela</button>
           </div>
           <button onClick={() => { setEditingTask(null); setIsSheetOpen(true); }} className="h-8 px-3 rounded bg-foreground text-background text-xs font-medium hover:opacity-90 transition-opacity flex items-center gap-1.5">
             <Plus className="w-3.5 h-3.5" /> Nova Tarefa
@@ -201,6 +206,7 @@ function TasksPage() {
       {view === "kanban" && <TaskKanban launches={launches} onRefresh={fetchData} />}
       {view === "gantt" && <TaskGantt launches={launches} onRefresh={fetchData} />}
       {view === "list_table" && <TaskList launches={launches} onRefresh={fetchData} />}
+
       <div className={`flex flex-1 overflow-hidden ${view !== "list" ? "hidden" : ""}`}>
         {/* Sidebar */}
         <div className="w-56 shrink-0 border-r border-slate-100 bg-slate-50/50 overflow-y-auto py-4 px-3">
@@ -212,7 +218,7 @@ function TasksPage() {
           </div>
           {launches.length > 0 && (
             <div className="mt-6">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-2 mb-2">Lançamentos</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-2 mb-2">Projetos</p>
               <div className="space-y-0.5">
                 {launches.map(l => <SideItem key={l.id} icon={<Rocket className="w-4 h-4" />} label={l.nome} count={countFilter(l.id)} active={activeFilter === l.id} onClick={() => setActiveFilter(l.id)} />)}
               </div>
@@ -221,7 +227,7 @@ function TasksPage() {
         </div>
 
         {/* Main */}
-        <div className="flex-1 overflow-y-auto flex flex-col">
+        <div className="flex-1 overflow-hidden flex flex-col">
           {/* Quick create */}
           <div className="sticky top-0 bg-white border-b border-slate-100 px-6 py-3 flex items-center gap-3 z-10">
             <input
@@ -237,8 +243,8 @@ function TasksPage() {
 
           {/* Header da lista */}
           {filteredTasks.length > 0 && (
-            <div className="flex items-center gap-3 px-6 py-2 border-b border-slate-50 bg-slate-50/30">
-              <button onClick={() => allSelected ? clearSelection() : setSelected(new Set(filteredTasks.map(t => t.id)))} className="shrink-0 text-slate-300 hover:text-slate-600 transition-colors">
+            <div className="flex items-center gap-3 px-6 py-2 border-b border-slate-50 bg-slate-50/30 shrink-0">
+              <button onClick={() => allSelected ? clearSelection() : setSelected(new Set(paginatedTasks.map(t => t.id)))} className="shrink-0 text-slate-300 hover:text-slate-600 transition-colors">
                 {allSelected ? <CheckSquare className="w-4 h-4 text-slate-700" /> : <Square className="w-4 h-4" />}
               </button>
               <span className="text-xs text-slate-400 font-medium">{filteredTasks.length} tarefa{filteredTasks.length !== 1 ? "s" : ""}</span>
@@ -246,42 +252,65 @@ function TasksPage() {
           )}
 
           {/* Task list */}
-          {loading ? (
-            <div className="flex items-center justify-center h-40"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div></div>
-          ) : filteredTasks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-60 text-center">
-              <CheckSquare className="w-10 h-10 text-slate-200 mb-3" />
-              <p className="text-sm font-medium text-slate-400">Nenhuma tarefa aqui</p>
-              <p className="text-xs text-slate-300 mt-1">Crie uma tarefa acima ou mude o filtro</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-50 flex-1">
-              {filteredTasks.map(task => (
-                <div key={task.id} className={`flex items-center gap-3 px-6 py-3 hover:bg-slate-50/80 group transition-colors ${selected.has(task.id) ? "bg-blue-50/50" : ""}`}>
-                  <button onClick={() => toggleSelect(task.id)} className="shrink-0 text-slate-300 hover:text-slate-600 transition-colors">
-                    {selected.has(task.id) ? <CheckSquare className="w-4 h-4 text-slate-700" /> : <Square className="w-4 h-4" />}
-                  </button>
-                  <button onClick={() => { setEditingTask(task); setIsSheetOpen(true); }} className="flex-1 text-left min-w-0">
-                    <p className="text-sm font-medium text-slate-800 group-hover:text-slate-900 truncate">{task.titulo}</p>
-                    {task.launch && <p className="text-[11px] text-slate-400 mt-0.5 truncate">{task.launch.nome}</p>}
-                  </button>
-                  <div className="flex items-center gap-3 shrink-0">
-                    {task.data_entrega && (
-                      <div className={`flex items-center gap-1 text-[11px] font-medium ${isOverdue(task.data_entrega) && !isToday(task.data_entrega) ? "text-rose-500" : isToday(task.data_entrega) ? "text-amber-500" : "text-slate-400"}`}>
-                        <Calendar className="w-3 h-3" />
-                        {formatDate(task.data_entrega)}
+          <div className="flex-1 overflow-y-auto">
+            {loading ? (
+              <div className="flex items-center justify-center h-40"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div></div>
+            ) : filteredTasks.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-60 text-center">
+                <CheckSquare className="w-10 h-10 text-slate-200 mb-3" />
+                <p className="text-sm font-medium text-slate-400">Nenhuma tarefa aqui</p>
+                <p className="text-xs text-slate-300 mt-1">Crie uma tarefa acima ou mude o filtro</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-50">
+                {paginatedTasks.map(task => (
+                  <div key={task.id} className={`flex items-center gap-3 px-6 py-3 hover:bg-slate-50/80 group transition-colors ${selected.has(task.id) ? "bg-blue-50/50" : ""}`}>
+                    <button onClick={() => toggleSelect(task.id)} className="shrink-0 text-slate-300 hover:text-slate-600 transition-colors">
+                      {selected.has(task.id) ? <CheckSquare className="w-4 h-4 text-slate-700" /> : <Square className="w-4 h-4" />}
+                    </button>
+                    <button onClick={() => { setEditingTask(task); setIsSheetOpen(true); }} className="flex-1 text-left min-w-0">
+                      <p className="text-sm font-medium text-slate-800 group-hover:text-slate-900 truncate">{task.titulo}</p>
+                      {task.launch && <p className="text-[11px] text-slate-400 mt-0.5 truncate">{task.launch.nome}</p>}
+                    </button>
+                    <div className="flex items-center gap-3 shrink-0">
+                      {task.data_entrega && (
+                        <div className={`flex items-center gap-1 text-[11px] font-medium ${isOverdue(task.data_entrega) && !isToday(task.data_entrega) ? "text-rose-500" : isToday(task.data_entrega) ? "text-amber-500" : "text-slate-400"}`}>
+                          <Calendar className="w-3 h-3" />
+                          {formatDate(task.data_entrega)}
+                        </div>
+                      )}
+                      <div className="h-6 w-6 rounded-full bg-slate-200 flex items-center justify-center text-[9px] font-bold text-slate-500" title={task.assignee?.nome || "Sem responsável"}>
+                        {task.assignee?.nome?.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() || "??"}
                       </div>
-                    )}
-                    <div className="h-6 w-6 rounded-full bg-slate-200 flex items-center justify-center text-[9px] font-bold text-slate-500" title={task.assignee?.nome || "Sem responsável"}>
-                      {task.assignee?.nome?.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() || "??"}
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Paginação */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-6 py-3 border-t border-slate-100 bg-white shrink-0">
+              <span className="text-xs text-slate-400">
+                Exibindo {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filteredTasks.length)} de {filteredTasks.length}
+              </span>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                  className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                  <ChevronLeft className="w-4 h-4 text-slate-500" />
+                </button>
+                <span className="text-xs text-slate-600 font-medium">{page} / {totalPages}</span>
+                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                  className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                  <ChevronRight className="w-4 h-4 text-slate-500" />
+                </button>
+              </div>
             </div>
           )}
         </div>
       </div>
+
       {/* Barra de seleção flutuante */}
       {selected.size > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-slate-900 text-white rounded-2xl shadow-2xl px-4 py-3">
@@ -289,12 +318,10 @@ function TasksPage() {
             <div className="h-6 w-6 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold">{selected.size}</div>
             <span className="text-sm font-medium">selecionada{selected.size !== 1 ? "s" : ""}</span>
           </div>
-
           <button onClick={handleDuplicateSelected} title="Duplicar" className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-slate-800 transition-colors">
             <Copy className="w-4 h-4" />
             <span className="text-[10px]">Duplicar</span>
           </button>
-
           <div className="relative">
             <button onClick={() => setShowMoveSelect(!showMoveSelect)} title="Mover de etapa" className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-slate-800 transition-colors">
               <ArrowRight className="w-4 h-4" />
@@ -310,29 +337,24 @@ function TasksPage() {
               </div>
             )}
           </div>
-
           <button onClick={handleExportSelected} title="Exportar CSV" className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-slate-800 transition-colors">
             <Download className="w-4 h-4" />
             <span className="text-[10px]">Exportar</span>
           </button>
-
           <button onClick={() => setDeleteConfirm(true)} title="Excluir" className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-rose-900 text-rose-400 hover:text-rose-300 transition-colors">
             <Trash2 className="w-4 h-4" />
             <span className="text-[10px]">Excluir</span>
           </button>
-
           <button onClick={() => { const ids = Array.from(selected); supabase.from("tasks").update({ status: "concluído" }).in("id", ids).then(() => { toast.success(`${ids.length} tarefa(s) concluída(s)`); clearSelection(); fetchData(); }); }} title="Concluir" className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-emerald-900 text-emerald-400 hover:text-emerald-300 transition-colors">
             <Check className="w-4 h-4" />
             <span className="text-[10px]">Concluir</span>
           </button>
-
           <button onClick={clearSelection} className="ml-2 pl-4 border-l border-slate-700 text-slate-400 hover:text-white transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
       )}
 
-      {/* Delete confirm */}
       <AlertDialog open={deleteConfirm} onOpenChange={setDeleteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
