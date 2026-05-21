@@ -31,37 +31,29 @@ interface Launch { id: string; nome: string; }
 interface Props {
   launches: Launch[];
   onRefresh?: () => void;
+  filterTeam?: string;
+  filterAssignee?: string;
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  "todo": "A fazer",
-  "em_progresso": "Em progresso",
-  "em_revisão": "Em revisão",
-  "bloqueado": "Bloqueado",
-  "concluído": "Concluído",
+  "todo": "A fazer", "em_progresso": "Em progresso", "em_revisão": "Em revisão",
+  "bloqueado": "Bloqueado", "concluído": "Concluído",
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  "todo": "bg-blue-100 text-blue-700",
-  "em_progresso": "bg-yellow-100 text-yellow-700",
-  "em_revisão": "bg-purple-100 text-purple-700",
-  "bloqueado": "bg-red-100 text-red-700",
+  "todo": "bg-blue-100 text-blue-700", "em_progresso": "bg-yellow-100 text-yellow-700",
+  "em_revisão": "bg-purple-100 text-purple-700", "bloqueado": "bg-red-100 text-red-700",
   "concluído": "bg-emerald-100 text-emerald-700",
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
-  "urgente": "bg-rose-100 text-rose-700",
-  "alta": "bg-orange-100 text-orange-700",
-  "média": "bg-yellow-100 text-yellow-700",
-  "baixa": "bg-slate-100 text-slate-500",
+  "crítica": "bg-rose-100 text-rose-700", "alta": "bg-orange-100 text-orange-700",
+  "média": "bg-yellow-100 text-yellow-700", "baixa": "bg-slate-100 text-slate-500",
 };
 
 const TEAM_LABELS: Record<string, string> = {
-  "marketing": "Marketing",
-  "sales": "Vendas",
-  "product": "Produto",
-  "engineering": "Tecnologia",
-  "executive": "Diretoria",
+  "marketing": "Marketing", "sales": "Vendas", "product": "Produto",
+  "engineering": "Tecnologia", "executive": "Diretoria",
 };
 
 type SortField = "titulo" | "status" | "prioridade" | "team" | "assignee" | "data_inicio" | "data_entrega" | "launch";
@@ -76,7 +68,7 @@ function formatDate(d: string | null) {
   return new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-export function TaskList({ launches, onRefresh }: Props) {
+export function TaskList({ launches, onRefresh, filterTeam, filterAssignee }: Props) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortField, setSortField] = useState<SortField>("data_entrega");
@@ -114,12 +106,17 @@ export function TaskList({ launches, onRefresh }: Props) {
   };
 
   const sorted = [...tasks]
-    .filter(t => !search || t.titulo.toLowerCase().includes(search.toLowerCase()) || t.launch?.nome?.toLowerCase().includes(search.toLowerCase()))
+    .filter(t => {
+      if (filterTeam && t.team !== filterTeam) return false;
+      if (filterAssignee && t.assignee_id !== filterAssignee) return false;
+      if (search && !t.titulo.toLowerCase().includes(search.toLowerCase()) && !t.launch?.nome?.toLowerCase().includes(search.toLowerCase())) return false;
+      return true;
+    })
     .sort((a, b) => {
       let av = "", bv = "";
       if (sortField === "titulo") { av = a.titulo; bv = b.titulo; }
       else if (sortField === "status") { av = STATUS_LABELS[a.status] || ""; bv = STATUS_LABELS[b.status] || ""; }
-      else if (sortField === "prioridade") { const order = ["urgente","alta","média","baixa"]; av = String(order.indexOf(a.prioridade)); bv = String(order.indexOf(b.prioridade)); }
+      else if (sortField === "prioridade") { const order = ["crítica","alta","média","baixa"]; av = String(order.indexOf(a.prioridade)); bv = String(order.indexOf(b.prioridade)); }
       else if (sortField === "team") { av = TEAM_LABELS[a.team || ""] || ""; bv = TEAM_LABELS[b.team || ""] || ""; }
       else if (sortField === "assignee") { av = a.assignee?.nome || ""; bv = b.assignee?.nome || ""; }
       else if (sortField === "data_inicio") { av = a.data_inicio || ""; bv = b.data_inicio || ""; }
@@ -147,17 +144,19 @@ export function TaskList({ launches, onRefresh }: Props) {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Toolbar */}
       <div className="px-6 py-3 border-b border-slate-100 flex items-center gap-3 shrink-0">
-        <input
-          type="text" value={search} onChange={e => setSearch(e.target.value)}
+        <input type="text" value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Pesquisar tarefas..."
-          className="w-64 text-sm bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 outline-none focus:border-slate-400 focus:bg-white transition-all placeholder:text-slate-400"
-        />
+          className="w-64 text-sm bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 outline-none focus:border-slate-400 focus:bg-white transition-all placeholder:text-slate-400" />
+        {(filterTeam || filterAssignee) && (
+          <div className="flex items-center gap-2">
+            {filterTeam && <span className="text-xs bg-slate-900 text-white px-2 py-0.5 rounded-full font-medium">{TEAM_LABELS[filterTeam] || filterTeam}</span>}
+            {filterAssignee && <span className="text-xs bg-slate-900 text-white px-2 py-0.5 rounded-full font-medium">Filtrado por responsável</span>}
+          </div>
+        )}
         <span className="text-xs text-slate-400 ml-auto">{sorted.length} tarefa{sorted.length !== 1 ? "s" : ""}</span>
       </div>
 
-      {/* Table */}
       <div className="flex-1 overflow-auto">
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-white border-b border-slate-200 z-10">
@@ -169,43 +168,31 @@ export function TaskList({ launches, onRefresh }: Props) {
               <th className="text-left px-4 py-3 w-[140px]"><ThButton field="assignee" label="Responsável" /></th>
               <th className="text-left px-4 py-3 w-[120px]"><ThButton field="data_inicio" label="Início" /></th>
               <th className="text-left px-4 py-3 w-[120px]"><ThButton field="data_entrega" label="Término" /></th>
-              <th className="text-left px-4 py-3"><ThButton field="launch" label="Lançamento" /></th>
+              <th className="text-left px-4 py-3"><ThButton field="launch" label="Projeto" /></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
             {sorted.length === 0 ? (
               <tr><td colSpan={8} className="text-center py-16 text-sm text-slate-300">Nenhuma tarefa encontrada</td></tr>
             ) : sorted.map(task => (
-              <tr
-                key={task.id}
-                onClick={() => { setSelectedTask(task); setIsSheetOpen(true); }}
-                className="hover:bg-slate-50 cursor-pointer transition-colors group"
-              >
-                {/* Nome */}
+              <tr key={task.id} onClick={() => { setSelectedTask(task); setIsSheetOpen(true); }}
+                className="hover:bg-slate-50 cursor-pointer transition-colors group">
                 <td className="px-6 py-3">
                   <span className="font-medium text-slate-800 group-hover:text-slate-900 truncate block max-w-[260px]">{task.titulo}</span>
                 </td>
-
-                {/* Status */}
                 <td className="px-4 py-3">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${STATUS_COLORS[task.status] || "bg-slate-100 text-slate-500"}`}>
                     {STATUS_LABELS[task.status] || task.status}
                   </span>
                 </td>
-
-                {/* Prioridade */}
                 <td className="px-4 py-3">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${PRIORITY_COLORS[task.prioridade] || "bg-slate-100 text-slate-500"}`}>
                     {task.prioridade}
                   </span>
                 </td>
-
-                {/* Time */}
                 <td className="px-4 py-3">
                   <span className="text-xs text-slate-600">{TEAM_LABELS[task.team || ""] || "—"}</span>
                 </td>
-
-                {/* Responsável */}
                 <td className="px-4 py-3">
                   {task.assignee ? (
                     <div className="flex items-center gap-2">
@@ -216,20 +203,14 @@ export function TaskList({ launches, onRefresh }: Props) {
                     </div>
                   ) : <span className="text-xs text-slate-300">—</span>}
                 </td>
-
-                {/* Data início */}
                 <td className="px-4 py-3">
                   <span className="text-xs text-slate-500">{formatDate(task.data_inicio)}</span>
                 </td>
-
-                {/* Data término */}
                 <td className="px-4 py-3">
                   <span className={`text-xs font-medium ${isOverdue(task.data_entrega) && task.status !== "concluído" ? "text-rose-500" : isToday(task.data_entrega) ? "text-amber-500" : "text-slate-500"}`}>
                     {formatDate(task.data_entrega)}
                   </span>
                 </td>
-
-                {/* Lançamento */}
                 <td className="px-4 py-3">
                   <span className="text-xs text-slate-500 truncate max-w-[160px] block">{task.launch?.nome || "—"}</span>
                 </td>
