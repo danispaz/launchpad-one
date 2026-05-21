@@ -77,17 +77,26 @@ function TasksPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: tasksRaw } = await supabase.from("tasks").select("*").neq("status", "concluído").order("data_entrega", { ascending: true, nullsFirst: false });
-      const { data: launchesRaw } = await supabase.from("launches").select("id, nome").order("nome");
+      const [{ data: tasksRaw }, { data: launchesRaw }] = await Promise.all([
+        supabase.from("tasks").select("*").neq("status", "concluído").order("data_entrega", { ascending: true, nullsFirst: false }),
+        supabase.from("launches").select("id, nome").order("nome"),
+      ]);
+
       setLaunches(launchesRaw || []);
       const launchMap = Object.fromEntries((launchesRaw || []).map((l: Launch) => [l.id, l]));
       const assigneeIds = [...new Set((tasksRaw || []).map((t: any) => t.assignee_id).filter(Boolean))];
+
       let profileMap: Record<string, { nome: string }> = {};
       if (assigneeIds.length > 0) {
         const { data: profiles } = await supabase.from("profiles").select("id, nome").in("id", assigneeIds);
         profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p]));
       }
-      setTasks((tasksRaw || []).map((t: any) => ({ ...t, launch: launchMap[t.launch_id] || null, assignee: t.assignee_id ? profileMap[t.assignee_id] || null : null })));
+
+      setTasks((tasksRaw || []).map((t: any) => ({
+        ...t,
+        launch: launchMap[t.launch_id] || null,
+        assignee: t.assignee_id ? profileMap[t.assignee_id] || null : null,
+      })));
     } catch (err: any) {
       toast.error("Erro ao carregar tarefas", { description: err.message });
     } finally { setLoading(false); }
@@ -230,12 +239,10 @@ function TasksPage() {
         <div className="flex-1 overflow-hidden flex flex-col">
           {/* Quick create */}
           <div className="sticky top-0 bg-white border-b border-slate-100 px-6 py-3 flex items-center gap-3 z-10">
-            <input
-              type="text" value={quickTitle} onChange={e => setQuickTitle(e.target.value)}
+            <input type="text" value={quickTitle} onChange={e => setQuickTitle(e.target.value)}
               onKeyDown={e => e.key === "Enter" && handleQuickCreate()}
               placeholder="Digite uma nova tarefa e pressione Enter..."
-              className="flex-1 text-sm bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 outline-none focus:border-slate-400 focus:bg-white transition-all placeholder:text-slate-400"
-            />
+              className="flex-1 text-sm bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 outline-none focus:border-slate-400 focus:bg-white transition-all placeholder:text-slate-400" />
             <button onClick={handleQuickCreate} disabled={creating || !quickTitle.trim()} className="h-9 px-4 rounded-lg bg-foreground text-background text-xs font-medium hover:opacity-90 disabled:opacity-40 transition-opacity">
               {creating ? "..." : "Criar"}
             </button>
@@ -319,13 +326,11 @@ function TasksPage() {
             <span className="text-sm font-medium">selecionada{selected.size !== 1 ? "s" : ""}</span>
           </div>
           <button onClick={handleDuplicateSelected} title="Duplicar" className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-slate-800 transition-colors">
-            <Copy className="w-4 h-4" />
-            <span className="text-[10px]">Duplicar</span>
+            <Copy className="w-4 h-4" /><span className="text-[10px]">Duplicar</span>
           </button>
           <div className="relative">
-            <button onClick={() => setShowMoveSelect(!showMoveSelect)} title="Mover de etapa" className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-slate-800 transition-colors">
-              <ArrowRight className="w-4 h-4" />
-              <span className="text-[10px]">Mover</span>
+            <button onClick={() => setShowMoveSelect(!showMoveSelect)} title="Mover" className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-slate-800 transition-colors">
+              <ArrowRight className="w-4 h-4" /><span className="text-[10px]">Mover</span>
             </button>
             {showMoveSelect && (
               <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden min-w-[160px]">
@@ -338,16 +343,13 @@ function TasksPage() {
             )}
           </div>
           <button onClick={handleExportSelected} title="Exportar CSV" className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-slate-800 transition-colors">
-            <Download className="w-4 h-4" />
-            <span className="text-[10px]">Exportar</span>
+            <Download className="w-4 h-4" /><span className="text-[10px]">Exportar</span>
           </button>
           <button onClick={() => setDeleteConfirm(true)} title="Excluir" className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-rose-900 text-rose-400 hover:text-rose-300 transition-colors">
-            <Trash2 className="w-4 h-4" />
-            <span className="text-[10px]">Excluir</span>
+            <Trash2 className="w-4 h-4" /><span className="text-[10px]">Excluir</span>
           </button>
           <button onClick={() => { const ids = Array.from(selected); supabase.from("tasks").update({ status: "concluído" }).in("id", ids).then(() => { toast.success(`${ids.length} tarefa(s) concluída(s)`); clearSelection(); fetchData(); }); }} title="Concluir" className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-emerald-900 text-emerald-400 hover:text-emerald-300 transition-colors">
-            <Check className="w-4 h-4" />
-            <span className="text-[10px]">Concluir</span>
+            <Check className="w-4 h-4" /><span className="text-[10px]">Concluir</span>
           </button>
           <button onClick={clearSelection} className="ml-2 pl-4 border-l border-slate-700 text-slate-400 hover:text-white transition-colors">
             <X className="w-4 h-4" />
