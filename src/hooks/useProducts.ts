@@ -22,7 +22,6 @@ export interface Product {
   owner_id: string | null;
   created_at: string;
   updated_at: string;
-  // Campos extras
   tipo?: string | null;
   codigo?: string | null;
   ativo?: boolean;
@@ -30,10 +29,19 @@ export interface Product {
   subcategoria?: string | null;
   area_executora?: string | null;
   metadata?: Record<string, any> | null;
-  // Joins
   owner_nome?: string;
   owner_email?: string;
 }
+
+type CreateProductInput = NewProductInput & {
+  tipo?: string;
+  codigo?: string;
+  ativo?: boolean;
+  versao?: string;
+  subcategoria?: string;
+  area_executora?: string;
+  metadata?: Record<string, any>;
+};
 
 export function useProducts() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -73,38 +81,33 @@ export function useProducts() {
 
       const enriched: Product[] = ((productsData ?? []) as Product[]).map((p: Product) => {
         const owner = p.owner_id ? profileMap.get(p.owner_id) : undefined;
-        return {
-          ...p,
-          owner_nome: owner?.nome,
-          owner_email: owner?.email,
-        };
+        return { ...p, owner_nome: owner?.nome, owner_email: owner?.email };
       });
 
       setProducts(enriched);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Erro ao carregar produtos";
-      console.error("[ERROR useProducts]", err);
       setError(message);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const createProduct = useCallback(async (input: NewProductInput) => {
+  const createProduct = useCallback(async (input: CreateProductInput) => {
     try {
-      const parsed = newProductSchema.parse(input);
-      const { data, error } = await supabase
+      const { nome, descricao, categoria, estagio_atual, owner_id, ...extras } = input;
+      const parsed = newProductSchema.parse({ nome, descricao, categoria, estagio_atual, owner_id });
+
+      const { error } = await supabase
         .from("products")
-        .insert(parsed)
+        .insert({ ...parsed, ...extras })
         .select()
         .single();
 
       if (error) throw error;
 
-      toast.success("Produto criado com sucesso");
       await fetchProducts();
     } catch (err) {
-      console.error("[ERROR useProducts createProduct]", err);
       toast.error("Erro ao criar produto", {
         description: err instanceof Error ? err.message : "Tente novamente",
       });
@@ -115,7 +118,7 @@ export function useProducts() {
   const updateProduct = useCallback(async (id: string, input: UpdateProductInput) => {
     try {
       const parsed = updateProductSchema.parse(input);
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("products")
         .update(parsed)
         .eq("id", id)
@@ -124,10 +127,8 @@ export function useProducts() {
 
       if (error) throw error;
 
-      toast.success("Produto atualizado");
       await fetchProducts();
     } catch (err) {
-      console.error("[ERROR useProducts updateProduct]", err);
       toast.error("Erro ao atualizar produto", {
         description: err instanceof Error ? err.message : "Tente novamente",
       });
@@ -137,17 +138,11 @@ export function useProducts() {
 
   const deleteProduct = useCallback(async (id: string) => {
     try {
-      const { error } = await supabase
-        .from("products")
-        .delete()
-        .eq("id", id);
-
+      const { error } = await supabase.from("products").delete().eq("id", id);
       if (error) throw error;
-
       toast.success("Produto excluído");
       await fetchProducts();
     } catch (err) {
-      console.error("[ERROR useProducts deleteProduct]", err);
       toast.error("Erro ao excluir produto", {
         description: err instanceof Error ? err.message : "Você pode não ter permissão para esta ação",
       });
@@ -159,13 +154,5 @@ export function useProducts() {
     fetchProducts();
   }, [fetchProducts]);
 
-  return {
-    products,
-    loading,
-    error,
-    refetch: fetchProducts,
-    createProduct,
-    updateProduct,
-    deleteProduct,
-  };
+  return { products, loading, error, refetch: fetchProducts, createProduct, updateProduct, deleteProduct };
 }
