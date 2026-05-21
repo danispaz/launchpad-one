@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
@@ -7,8 +7,9 @@ import { LifecycleTransitionDialog } from "@/components/products/LifecycleTransi
 import { LifecycleHistoryDisplay } from "@/components/products/LifecycleHistoryDisplay";
 import { ProductRoadmap } from "@/components/products/ProductRoadmap";
 import { EditProductSheet } from "@/components/products/EditProductSheet";
+import { TaskSheet } from "@/components/launches/TaskSheet";
 import { CATEGORY_LABELS, LIFECYCLE_LABELS, LIFECYCLE_ICONS } from "@/lib/schemas/product-schema";
-import { ChevronLeft, ArrowRightLeft, ListTodo, Users, Pencil, Trash2 } from "lucide-react";
+import { ChevronLeft, ArrowRightLeft, ListTodo, Users, Pencil, Trash2, Calendar, CheckCircle2, Circle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import {
@@ -31,6 +32,42 @@ const TABS = [
   { key: "team", label: "Time" },
 ];
 
+const STATUS_COLORS: Record<string, string> = {
+  todo: "bg-slate-100 text-slate-600",
+  em_progresso: "bg-blue-100 text-blue-700",
+  em_revisão: "bg-purple-100 text-purple-700",
+  bloqueado: "bg-red-100 text-red-700",
+  concluído: "bg-emerald-100 text-emerald-700",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  todo: "A fazer",
+  em_progresso: "Em progresso",
+  em_revisão: "Em revisão",
+  bloqueado: "Bloqueado",
+  concluído: "Concluído",
+};
+
+interface Task {
+  id: string;
+  titulo: string;
+  status: string;
+  prioridade: string;
+  team: string | null;
+  assignee_id: string | null;
+  launch_id: string;
+  data_entrega: string | null;
+  data_inicio: string | null;
+  descricao?: string | null;
+  colaboradores?: string[];
+  seguidores?: string[];
+  checklist?: any[];
+  precisa_aprovacao?: boolean;
+  anexos?: any[];
+  assignee?: { nome: string | null } | null;
+  launch?: { id: string; nome: string } | null;
+}
+
 function ProductDetail() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
@@ -41,6 +78,63 @@ function ProductDetail() {
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const [activeTab, setActiveTab] = useState("overview");
   const [deleting, setDeleting] = useState(false);
+
+  // Tarefas
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [launches, setLaunches] = useState<{ id: string; nome: string }[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [isTaskSheetOpen, setIsTaskSheetOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const fetchTasks = useCallback(async () => {
+    if (!id) return;
+    setTasksLoading(true);
+    try {
+      // Busca projetos vinculados ao produto
+      const { data: launchesRaw } = await supabase
+        .from("launches")
+        .select("id, nome")
+        .eq("product_id", id);
+
+      if (!launchesRaw?.length) { setTasks([]); setLaunches([]); return; }
+      setLaunches(launchesRaw);
+
+      const launchIds = launchesRaw.map(l => l.id);
+      const launchMap = Object.fromEntries(launchesRaw.map(l => [l.id, l]));
+
+      // Busca tarefas desses projetos
+      const { data: tasksRaw } = await supabase
+        .from("tasks")
+        .select("*")
+        .in("launch_id", launchIds)
+        .order("data_entrega", { ascending: true, nullsFirst: false });
+
+      if (!tasksRaw?.length) { setTasks([]); return; }
+
+      // Busca assignees
+      const assigneeIds = [...new Set(tasksRaw.map((t: any) => t.assignee_id).filter(Boolean))];
+      let profileMap: Record<string, { nome: string }> = {};
+      if (assigneeIds.length > 0) {
+        const { data: profiles } = await supabase.from("profiles").select("id, nome").in("id", assigneeIds);
+        profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p]));
+      }
+
+      setTasks(tasksRaw.map((t: any) => ({
+        ...t,
+        assignee: t.assignee_id ? profileMap[t.assignee_id] || null : null,
+        launch: launchMap[t.launch_id] || null,
+      })));
+    } catch (err: any) {
+      toast.error("Erro ao carregar tarefas", { description: err.message });
+    } finally {
+      setTasksLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    if (activeTab === "tasks") fetchTasks();
+  }, [activeTab, fetchTasks]);
 
   const handleTransitionComplete = () => {
     refetch();
@@ -93,11 +187,20 @@ function ProductDetail() {
   const healthColor = product.status_saude === "saudavel" ? "text-emerald-600 bg-emerald-50" :
     product.status_saude === "atencao" ? "text-amber-600 bg-amber-50" : "text-rose-600 bg-rose-50";
 
-  // Mock updateProduct para o EditProductSheet
   const updateProduct = async (productId: string, input: any) => {
     const { error } = await supabase.from("products").update(input).eq("id", productId);
     if (error) throw error;
     await refetch();
+  };
+
+  const filteredTasks = tasks.filter(t => {
+    if (statusFilter === "all") return true;
+    return t.status === statusFilter;
+  });
+
+  const formatDate = (d: string | null) => {
+    if (!d) return null;
+    return new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
   };
 
   return (
@@ -135,7 +238,6 @@ function ProductDetail() {
               {m.descricao_curta && <p className="text-base text-slate-500 leading-relaxed">{m.descricao_curta}</p>}
             </div>
 
-            {/* Ações */}
             <div className="flex items-center gap-2 shrink-0">
               <button onClick={() => setIsEditOpen(true)}
                 className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-slate-200 hover:bg-slate-50 transition-colors text-slate-700">
@@ -168,6 +270,9 @@ function ProductDetail() {
               <button key={tab.key} onClick={() => setActiveTab(tab.key)}
                 className={`px-5 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${activeTab === tab.key ? "border-slate-900 text-slate-900" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
                 {tab.label}
+                {tab.key === "tasks" && tasks.length > 0 && (
+                  <span className="ml-1.5 text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full font-bold">{tasks.length}</span>
+                )}
               </button>
             ))}
           </div>
@@ -253,9 +358,87 @@ function ProductDetail() {
           {activeTab === "roadmap" && <ProductRoadmap productId={product.id} />}
 
           {activeTab === "tasks" && (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <ListTodo className="w-12 h-12 text-slate-200 mb-4" />
-              <p className="text-sm text-slate-400 font-medium">Tarefas do produto em construção</p>
+            <div className="space-y-4">
+              {/* Filtros de status */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {[
+                  { key: "all", label: "Todas" },
+                  { key: "todo", label: "A fazer" },
+                  { key: "em_progresso", label: "Em progresso" },
+                  { key: "em_revisão", label: "Em revisão" },
+                  { key: "bloqueado", label: "Bloqueado" },
+                  { key: "concluído", label: "Concluído" },
+                ].map(f => (
+                  <button key={f.key} onClick={() => setStatusFilter(f.key)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${statusFilter === f.key ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}>
+                    {f.label}
+                  </button>
+                ))}
+                <span className="text-xs text-slate-400 ml-auto">{filteredTasks.length} tarefa{filteredTasks.length !== 1 ? "s" : ""}</span>
+              </div>
+
+              {tasksLoading ? (
+                <div className="flex items-center justify-center h-40">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                </div>
+              ) : filteredTasks.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <ListTodo className="w-12 h-12 text-slate-200 mb-4" />
+                  <p className="text-sm text-slate-400 font-medium">
+                    {tasks.length === 0 ? "Nenhuma tarefa nos projetos deste produto" : "Nenhuma tarefa com este filtro"}
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-50 border-b border-slate-100">
+                      <tr>
+                        <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">Tarefa</th>
+                        <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">Projeto</th>
+                        <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">Status</th>
+                        <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">Responsável</th>
+                        <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">Entrega</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {filteredTasks.map(task => (
+                        <tr key={task.id} className="hover:bg-slate-50 transition-colors cursor-pointer"
+                          onClick={() => { setEditingTask(task); setIsTaskSheetOpen(true); }}>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              {task.status === "concluído"
+                                ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                : <Circle className="w-3.5 h-3.5 text-slate-300 shrink-0" />}
+                              <span className={`font-medium ${task.status === "concluído" ? "line-through text-slate-400" : "text-slate-800"}`}>
+                                {task.titulo}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="text-xs text-slate-500">{task.launch?.nome || "—"}</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${STATUS_COLORS[task.status] || "bg-slate-100 text-slate-500"}`}>
+                              {STATUS_LABELS[task.status] || task.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="h-5 w-5 rounded-full bg-slate-200 flex items-center justify-center text-[9px] font-bold text-slate-500">
+                                {task.assignee?.nome?.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() || "??"}
+                              </div>
+                              <span className="text-xs text-slate-500">{task.assignee?.nome || "—"}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="text-xs text-slate-500">{formatDate(task.data_entrega) || "—"}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 
@@ -267,6 +450,15 @@ function ProductDetail() {
           )}
         </div>
       </div>
+
+      <TaskSheet
+        open={isTaskSheetOpen}
+        onOpenChange={(open) => { setIsTaskSheetOpen(open); if (!open) setEditingTask(null); }}
+        launchId={editingTask?.launch_id || launches[0]?.id || ""}
+        launches={launches}
+        task={editingTask}
+        onSuccess={() => { fetchTasks(); setIsTaskSheetOpen(false); setEditingTask(null); }}
+      />
 
       <EditProductSheet
         open={isEditOpen}
