@@ -5,7 +5,7 @@ import { TopBar } from "@/components/TopBar";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Plus, Calendar, CheckSquare, Square, Star, Sun, AlignLeft, Clock, Rocket, Copy, Trash2, ArrowRight, Download, X, Check, ChevronLeft, ChevronRight, Filter } from "lucide-react";
+import { Plus, Calendar, CheckSquare, Square, Star, Sun, AlignLeft, Clock, Rocket, Copy, Trash2, ArrowRight, Download, X, Check, ChevronLeft, ChevronRight, Filter, ExternalLink } from "lucide-react";
 import { TaskSheet } from "@/components/launches/TaskSheet";
 import { TaskKanban } from "@/components/tasks/TaskKanban";
 import { TaskGantt } from "@/components/tasks/TaskGantt";
@@ -58,6 +58,9 @@ const TIMES = [
   { value: "executive", label: "Diretoria" },
 ];
 
+const CLICKUP_LIST_ID = "901327295706";
+const CLICKUP_PROXY = "https://clickup-proxy.danielypeace.workers.dev";
+
 const PAGE_SIZE = 50;
 
 const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -87,6 +90,7 @@ function TasksPage() {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [showMoveSelect, setShowMoveSelect] = useState(false);
   const [page, setPage] = useState(1);
+  const [exportingClickUp, setExportingClickUp] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -196,7 +200,7 @@ function TasksPage() {
     } catch (err: any) { toast.error("Erro ao mover", { description: err.message }); }
   };
 
-  const handleExportToClickUp = () => {
+  const handleExportSelected = () => {
     const selectedTasks = tasks.filter(t => selected.has(t.id));
     const csv = ["Título,Status,Time,Responsável,Data Entrega,Projeto",
       ...selectedTasks.map(t => `"${t.titulo}","${t.status}","${t.team || ""}","${t.assignee?.nome || ""}","${t.data_entrega || ""}","${t.launch?.nome || ""}"`)
@@ -205,6 +209,27 @@ function TasksPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url; a.download = "tarefas.csv"; a.click();
     toast.success("Exportado com sucesso");
+  };
+
+  const handleExportToClickUp = async () => {
+    const selectedTasks = tasks.filter(t => selected.has(t.id));
+    if (!selectedTasks.length) return;
+    setExportingClickUp(true);
+    try {
+      const res = await fetch(CLICKUP_PROXY, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tasks: selectedTasks, listId: CLICKUP_LIST_ID }),
+      });
+      const data = await res.json();
+      const succeeded = data.results.filter((r: any) => r.success).length;
+      const failed = data.results.filter((r: any) => !r.success).length;
+      if (succeeded > 0) toast.success(`${succeeded} tarefa(s) exportada(s) para o ClickUp!`);
+      if (failed > 0) toast.error(`${failed} tarefa(s) falharam na exportação`);
+      clearSelection();
+    } catch (err: any) {
+      toast.error("Erro ao exportar para ClickUp", { description: err.message });
+    } finally { setExportingClickUp(false); }
   };
 
   const formatDate = (d: string | null) => {
@@ -221,7 +246,6 @@ function TasksPage() {
 
   return (
     <AppLayout>
-      {/* TopBar: só views + botão nova tarefa */}
       <TopBar title="Tarefas" subtitle="Painel global" actions={
         <div className="flex items-center gap-2">
           <div className="flex items-center bg-slate-100 rounded-lg p-0.5">
@@ -237,7 +261,7 @@ function TasksPage() {
         </div>
       } />
 
-      {/* Barra de filtros secundária */}
+      {/* Barra de filtros */}
       <div className="shrink-0 bg-white border-b border-slate-100 px-6 py-2.5 flex items-center gap-3">
         <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
         <select value={filterTeam} onChange={e => setFilterTeam(e.target.value)}
@@ -363,6 +387,7 @@ function TasksPage() {
         </div>
       </div>
 
+      {/* Barra flutuante de seleção */}
       {selected.size > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-slate-900 text-white rounded-2xl shadow-2xl px-4 py-3">
           <div className="flex items-center gap-2 pr-4 border-r border-slate-700">
@@ -383,7 +408,10 @@ function TasksPage() {
             )}
           </div>
           <button onClick={handleExportSelected} className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-slate-800 transition-colors">
-            <Download className="w-4 h-4" /><span className="text-[10px]">Exportar</span>
+            <Download className="w-4 h-4" /><span className="text-[10px]">CSV</span>
+          </button>
+          <button onClick={handleExportToClickUp} disabled={exportingClickUp} className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-violet-900 text-violet-400 hover:text-violet-300 transition-colors disabled:opacity-50">
+            <ExternalLink className="w-4 h-4" /><span className="text-[10px]">{exportingClickUp ? "..." : "ClickUp"}</span>
           </button>
           <button onClick={() => setDeleteConfirm(true)} className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-rose-900 text-rose-400 hover:text-rose-300 transition-colors">
             <Trash2 className="w-4 h-4" /><span className="text-[10px]">Excluir</span>
