@@ -14,8 +14,8 @@ interface Task {
   launch_id: string;
   assignee_id: string | null;
   prioridade: string;
-  descricao?: string | null;
   colaboradores?: string[];
+  descricao?: string | null;
   seguidores?: string[];
   checklist?: any[];
   precisa_aprovacao?: boolean;
@@ -33,6 +33,8 @@ interface Props {
   onRefresh?: () => void;
   filterTeam?: string;
   filterAssignee?: string;
+  filterLaunch?: string;
+  filterColaborador?: string;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -68,7 +70,7 @@ function formatDate(d: string | null) {
   return new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-export function TaskList({ launches, onRefresh, filterTeam, filterAssignee }: Props) {
+export function TaskList({ launches, onRefresh, filterTeam, filterAssignee, filterLaunch, filterColaborador }: Props) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortField, setSortField] = useState<SortField>("data_entrega");
@@ -109,6 +111,8 @@ export function TaskList({ launches, onRefresh, filterTeam, filterAssignee }: Pr
     .filter(t => {
       if (filterTeam && t.team !== filterTeam) return false;
       if (filterAssignee && t.assignee_id !== filterAssignee) return false;
+      if (filterLaunch && t.launch_id !== filterLaunch) return false;
+      if (filterColaborador && !(t.colaboradores || []).includes(filterColaborador)) return false;
       if (search && !t.titulo.toLowerCase().includes(search.toLowerCase()) && !t.launch?.nome?.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     })
@@ -148,12 +152,6 @@ export function TaskList({ launches, onRefresh, filterTeam, filterAssignee }: Pr
         <input type="text" value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Pesquisar tarefas..."
           className="w-64 text-sm bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 outline-none focus:border-slate-400 focus:bg-white transition-all placeholder:text-slate-400" />
-        {(filterTeam || filterAssignee) && (
-          <div className="flex items-center gap-2">
-            {filterTeam && <span className="text-xs bg-slate-900 text-white px-2 py-0.5 rounded-full font-medium">{TEAM_LABELS[filterTeam] || filterTeam}</span>}
-            {filterAssignee && <span className="text-xs bg-slate-900 text-white px-2 py-0.5 rounded-full font-medium">Filtrado por responsável</span>}
-          </div>
-        )}
         <span className="text-xs text-slate-400 ml-auto">{sorted.length} tarefa{sorted.length !== 1 ? "s" : ""}</span>
       </div>
 
