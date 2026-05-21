@@ -22,8 +22,8 @@ interface Task {
   launch_id: string;
   assignee_id: string | null;
   prioridade: string;
-  descricao?: string | null;
   colaboradores?: string[];
+  descricao?: string | null;
   seguidores?: string[];
   checklist?: any[];
   precisa_aprovacao?: boolean;
@@ -41,6 +41,8 @@ interface Props {
   onRefresh?: () => void;
   filterTeam?: string;
   filterAssignee?: string;
+  filterLaunch?: string;
+  filterColaborador?: string;
 }
 
 const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -52,7 +54,7 @@ function formatDate(d: string | null) {
   return new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
 }
 
-export function TaskKanban({ launches, onRefresh, filterTeam, filterAssignee }: Props) {
+export function TaskKanban({ launches, onRefresh, filterTeam, filterAssignee, filterLaunch, filterColaborador }: Props) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -88,6 +90,8 @@ export function TaskKanban({ launches, onRefresh, filterTeam, filterAssignee }: 
   const filteredTasks = tasks.filter(t => {
     if (filterTeam && t.team !== filterTeam) return false;
     if (filterAssignee && t.assignee_id !== filterAssignee) return false;
+    if (filterLaunch && t.launch_id !== filterLaunch) return false;
+    if (filterColaborador && !(t.colaboradores || []).includes(filterColaborador)) return false;
     return true;
   });
 
@@ -121,7 +125,8 @@ export function TaskKanban({ launches, onRefresh, filterTeam, filterAssignee }: 
     if (!launches[0]) { toast.error("Crie um projeto primeiro"); return; }
     try {
       await supabase.from("tasks").insert({
-        titulo: quickTitle.trim(), status, launch_id: launches[0].id,
+        titulo: quickTitle.trim(), status,
+        launch_id: filterLaunch || launches[0].id,
         team: filterTeam || "product", prioridade: "média",
         assignee_id: filterAssignee || null,
       });
@@ -143,14 +148,12 @@ export function TaskKanban({ launches, onRefresh, filterTeam, filterAssignee }: 
         const isOver = dragOverCol === col.value;
 
         return (
-          <div
-            key={col.value}
+          <div key={col.value}
             className={`flex flex-col rounded-xl shrink-0 w-72 transition-all ${isOver ? "ring-2 ring-offset-1" : ""}`}
             style={{ background: col.bg }}
             onDragOver={e => handleDragOver(e, col.value)}
             onDrop={e => handleDrop(e, col.value)}
-            onDragLeave={() => setDragOverCol(null)}
-          >
+            onDragLeave={() => setDragOverCol(null)}>
             <div className="px-4 pt-4 pb-3 flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2">
@@ -185,7 +188,7 @@ export function TaskKanban({ launches, onRefresh, filterTeam, filterAssignee }: 
                         </div>
                       )}
                     </div>
-                    <div className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${task.prioridade === "alta" ? "bg-orange-100 text-orange-600" : task.prioridade === "média" ? "bg-yellow-100 text-yellow-600" : task.prioridade === "crítica" ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-500"}`}>
+                    <div className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${task.prioridade === "crítica" ? "bg-rose-100 text-rose-600" : task.prioridade === "alta" ? "bg-orange-100 text-orange-600" : task.prioridade === "média" ? "bg-yellow-100 text-yellow-600" : "bg-slate-100 text-slate-500"}`}>
                       {task.prioridade}
                     </div>
                   </div>
