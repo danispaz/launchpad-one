@@ -5,7 +5,7 @@ import { TopBar } from "@/components/TopBar";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Plus, Calendar, CheckSquare, Square, Star, Sun, AlignLeft, Clock, Rocket, Copy, Trash2, ArrowRight, Download, X, Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Calendar, CheckSquare, Square, Star, Sun, AlignLeft, Clock, Rocket, Copy, Trash2, ArrowRight, Download, X, Check, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import { TaskSheet } from "@/components/launches/TaskSheet";
 import { TaskKanban } from "@/components/tasks/TaskKanban";
 import { TaskGantt } from "@/components/tasks/TaskGantt";
@@ -217,61 +217,55 @@ function TasksPage() {
   const todayCount = countFilter("today");
   const allSelected = paginatedTasks.length > 0 && paginatedTasks.every(t => selected.has(t.id));
   const hasActiveFilters = filterTeam || filterAssignee || filterLaunch || filterColaborador;
-
   const clearAllFilters = () => { setFilterTeam(""); setFilterAssignee(""); setFilterLaunch(""); setFilterColaborador(""); };
 
   return (
     <AppLayout>
+      {/* TopBar: só views + botão nova tarefa */}
       <TopBar title="Tarefas" subtitle="Painel global" actions={
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Filtro Time */}
-          <select value={filterTeam} onChange={e => setFilterTeam(e.target.value)}
-            className={`text-xs border rounded-lg px-2.5 py-1.5 outline-none transition-colors bg-white ${filterTeam ? "border-slate-900 text-slate-900 font-semibold" : "border-slate-200 text-slate-500"}`}>
-            <option value="">Time</option>
-            {TIMES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-          </select>
-
-          {/* Filtro Responsável */}
-          <select value={filterAssignee} onChange={e => setFilterAssignee(e.target.value)}
-            className={`text-xs border rounded-lg px-2.5 py-1.5 outline-none transition-colors bg-white ${filterAssignee ? "border-slate-900 text-slate-900 font-semibold" : "border-slate-200 text-slate-500"}`}>
-            <option value="">Responsável</option>
-            {profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
-          </select>
-
-          {/* Filtro Projeto */}
-          <select value={filterLaunch} onChange={e => setFilterLaunch(e.target.value)}
-            className={`text-xs border rounded-lg px-2.5 py-1.5 outline-none transition-colors bg-white ${filterLaunch ? "border-slate-900 text-slate-900 font-semibold" : "border-slate-200 text-slate-500"}`}>
-            <option value="">Projeto</option>
-            {launches.map(l => <option key={l.id} value={l.id}>{l.nome}</option>)}
-          </select>
-
-          {/* Filtro Colaborador */}
-          <select value={filterColaborador} onChange={e => setFilterColaborador(e.target.value)}
-            className={`text-xs border rounded-lg px-2.5 py-1.5 outline-none transition-colors bg-white ${filterColaborador ? "border-slate-900 text-slate-900 font-semibold" : "border-slate-200 text-slate-500"}`}>
-            <option value="">Colaborador</option>
-            {profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
-          </select>
-
-          {hasActiveFilters && (
-            <button onClick={clearAllFilters} className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1 transition-colors">
-              <X className="w-3 h-3" /> Limpar
-            </button>
-          )}
-
-          <div className="w-px h-5 bg-slate-200" />
-
+        <div className="flex items-center gap-2">
           <div className="flex items-center bg-slate-100 rounded-lg p-0.5">
             <button onClick={() => setView("list")} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${view === "list" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>Lista</button>
             <button onClick={() => setView("kanban")} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${view === "kanban" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>Kanban</button>
             <button onClick={() => setView("gantt")} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${view === "gantt" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>Gantt</button>
             <button onClick={() => setView("list_table")} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${view === "list_table" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>Tabela</button>
           </div>
-
-          <button onClick={() => { setEditingTask(null); setIsSheetOpen(true); }} className="h-8 px-3 rounded bg-foreground text-background text-xs font-medium hover:opacity-90 transition-opacity flex items-center gap-1.5">
+          <button onClick={() => { setEditingTask(null); setIsSheetOpen(true); }}
+            className="h-8 px-3 rounded bg-foreground text-background text-xs font-medium hover:opacity-90 transition-opacity flex items-center gap-1.5">
             <Plus className="w-3.5 h-3.5" /> Nova Tarefa
           </button>
         </div>
       } />
+
+      {/* Barra de filtros secundária */}
+      <div className="shrink-0 bg-white border-b border-slate-100 px-6 py-2.5 flex items-center gap-3">
+        <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+        <select value={filterTeam} onChange={e => setFilterTeam(e.target.value)}
+          className={`text-xs border rounded-lg px-2.5 py-1.5 outline-none transition-colors bg-white min-w-[120px] ${filterTeam ? "border-slate-900 text-slate-900 font-semibold" : "border-slate-200 text-slate-500"}`}>
+          <option value="">Time</option>
+          {TIMES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+        </select>
+        <select value={filterAssignee} onChange={e => setFilterAssignee(e.target.value)}
+          className={`text-xs border rounded-lg px-2.5 py-1.5 outline-none transition-colors bg-white min-w-[130px] ${filterAssignee ? "border-slate-900 text-slate-900 font-semibold" : "border-slate-200 text-slate-500"}`}>
+          <option value="">Responsável</option>
+          {profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+        </select>
+        <select value={filterLaunch} onChange={e => setFilterLaunch(e.target.value)}
+          className={`text-xs border rounded-lg px-2.5 py-1.5 outline-none transition-colors bg-white min-w-[130px] ${filterLaunch ? "border-slate-900 text-slate-900 font-semibold" : "border-slate-200 text-slate-500"}`}>
+          <option value="">Projeto</option>
+          {launches.map(l => <option key={l.id} value={l.id}>{l.nome}</option>)}
+        </select>
+        <select value={filterColaborador} onChange={e => setFilterColaborador(e.target.value)}
+          className={`text-xs border rounded-lg px-2.5 py-1.5 outline-none transition-colors bg-white min-w-[130px] ${filterColaborador ? "border-slate-900 text-slate-900 font-semibold" : "border-slate-200 text-slate-500"}`}>
+          <option value="">Colaborador</option>
+          {profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+        </select>
+        {hasActiveFilters && (
+          <button onClick={clearAllFilters} className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1 transition-colors ml-1">
+            <X className="w-3 h-3" /> Limpar filtros
+          </button>
+        )}
+      </div>
 
       {view === "kanban" && <TaskKanban launches={launches} onRefresh={fetchData} filterTeam={filterTeam} filterAssignee={filterAssignee} filterLaunch={filterLaunch} filterColaborador={filterColaborador} />}
       {view === "gantt" && <TaskGantt launches={launches} onRefresh={fetchData} />}
