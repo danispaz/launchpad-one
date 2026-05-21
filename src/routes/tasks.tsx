@@ -38,6 +38,7 @@ interface Task {
 }
 
 interface Launch { id: string; nome: string; }
+interface Profile { id: string; nome: string; }
 
 type Filter = "all" | "today" | "tomorrow" | "no_date" | "concluidas" | string;
 
@@ -47,6 +48,14 @@ const STATUSES = [
   { value: "em_revisão", label: "Em revisão" },
   { value: "bloqueado", label: "Bloqueado" },
   { value: "concluído", label: "Concluído" },
+];
+
+const TIMES = [
+  { value: "marketing", label: "Marketing" },
+  { value: "sales", label: "Vendas" },
+  { value: "product", label: "Produto" },
+  { value: "engineering", label: "Tecnologia" },
+  { value: "executive", label: "Diretoria" },
 ];
 
 const PAGE_SIZE = 50;
@@ -62,8 +71,11 @@ function TasksPage() {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [launches, setLaunches] = useState<Launch[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<Filter>("all");
+  const [filterTeam, setFilterTeam] = useState("");
+  const [filterAssignee, setFilterAssignee] = useState("");
   const [quickTitle, setQuickTitle] = useState("");
   const [creating, setCreating] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -77,20 +89,16 @@ function TasksPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [{ data: tasksRaw }, { data: launchesRaw }] = await Promise.all([
+      const [{ data: tasksRaw }, { data: launchesRaw }, { data: profilesRaw }] = await Promise.all([
         supabase.from("tasks").select("*").order("data_entrega", { ascending: true, nullsFirst: false }),
         supabase.from("launches").select("id, nome").order("nome"),
+        supabase.from("profiles").select("id, nome").order("nome"),
       ]);
 
       setLaunches(launchesRaw || []);
+      setProfiles(profilesRaw || []);
       const launchMap = Object.fromEntries((launchesRaw || []).map((l: Launch) => [l.id, l]));
-      const assigneeIds = [...new Set((tasksRaw || []).map((t: any) => t.assignee_id).filter(Boolean))];
-
-      let profileMap: Record<string, { nome: string }> = {};
-      if (assigneeIds.length > 0) {
-        const { data: profiles } = await supabase.from("profiles").select("id, nome").in("id", assigneeIds);
-        profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p]));
-      }
+      const profileMap = Object.fromEntries((profilesRaw || []).map((p: Profile) => [p.id, p]));
 
       setTasks((tasksRaw || []).map((t: any) => ({
         ...t,
@@ -103,9 +111,16 @@ function TasksPage() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-  useEffect(() => { setPage(1); }, [activeFilter, view]);
+  useEffect(() => { setPage(1); }, [activeFilter, view, filterTeam, filterAssignee]);
+
+  const applyGlobalFilters = (t: Task) => {
+    if (filterTeam && t.team !== filterTeam) return false;
+    if (filterAssignee && t.assignee_id !== filterAssignee) return false;
+    return true;
+  };
 
   const filteredTasks = tasks.filter(t => {
+    if (!applyGlobalFilters(t)) return false;
     if (activeFilter === "concluidas") return t.status === "concluído";
     if (activeFilter === "all") return t.status !== "concluído";
     if (activeFilter === "today") return (isToday(t.data_entrega) || isOverdue(t.data_entrega)) && t.status !== "concluído";
@@ -114,16 +129,19 @@ function TasksPage() {
     return t.launch_id === activeFilter && t.status !== "concluído";
   });
 
+  const filteredForKanban = tasks.filter(applyGlobalFilters);
+
   const totalPages = Math.max(1, Math.ceil(filteredTasks.length / PAGE_SIZE));
   const paginatedTasks = filteredTasks.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const countFilter = (f: Filter) => {
-    if (f === "concluidas") return tasks.filter(t => t.status === "concluído").length;
-    if (f === "all") return tasks.filter(t => t.status !== "concluído").length;
-    if (f === "today") return tasks.filter(t => (isToday(t.data_entrega) || isOverdue(t.data_entrega)) && t.status !== "concluído").length;
-    if (f === "tomorrow") return tasks.filter(t => isTomorrow(t.data_entrega) && t.status !== "concluído").length;
-    if (f === "no_date") return tasks.filter(t => !t.data_entrega && t.status !== "concluído").length;
-    return tasks.filter(t => t.launch_id === f && t.status !== "concluído").length;
+    const base = tasks.filter(applyGlobalFilters);
+    if (f === "concluidas") return base.filter(t => t.status === "concluído").length;
+    if (f === "all") return base.filter(t => t.status !== "concluído").length;
+    if (f === "today") return base.filter(t => (isToday(t.data_entrega) || isOverdue(t.data_entrega)) && t.status !== "concluído").length;
+    if (f === "tomorrow") return base.filter(t => isTomorrow(t.data_entrega) && t.status !== "concluído").length;
+    if (f === "no_date") return base.filter(t => !t.data_entrega && t.status !== "concluído").length;
+    return base.filter(t => t.launch_id === f && t.status !== "concluído").length;
   };
 
   const toggleSelect = (id: string) => {
@@ -138,7 +156,7 @@ function TasksPage() {
     setCreating(true);
     try {
       const launchId = activeFilter !== "all" && activeFilter !== "today" && activeFilter !== "tomorrow" && activeFilter !== "no_date" && activeFilter !== "concluidas" ? activeFilter : launches[0].id;
-      const { error } = await supabase.from("tasks").insert({ titulo: quickTitle.trim(), status: "todo", launch_id: launchId, assignee_id: user?.id || null, team: "product", prioridade: "média" });
+      const { error } = await supabase.from("tasks").insert({ titulo: quickTitle.trim(), status: "todo", launch_id: launchId, assignee_id: user?.id || null, team: filterTeam || "product", prioridade: "média" });
       if (error) throw error;
       setQuickTitle(""); fetchData(); toast.success("Tarefa criada");
     } catch (err: any) { toast.error("Erro ao criar tarefa", { description: err.message }); }
@@ -197,26 +215,53 @@ function TasksPage() {
 
   const todayCount = countFilter("today");
   const allSelected = paginatedTasks.length > 0 && paginatedTasks.every(t => selected.has(t.id));
+  const hasActiveFilters = filterTeam || filterAssignee;
 
   return (
     <AppLayout>
       <TopBar title="Tarefas" subtitle="Painel global" actions={
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Filtro Time */}
+          <select value={filterTeam} onChange={e => setFilterTeam(e.target.value)}
+            className={`text-xs border rounded-lg px-3 py-1.5 outline-none transition-colors bg-white ${filterTeam ? "border-slate-900 text-slate-900 font-semibold" : "border-slate-200 text-slate-500"}`}>
+            <option value="">Todos os times</option>
+            {TIMES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+          </select>
+
+          {/* Filtro Responsável */}
+          <select value={filterAssignee} onChange={e => setFilterAssignee(e.target.value)}
+            className={`text-xs border rounded-lg px-3 py-1.5 outline-none transition-colors bg-white ${filterAssignee ? "border-slate-900 text-slate-900 font-semibold" : "border-slate-200 text-slate-500"}`}>
+            <option value="">Todos os responsáveis</option>
+            {profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+          </select>
+
+          {/* Limpar filtros */}
+          {hasActiveFilters && (
+            <button onClick={() => { setFilterTeam(""); setFilterAssignee(""); }}
+              className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1 transition-colors">
+              <X className="w-3 h-3" /> Limpar
+            </button>
+          )}
+
+          <div className="w-px h-5 bg-slate-200" />
+
+          {/* Views */}
           <div className="flex items-center bg-slate-100 rounded-lg p-0.5">
             <button onClick={() => setView("list")} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${view === "list" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>Lista</button>
             <button onClick={() => setView("kanban")} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${view === "kanban" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>Kanban</button>
             <button onClick={() => setView("gantt")} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${view === "gantt" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>Gantt</button>
             <button onClick={() => setView("list_table")} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${view === "list_table" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>Tabela</button>
           </div>
+
           <button onClick={() => { setEditingTask(null); setIsSheetOpen(true); }} className="h-8 px-3 rounded bg-foreground text-background text-xs font-medium hover:opacity-90 transition-opacity flex items-center gap-1.5">
             <Plus className="w-3.5 h-3.5" /> Nova Tarefa
           </button>
         </div>
       } />
 
-      {view === "kanban" && <TaskKanban launches={launches} onRefresh={fetchData} />}
+      {view === "kanban" && <TaskKanban launches={launches} onRefresh={fetchData} filterTeam={filterTeam} filterAssignee={filterAssignee} />}
       {view === "gantt" && <TaskGantt launches={launches} onRefresh={fetchData} />}
-      {view === "list_table" && <TaskList launches={launches} onRefresh={fetchData} />}
+      {view === "list_table" && <TaskList launches={launches} onRefresh={fetchData} filterTeam={filterTeam} filterAssignee={filterAssignee} />}
 
       <div className={`flex flex-1 overflow-hidden ${view !== "list" ? "hidden" : ""}`}>
         {/* Sidebar */}
