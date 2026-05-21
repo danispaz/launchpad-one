@@ -48,6 +48,22 @@ const STATUS_LABELS: Record<string, string> = {
   concluído: "Concluído",
 };
 
+const TEAM_LABELS: Record<string, string> = {
+  marketing: "Marketing",
+  sales: "Vendas",
+  product: "Produto",
+  engineering: "Tecnologia",
+  executive: "Diretoria",
+};
+
+const TEAM_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
+  marketing: { bg: "bg-pink-50", text: "text-pink-700", dot: "bg-pink-400" },
+  sales: { bg: "bg-orange-50", text: "text-orange-700", dot: "bg-orange-400" },
+  product: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-400" },
+  engineering: { bg: "bg-violet-50", text: "text-violet-700", dot: "bg-violet-400" },
+  executive: { bg: "bg-slate-50", text: "text-slate-700", dot: "bg-slate-400" },
+};
+
 interface Task {
   id: string;
   titulo: string;
@@ -79,7 +95,6 @@ function ProductDetail() {
   const [activeTab, setActiveTab] = useState("overview");
   const [deleting, setDeleting] = useState(false);
 
-  // Tarefas
   const [tasks, setTasks] = useState<Task[]>([]);
   const [launches, setLaunches] = useState<{ id: string; nome: string }[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
@@ -91,11 +106,8 @@ function ProductDetail() {
     if (!id) return;
     setTasksLoading(true);
     try {
-      // Busca projetos vinculados ao produto
       const { data: launchesRaw } = await supabase
-        .from("launches")
-        .select("id, nome")
-        .eq("product_id", id);
+        .from("launches").select("id, nome").eq("product_id", id);
 
       if (!launchesRaw?.length) { setTasks([]); setLaunches([]); return; }
       setLaunches(launchesRaw);
@@ -103,16 +115,12 @@ function ProductDetail() {
       const launchIds = launchesRaw.map(l => l.id);
       const launchMap = Object.fromEntries(launchesRaw.map(l => [l.id, l]));
 
-      // Busca tarefas desses projetos
       const { data: tasksRaw } = await supabase
-        .from("tasks")
-        .select("*")
-        .in("launch_id", launchIds)
+        .from("tasks").select("*").in("launch_id", launchIds)
         .order("data_entrega", { ascending: true, nullsFirst: false });
 
       if (!tasksRaw?.length) { setTasks([]); return; }
 
-      // Busca assignees
       const assigneeIds = [...new Set(tasksRaw.map((t: any) => t.assignee_id).filter(Boolean))];
       let profileMap: Record<string, { nome: string }> = {};
       if (assigneeIds.length > 0) {
@@ -127,13 +135,11 @@ function ProductDetail() {
       })));
     } catch (err: any) {
       toast.error("Erro ao carregar tarefas", { description: err.message });
-    } finally {
-      setTasksLoading(false);
-    }
+    } finally { setTasksLoading(false); }
   }, [id]);
 
   useEffect(() => {
-    if (activeTab === "tasks") fetchTasks();
+    if (activeTab === "tasks" || activeTab === "team") fetchTasks();
   }, [activeTab, fetchTasks]);
 
   const handleTransitionComplete = () => {
@@ -150,40 +156,32 @@ function ProductDetail() {
       navigate({ to: "/products" });
     } catch (err: any) {
       toast.error("Erro ao excluir produto", { description: err.message });
-    } finally {
-      setDeleting(false);
-      setIsDeleteOpen(false);
-    }
+    } finally { setDeleting(false); setIsDeleteOpen(false); }
   };
 
-  if (loading) {
-    return (
-      <AppLayout>
-        <div className="flex items-center justify-center h-[50vh]">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      </AppLayout>
-    );
-  }
+  if (loading) return (
+    <AppLayout>
+      <div className="flex items-center justify-center h-[50vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    </AppLayout>
+  );
 
-  if (error || !product) {
-    return (
-      <AppLayout>
-        <div className="flex flex-col items-center justify-center h-[50vh] space-y-4">
-          <p className="text-destructive font-bold">{error || "Produto não encontrado"}</p>
-          <Link to="/products" className="text-primary hover:underline flex items-center gap-1">
-            <ChevronLeft className="h-4 w-4" /> Voltar para produtos
-          </Link>
-        </div>
-      </AppLayout>
-    );
-  }
+  if (error || !product) return (
+    <AppLayout>
+      <div className="flex flex-col items-center justify-center h-[50vh] space-y-4">
+        <p className="text-destructive font-bold">{error || "Produto não encontrado"}</p>
+        <Link to="/products" className="text-primary hover:underline flex items-center gap-1">
+          <ChevronLeft className="h-4 w-4" /> Voltar para produtos
+        </Link>
+      </div>
+    </AppLayout>
+  );
 
   const p = product as any;
   const m = p.metadata || {};
   const StageIcon = LIFECYCLE_ICONS[product.estagio_atual];
   const isAtivo = p.ativo !== false;
-
   const healthColor = product.status_saude === "saudavel" ? "text-emerald-600 bg-emerald-50" :
     product.status_saude === "atencao" ? "text-amber-600 bg-amber-50" : "text-rose-600 bg-rose-50";
 
@@ -193,15 +191,23 @@ function ProductDetail() {
     await refetch();
   };
 
-  const filteredTasks = tasks.filter(t => {
-    if (statusFilter === "all") return true;
-    return t.status === statusFilter;
-  });
+  const filteredTasks = tasks.filter(t => statusFilter === "all" || t.status === statusFilter);
 
   const formatDate = (d: string | null) => {
     if (!d) return null;
     return new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
   };
+
+  // Agrupa tarefas por time
+  const teamGroups = tasks.reduce((acc, task) => {
+    const team = task.team || "outros";
+    if (!acc[team]) acc[team] = { tasks: [], members: new Map() };
+    acc[team].tasks.push(task);
+    if (task.assignee_id && task.assignee?.nome) {
+      acc[team].members.set(task.assignee_id, task.assignee.nome);
+    }
+    return acc;
+  }, {} as Record<string, { tasks: Task[]; members: Map<string, string> }>);
 
   return (
     <AppLayout>
@@ -214,7 +220,6 @@ function ProductDetail() {
             <ChevronLeft className="h-3 w-3" /> Produtos
           </Link>
 
-          {/* Header */}
           <div className="flex items-start justify-between gap-4 mb-8">
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -222,39 +227,27 @@ function ProductDetail() {
                   {isAtivo ? "Ativo" : "Inativo"}
                 </span>
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600">
-                  <StageIcon className="w-3 h-3" />
-                  {LIFECYCLE_LABELS[product.estagio_atual]}
+                  <StageIcon className="w-3 h-3" />{LIFECYCLE_LABELS[product.estagio_atual]}
                 </span>
-                {p.tipo && (
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700">
-                    {p.tipo}
-                  </span>
-                )}
-                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold ${healthColor}`}>
-                  {product.score_saude}/100
-                </span>
+                {p.tipo && <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700">{p.tipo}</span>}
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold ${healthColor}`}>{product.score_saude}/100</span>
               </div>
               <h1 className="text-3xl font-black text-slate-900 mb-2">{product.nome}</h1>
               {m.descricao_curta && <p className="text-base text-slate-500 leading-relaxed">{m.descricao_curta}</p>}
             </div>
-
             <div className="flex items-center gap-2 shrink-0">
-              <button onClick={() => setIsEditOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-slate-200 hover:bg-slate-50 transition-colors text-slate-700">
+              <button onClick={() => setIsEditOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-slate-200 hover:bg-slate-50 transition-colors text-slate-700">
                 <Pencil className="w-3.5 h-3.5" /> Editar
               </button>
-              <button onClick={() => setIsDeleteOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-rose-200 hover:bg-rose-50 transition-colors text-rose-600">
+              <button onClick={() => setIsDeleteOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-rose-200 hover:bg-rose-50 transition-colors text-rose-600">
                 <Trash2 className="w-3.5 h-3.5" /> Excluir
               </button>
-              <button onClick={() => setIsTransitionDialogOpen(true)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-foreground text-background hover:opacity-90 transition-opacity">
+              <button onClick={() => setIsTransitionDialogOpen(true)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-foreground text-background hover:opacity-90 transition-opacity">
                 <ArrowRightLeft className="w-3.5 h-3.5" /> Mudar estágio
               </button>
             </div>
           </div>
 
-          {/* Cards de info */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
             <InfoCard label="Categoria" value={CATEGORY_LABELS[product.categoria]} />
             <InfoCard label="Responsável" value={product.owner_nome || "—"} />
@@ -264,7 +257,6 @@ function ProductDetail() {
             {p.area_executora && <InfoCard label="Área executora" value={p.area_executora} />}
           </div>
 
-          {/* Abas */}
           <div className="flex items-center gap-0 border-b border-slate-200 mb-8 overflow-x-auto">
             {TABS.map(tab => (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)}
@@ -272,6 +264,9 @@ function ProductDetail() {
                 {tab.label}
                 {tab.key === "tasks" && tasks.length > 0 && (
                   <span className="ml-1.5 text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full font-bold">{tasks.length}</span>
+                )}
+                {tab.key === "team" && Object.keys(teamGroups).length > 0 && (
+                  <span className="ml-1.5 text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full font-bold">{Object.keys(teamGroups).length}</span>
                 )}
               </button>
             ))}
@@ -359,7 +354,6 @@ function ProductDetail() {
 
           {activeTab === "tasks" && (
             <div className="space-y-4">
-              {/* Filtros de status */}
               <div className="flex items-center gap-2 flex-wrap">
                 {[
                   { key: "all", label: "Todas" },
@@ -414,9 +408,7 @@ function ProductDetail() {
                               </span>
                             </div>
                           </td>
-                          <td className="px-4 py-3">
-                            <span className="text-xs text-slate-500">{task.launch?.nome || "—"}</span>
-                          </td>
+                          <td className="px-4 py-3"><span className="text-xs text-slate-500">{task.launch?.nome || "—"}</span></td>
                           <td className="px-4 py-3">
                             <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${STATUS_COLORS[task.status] || "bg-slate-100 text-slate-500"}`}>
                               {STATUS_LABELS[task.status] || task.status}
@@ -430,9 +422,7 @@ function ProductDetail() {
                               <span className="text-xs text-slate-500">{task.assignee?.nome || "—"}</span>
                             </div>
                           </td>
-                          <td className="px-4 py-3">
-                            <span className="text-xs text-slate-500">{formatDate(task.data_entrega) || "—"}</span>
-                          </td>
+                          <td className="px-4 py-3"><span className="text-xs text-slate-500">{formatDate(task.data_entrega) || "—"}</span></td>
                         </tr>
                       ))}
                     </tbody>
@@ -443,9 +433,74 @@ function ProductDetail() {
           )}
 
           {activeTab === "team" && (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <Users className="w-12 h-12 text-slate-200 mb-4" />
-              <p className="text-sm text-slate-400 font-medium">Time do produto em construção</p>
+            <div className="space-y-4">
+              {tasksLoading ? (
+                <div className="flex items-center justify-center h-40">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                </div>
+              ) : Object.keys(teamGroups).length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <Users className="w-12 h-12 text-slate-200 mb-4" />
+                  <p className="text-sm text-slate-400 font-medium">Nenhum time envolvido ainda</p>
+                  <p className="text-xs text-slate-300 mt-1">Os times aparecem aqui conforme as tarefas são criadas</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {Object.entries(teamGroups).map(([team, data]) => {
+                    const colors = TEAM_COLORS[team] || TEAM_COLORS["product"];
+                    const label = TEAM_LABELS[team] || team;
+                    const done = data.tasks.filter(t => t.status === "concluído").length;
+                    const total = data.tasks.length;
+                    const progress = total > 0 ? Math.round((done / total) * 100) : 0;
+                    const members = Array.from(data.members.entries());
+
+                    return (
+                      <div key={team} className={`rounded-xl border border-slate-100 shadow-sm p-5 ${colors.bg}`}>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            <div className={`h-2.5 w-2.5 rounded-full ${colors.dot}`}></div>
+                            <h3 className={`text-sm font-bold ${colors.text}`}>{label}</h3>
+                          </div>
+                          <span className="text-xs text-slate-500 font-medium">{done}/{total} tarefas</span>
+                        </div>
+
+                        {/* Barra de progresso */}
+                        <div className="h-1.5 bg-white/60 rounded-full overflow-hidden mb-4">
+                          <div className={`h-full ${colors.dot} rounded-full transition-all`} style={{ width: `${progress}%` }} />
+                        </div>
+
+                        {/* Membros */}
+                        {members.length > 0 && (
+                          <div className="space-y-2">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Membros</p>
+                            <div className="flex flex-wrap gap-2">
+                              {members.map(([memberId, memberNome]) => (
+                                <div key={memberId} className="flex items-center gap-1.5 bg-white/70 rounded-full px-2.5 py-1">
+                                  <div className="h-4 w-4 rounded-full bg-slate-200 flex items-center justify-center text-[8px] font-bold text-slate-600">
+                                    {memberNome.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase()}
+                                  </div>
+                                  <span className="text-[11px] text-slate-700 font-medium">{memberNome}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Status das tarefas */}
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {Object.entries(
+                            data.tasks.reduce((acc, t) => { acc[t.status] = (acc[t.status] || 0) + 1; return acc; }, {} as Record<string, number>)
+                          ).map(([status, count]) => (
+                            <span key={status} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[status] || "bg-slate-100 text-slate-500"}`}>
+                              {STATUS_LABELS[status] || status}: {count}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>
