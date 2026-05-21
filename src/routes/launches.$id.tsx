@@ -1,106 +1,76 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { TeamName } from "@/lib/utils/formatters";
 import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
 import { StatusBadge, TeamChip, ProgressBar, Avatar, PriorityDot } from "@/components/Badges";
-import { formatLaunchCode, teamMap, taskStatusMap, priorityMap, TASK_STATUS_DONE, TASK_STATUS_IN_PROGRESS, TASK_STATUS_TODO, TASK_STATUS_BLOCKED } from "@/lib/utils/formatters";
+import { formatLaunchCode, teamMap, taskStatusMap, TASK_STATUS_DONE, TASK_STATUS_IN_PROGRESS, TASK_STATUS_TODO, TASK_STATUS_BLOCKED } from "@/lib/utils/formatters";
 import { useLaunchDetail, type Task } from "@/hooks/useLaunchDetail";
-import { 
-  ChevronLeft, 
-  Calendar, 
-  Target, 
-  CheckCircle2, 
-  Circle, 
-  Layout, 
-  ListTodo, 
-  Users, 
-  AlertOctagon,
-  Clock,
-  ChevronDown,
-  ChevronUp
+import {
+  ChevronLeft, Calendar, Target, CheckCircle2, Circle, Layout, ListTodo,
+  Users, Clock, ChevronDown, ChevronUp, Pencil, Trash2,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskSheet } from "@/components/launches/TaskSheet";
+import { EditLaunchSheet } from "@/components/launches/EditLaunchSheet";
 import { KanbanBoard } from "@/components/launches/KanbanBoard";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useTaskMutations } from "@/hooks/useTaskMutations";
 import { RisksPanel } from "@/components/launches/RisksPanel";
 import { ReleasesPanel } from "@/components/launches/ReleasesPanel";
 import type { TaskStatusEnum } from "@/lib/schemas/task-schema";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/launches/$id")({
-  head: () => ({
-    meta: [
-      { title: "LaunchHub — Detalhes do Projeto" },
-    ],
-  }),
+  head: () => ({ meta: [{ title: "LaunchHub — Detalhes do Projeto" }] }),
   component: LaunchDetail,
 });
 
 function LaunchDetail() {
   const params = Route.useParams();
   const { id } = params;
+  const navigate = useNavigate();
   const { launch, phases, tasks, milestones, risks, loading, error, refresh } = useLaunchDetail(id);
   const [expandedTeams, setExpandedTeams] = useState<string[]>([]);
   const [isTaskSheetOpen, setIsTaskSheetOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
-  const handleOpenNewTask = () => {
-    setTaskToEdit(null);
-    setIsTaskSheetOpen(true);
-  };
-
-  const handleTaskSuccess = () => {
-    refresh();
-  };
-
+  const handleOpenNewTask = () => { setTaskToEdit(null); setIsTaskSheetOpen(true); };
+  const handleTaskSuccess = () => { refresh(); };
   const { updateTaskStatus, deleteTask } = useTaskMutations();
-
-  const handleTaskClick = (task: any) => {
-    setTaskToEdit(task);
-    setIsTaskSheetOpen(true);
-  };
-
-  const handleStatusChange = async (taskId: string, newStatus: TaskStatusEnum) => {
-    await updateTaskStatus(taskId, newStatus);
-  };
-
-  const handleDeleteTask = async (taskId: string) => {
-    setTaskToDelete(taskId);
-  };
-
-  const handleConfirmDelete = async () => {
+  const handleTaskClick = (task: any) => { setTaskToEdit(task); setIsTaskSheetOpen(true); };
+  const handleStatusChange = async (taskId: string, newStatus: TaskStatusEnum) => { await updateTaskStatus(taskId, newStatus); };
+  const handleDeleteTask = async (taskId: string) => { setTaskToDelete(taskId); };
+  const handleConfirmDeleteTask = async () => {
     if (!taskToDelete) return;
     await deleteTask(taskToDelete);
     setTaskToDelete(null);
     refresh();
   };
 
-  const toggleTeam = (team: string) => {
-    setExpandedTeams(prev => 
-      prev.includes(team) ? prev.filter(t => t !== team) : [...prev, team]
-    );
+  const handleDeleteLaunch = async () => {
+    setDeleting(true);
+    try {
+      const { error } = await supabase.from("launches").delete().eq("id", id);
+      if (error) throw error;
+      toast.success("Projeto excluído");
+      navigate({ to: "/launches" });
+    } catch (err: any) {
+      toast.error("Erro ao excluir projeto", { description: err.message });
+    } finally { setDeleting(false); setIsDeleteOpen(false); }
   };
 
-  const tasksByStatus = useMemo(() => {
-    return {
-      todo: tasks.filter(t => t.status === TASK_STATUS_TODO),
-      in_progress: tasks.filter(t => t.status === TASK_STATUS_IN_PROGRESS),
-      blocked: tasks.filter(t => t.status === TASK_STATUS_BLOCKED),
-      done: tasks.filter(t => t.status === TASK_STATUS_DONE)
-    };
-  }, [tasks]);
+  const toggleTeam = (team: string) => {
+    setExpandedTeams(prev => prev.includes(team) ? prev.filter(t => t !== team) : [...prev, team]);
+  };
 
   const tasksByTeam = useMemo(() => {
     return tasks.reduce((acc, task) => {
@@ -111,45 +81,49 @@ function LaunchDetail() {
     }, {} as Record<string, typeof tasks>);
   }, [tasks]);
 
-  if (loading) {
-    return (
-      <AppLayout>
-        <div className="flex items-center justify-center h-[50vh]">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      </AppLayout>
-    );
-  }
+  if (loading) return (
+    <AppLayout>
+      <div className="flex items-center justify-center h-[50vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    </AppLayout>
+  );
 
-  if (error || !launch) {
-    return (
-      <AppLayout>
-        <div className="flex flex-col items-center justify-center h-[50vh] space-y-4">
-          <p className="text-destructive font-bold">Erro ao carregar projeto</p>
-          <Link to="/launches" className="text-primary hover:underline flex items-center gap-1">
-            <ChevronLeft className="h-4 w-4" /> Voltar para projetos
-          </Link>
-        </div>
-      </AppLayout>
-    );
-  }
+  if (error || !launch) return (
+    <AppLayout>
+      <div className="flex flex-col items-center justify-center h-[50vh] space-y-4">
+        <p className="text-destructive font-bold">Erro ao carregar projeto</p>
+        <Link to="/launches" className="text-primary hover:underline flex items-center gap-1">
+          <ChevronLeft className="h-4 w-4" /> Voltar para projetos
+        </Link>
+      </div>
+    </AppLayout>
+  );
 
   return (
     <AppLayout>
-      <TopBar 
-        title={launch.nome} 
+      <TopBar
+        title={launch.nome}
         subtitle={formatLaunchCode(launch.id)}
         actions={
-          <button 
-            onClick={handleOpenNewTask}
-            className="h-8 px-3 rounded bg-foreground text-background text-xs font-medium hover:opacity-90 transition-opacity"
-          >
-            + Nova tarefa
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setIsEditOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 hover:bg-slate-50 transition-colors text-slate-700">
+              <Pencil className="w-3.5 h-3.5" /> Editar
+            </button>
+            <button onClick={() => setIsDeleteOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-rose-200 hover:bg-rose-50 transition-colors text-rose-600">
+              <Trash2 className="w-3.5 h-3.5" /> Excluir
+            </button>
+            <button onClick={handleOpenNewTask}
+              className="h-8 px-3 rounded bg-foreground text-background text-xs font-medium hover:opacity-90 transition-opacity">
+              + Nova tarefa
+            </button>
+          </div>
         }
       />
-      
-      <div className="flex-1 px-8 py-10 max-w-[1200px] mx-auto w-full">
+
+      <div className="flex-1 px-8 py-10 max-w-[1200px] mx-auto w-full overflow-auto">
         <Link to="/launches" className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-primary mb-8 font-bold uppercase tracking-wider transition-colors">
           <ChevronLeft className="h-3 w-3" /> Projetos
         </Link>
@@ -172,7 +146,9 @@ function LaunchDetail() {
             <div className="pt-3"><ProgressBar value={launch.progresso} /></div>
           </div>
           <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-            <Meta icon={Calendar} label="Data Alvo" value={launch.data_lancamento_prevista ? new Date(launch.data_lancamento_prevista).toLocaleDateString("pt-BR", { day: "2-digit", month: "long" }) : 'Não definida'} />
+            <Meta icon={Calendar} label="Data Alvo" value={launch.data_lancamento_prevista
+              ? new Date(launch.data_lancamento_prevista).toLocaleDateString("pt-BR", { day: "2-digit", month: "long" })
+              : 'Não definida'} />
           </div>
           <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
             <Meta icon={Avatar} label="Responsável" value={launch.owner?.nome || 'Não atribuído'} />
@@ -183,10 +159,10 @@ function LaunchDetail() {
         </div>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="bg-slate-100/50 p-1 mb-10 h-12 w-fit">
+          <TabsList className="bg-slate-100/50 p-1 mb-10 h-12 w-fit overflow-x-auto">
             <TabsTrigger value="overview" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Visão Geral</TabsTrigger>
             <TabsTrigger value="scope" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Escopo</TabsTrigger>
-            <TabsTrigger value="activities" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Atividades (Kanban)</TabsTrigger>
+            <TabsTrigger value="activities" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Kanban</TabsTrigger>
             <TabsTrigger value="by_team" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Por Time</TabsTrigger>
             <TabsTrigger value="risks" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Riscos</TabsTrigger>
             <TabsTrigger value="team" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Time</TabsTrigger>
@@ -196,8 +172,7 @@ function LaunchDetail() {
             <section className="grid grid-cols-1 lg:grid-cols-2 gap-10">
               <div className="space-y-8">
                 <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
-                  <Layout className="w-5 h-5 text-primary" />
-                  Marcos do Projeto
+                  <Layout className="w-5 h-5 text-primary" /> Marcos do Projeto
                 </h3>
                 {milestones.length === 0 ? (
                   <p className="text-sm text-slate-400 font-medium bg-slate-50 p-6 rounded-xl border border-dashed border-slate-200">Nenhum marco cadastrado.</p>
@@ -220,11 +195,9 @@ function LaunchDetail() {
                   </div>
                 )}
               </div>
-
               <div className="space-y-8">
                 <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
-                  <Users className="w-5 h-5 text-primary" />
-                  Fases do Projeto
+                  <Users className="w-5 h-5 text-primary" /> Fases do Projeto
                 </h3>
                 <div className="space-y-3">
                   {phases.map((p, idx) => (
@@ -255,10 +228,7 @@ function LaunchDetail() {
           <TabsContent value="by_team" className="space-y-4">
             {Object.entries(tasksByTeam).map(([team, teamTasks]) => (
               <div key={team} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                <button 
-                  onClick={() => toggleTeam(team)}
-                  className="w-full flex items-center justify-between p-5 hover:bg-slate-50 transition-colors"
-                >
+                <button onClick={() => toggleTeam(team)} className="w-full flex items-center justify-between p-5 hover:bg-slate-50 transition-colors">
                   <div className="flex items-center gap-3">
                     <TeamChip team={team as any} />
                     <span className="text-sm font-bold text-slate-700">{teamMap[team as TeamName] || team} · {teamTasks.length} tarefas</span>
@@ -269,13 +239,14 @@ function LaunchDetail() {
                   <div className="p-5 pt-0 border-t border-slate-50">
                     <div className="space-y-3 mt-4">
                       {teamTasks.map(task => (
-                        <div key={task.id} className="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-xl transition-colors group">
+                        <div key={task.id} onClick={() => handleTaskClick(task)}
+                          className="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer">
                           {task.status === TASK_STATUS_DONE ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <Circle className="h-4 w-4 text-slate-300" />}
                           <div className="flex-1">
                             <p className={`text-sm ${task.status === TASK_STATUS_DONE ? "line-through text-slate-400" : "font-bold text-slate-700"}`}>{task.titulo}</p>
                             <p className="text-[10px] text-slate-400 font-bold uppercase">{task.assignee?.nome || 'Sem responsável'} · {task.data_entrega ? new Date(task.data_entrega).toLocaleDateString('pt-BR') : 'Sem data'}</p>
                           </div>
-                          <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-500`}>
+                          <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-500">
                             {(taskStatusMap as any)[task.status] || task.status}
                           </span>
                         </div>
@@ -299,6 +270,13 @@ function LaunchDetail() {
         </Tabs>
       </div>
 
+      <EditLaunchSheet
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        launch={launch}
+        onSuccess={refresh}
+      />
+
       <TaskSheet
         open={isTaskSheetOpen}
         onOpenChange={setIsTaskSheetOpen}
@@ -312,14 +290,25 @@ function LaunchDetail() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Deletar tarefa</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja deletar esta tarefa? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Tem certeza que deseja deletar esta tarefa? Esta ação não pode ser desfeita.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete} className="bg-rose-500 hover:bg-rose-600">
-              Deletar
+            <AlertDialogAction onClick={handleConfirmDeleteTask} className="bg-rose-500 hover:bg-rose-600">Deletar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir projeto</AlertDialogTitle>
+            <AlertDialogDescription>Tem certeza que deseja excluir "{launch.nome}"? Todas as tarefas e dados relacionados serão removidos. Esta ação não pode ser desfeita.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteLaunch} disabled={deleting} className="bg-rose-500 hover:bg-rose-600">
+              {deleting ? "Excluindo..." : "Excluir"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -332,8 +321,7 @@ function Meta({ icon: Icon, label, value }: { icon: any; label: string; value: s
   return (
     <div>
       <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
-        <Icon className="h-3.5 w-3.5" />
-        {label}
+        <Icon className="h-3.5 w-3.5" />{label}
       </div>
       <p className="text-sm font-black text-slate-700">{value}</p>
     </div>
