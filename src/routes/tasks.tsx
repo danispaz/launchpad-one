@@ -196,7 +196,7 @@ function TasksPage() {
     } catch (err: any) { toast.error("Erro ao mover", { description: err.message }); }
   };
 
-  const handleExportSelected = () => {
+  const handleExportToClickUp = () => {
     const selectedTasks = tasks.filter(t => selected.has(t.id));
     const csv = ["Título,Status,Time,Responsável,Data Entrega,Projeto",
       ...selectedTasks.map(t => `"${t.titulo}","${t.status}","${t.team || ""}","${t.assignee?.nome || ""}","${t.data_entrega || ""}","${t.launch?.nome || ""}"`)
