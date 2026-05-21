@@ -39,7 +39,7 @@ interface Task {
 
 interface Launch { id: string; nome: string; }
 
-type Filter = "all" | "today" | "tomorrow" | "no_date" | string;
+type Filter = "all" | "today" | "tomorrow" | "no_date" | "concluidas" | string;
 
 const STATUSES = [
   { value: "todo", label: "A fazer" },
@@ -78,7 +78,7 @@ function TasksPage() {
     setLoading(true);
     try {
       const [{ data: tasksRaw }, { data: launchesRaw }] = await Promise.all([
-        supabase.from("tasks").select("*").neq("status", "concluído").order("data_entrega", { ascending: true, nullsFirst: false }),
+        supabase.from("tasks").select("*").order("data_entrega", { ascending: true, nullsFirst: false }),
         supabase.from("launches").select("id, nome").order("nome"),
       ]);
 
@@ -106,22 +106,24 @@ function TasksPage() {
   useEffect(() => { setPage(1); }, [activeFilter, view]);
 
   const filteredTasks = tasks.filter(t => {
-    if (activeFilter === "all") return true;
-    if (activeFilter === "today") return isToday(t.data_entrega) || isOverdue(t.data_entrega);
-    if (activeFilter === "tomorrow") return isTomorrow(t.data_entrega);
-    if (activeFilter === "no_date") return !t.data_entrega;
-    return t.launch_id === activeFilter;
+    if (activeFilter === "concluidas") return t.status === "concluído";
+    if (activeFilter === "all") return t.status !== "concluído";
+    if (activeFilter === "today") return (isToday(t.data_entrega) || isOverdue(t.data_entrega)) && t.status !== "concluído";
+    if (activeFilter === "tomorrow") return isTomorrow(t.data_entrega) && t.status !== "concluído";
+    if (activeFilter === "no_date") return !t.data_entrega && t.status !== "concluído";
+    return t.launch_id === activeFilter && t.status !== "concluído";
   });
 
   const totalPages = Math.max(1, Math.ceil(filteredTasks.length / PAGE_SIZE));
   const paginatedTasks = filteredTasks.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const countFilter = (f: Filter) => {
-    if (f === "all") return tasks.length;
-    if (f === "today") return tasks.filter(t => isToday(t.data_entrega) || isOverdue(t.data_entrega)).length;
-    if (f === "tomorrow") return tasks.filter(t => isTomorrow(t.data_entrega)).length;
-    if (f === "no_date") return tasks.filter(t => !t.data_entrega).length;
-    return tasks.filter(t => t.launch_id === f).length;
+    if (f === "concluidas") return tasks.filter(t => t.status === "concluído").length;
+    if (f === "all") return tasks.filter(t => t.status !== "concluído").length;
+    if (f === "today") return tasks.filter(t => (isToday(t.data_entrega) || isOverdue(t.data_entrega)) && t.status !== "concluído").length;
+    if (f === "tomorrow") return tasks.filter(t => isTomorrow(t.data_entrega) && t.status !== "concluído").length;
+    if (f === "no_date") return tasks.filter(t => !t.data_entrega && t.status !== "concluído").length;
+    return tasks.filter(t => t.launch_id === f && t.status !== "concluído").length;
   };
 
   const toggleSelect = (id: string) => {
@@ -135,7 +137,7 @@ function TasksPage() {
     if (!launches[0]) { toast.error("Crie um projeto primeiro"); return; }
     setCreating(true);
     try {
-      const launchId = activeFilter !== "all" && activeFilter !== "today" && activeFilter !== "tomorrow" && activeFilter !== "no_date" ? activeFilter : launches[0].id;
+      const launchId = activeFilter !== "all" && activeFilter !== "today" && activeFilter !== "tomorrow" && activeFilter !== "no_date" && activeFilter !== "concluidas" ? activeFilter : launches[0].id;
       const { error } = await supabase.from("tasks").insert({ titulo: quickTitle.trim(), status: "todo", launch_id: launchId, assignee_id: user?.id || null, team: "product", prioridade: "média" });
       if (error) throw error;
       setQuickTitle(""); fetchData(); toast.success("Tarefa criada");
@@ -224,6 +226,7 @@ function TasksPage() {
             <SideItem icon={<Star className="w-4 h-4" />} label="Hoje" count={todayCount} active={activeFilter === "today"} onClick={() => setActiveFilter("today")} badge={todayCount > 0} />
             <SideItem icon={<Sun className="w-4 h-4" />} label="Amanhã" count={countFilter("tomorrow")} active={activeFilter === "tomorrow"} onClick={() => setActiveFilter("tomorrow")} />
             <SideItem icon={<Clock className="w-4 h-4" />} label="Sem data" count={countFilter("no_date")} active={activeFilter === "no_date"} onClick={() => setActiveFilter("no_date")} />
+            <SideItem icon={<CheckSquare className="w-4 h-4" />} label="Concluídas" count={countFilter("concluidas")} active={activeFilter === "concluidas"} onClick={() => setActiveFilter("concluidas")} />
           </div>
           {launches.length > 0 && (
             <div className="mt-6">
@@ -237,7 +240,6 @@ function TasksPage() {
 
         {/* Main */}
         <div className="flex-1 overflow-hidden flex flex-col">
-          {/* Quick create */}
           <div className="sticky top-0 bg-white border-b border-slate-100 px-6 py-3 flex items-center gap-3 z-10">
             <input type="text" value={quickTitle} onChange={e => setQuickTitle(e.target.value)}
               onKeyDown={e => e.key === "Enter" && handleQuickCreate()}
@@ -248,7 +250,6 @@ function TasksPage() {
             </button>
           </div>
 
-          {/* Header da lista */}
           {filteredTasks.length > 0 && (
             <div className="flex items-center gap-3 px-6 py-2 border-b border-slate-50 bg-slate-50/30 shrink-0">
               <button onClick={() => allSelected ? clearSelection() : setSelected(new Set(paginatedTasks.map(t => t.id)))} className="shrink-0 text-slate-300 hover:text-slate-600 transition-colors">
@@ -258,7 +259,6 @@ function TasksPage() {
             </div>
           )}
 
-          {/* Task list */}
           <div className="flex-1 overflow-y-auto">
             {loading ? (
               <div className="flex items-center justify-center h-40"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div></div>
@@ -271,12 +271,12 @@ function TasksPage() {
             ) : (
               <div className="divide-y divide-slate-50">
                 {paginatedTasks.map(task => (
-                  <div key={task.id} className={`flex items-center gap-3 px-6 py-3 hover:bg-slate-50/80 group transition-colors ${selected.has(task.id) ? "bg-blue-50/50" : ""}`}>
+                  <div key={task.id} className={`flex items-center gap-3 px-6 py-3 hover:bg-slate-50/80 group transition-colors ${selected.has(task.id) ? "bg-blue-50/50" : ""} ${task.status === "concluído" ? "opacity-60" : ""}`}>
                     <button onClick={() => toggleSelect(task.id)} className="shrink-0 text-slate-300 hover:text-slate-600 transition-colors">
                       {selected.has(task.id) ? <CheckSquare className="w-4 h-4 text-slate-700" /> : <Square className="w-4 h-4" />}
                     </button>
                     <button onClick={() => { setEditingTask(task); setIsSheetOpen(true); }} className="flex-1 text-left min-w-0">
-                      <p className="text-sm font-medium text-slate-800 group-hover:text-slate-900 truncate">{task.titulo}</p>
+                      <p className={`text-sm font-medium truncate ${task.status === "concluído" ? "line-through text-slate-400" : "text-slate-800 group-hover:text-slate-900"}`}>{task.titulo}</p>
                       {task.launch && <p className="text-[11px] text-slate-400 mt-0.5 truncate">{task.launch.nome}</p>}
                     </button>
                     <div className="flex items-center gap-3 shrink-0">
@@ -296,7 +296,6 @@ function TasksPage() {
             )}
           </div>
 
-          {/* Paginação */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-6 py-3 border-t border-slate-100 bg-white shrink-0">
               <span className="text-xs text-slate-400">
@@ -318,7 +317,6 @@ function TasksPage() {
         </div>
       </div>
 
-      {/* Barra de seleção flutuante */}
       {selected.size > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-slate-900 text-white rounded-2xl shadow-2xl px-4 py-3">
           <div className="flex items-center gap-2 pr-4 border-r border-slate-700">
