@@ -27,8 +27,8 @@ interface Task {
   launch_id: string;
   assignee_id: string | null;
   prioridade: string;
-  descricao?: string | null;
   colaboradores?: string[];
+  descricao?: string | null;
   seguidores?: string[];
   checklist?: any[];
   precisa_aprovacao?: boolean;
@@ -76,6 +76,8 @@ function TasksPage() {
   const [activeFilter, setActiveFilter] = useState<Filter>("all");
   const [filterTeam, setFilterTeam] = useState("");
   const [filterAssignee, setFilterAssignee] = useState("");
+  const [filterLaunch, setFilterLaunch] = useState("");
+  const [filterColaborador, setFilterColaborador] = useState("");
   const [quickTitle, setQuickTitle] = useState("");
   const [creating, setCreating] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -111,11 +113,13 @@ function TasksPage() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-  useEffect(() => { setPage(1); }, [activeFilter, view, filterTeam, filterAssignee]);
+  useEffect(() => { setPage(1); }, [activeFilter, view, filterTeam, filterAssignee, filterLaunch, filterColaborador]);
 
   const applyGlobalFilters = (t: Task) => {
     if (filterTeam && t.team !== filterTeam) return false;
     if (filterAssignee && t.assignee_id !== filterAssignee) return false;
+    if (filterLaunch && t.launch_id !== filterLaunch) return false;
+    if (filterColaborador && !(t.colaboradores || []).includes(filterColaborador)) return false;
     return true;
   };
 
@@ -128,8 +132,6 @@ function TasksPage() {
     if (activeFilter === "no_date") return !t.data_entrega && t.status !== "concluído";
     return t.launch_id === activeFilter && t.status !== "concluído";
   });
-
-  const filteredForKanban = tasks.filter(applyGlobalFilters);
 
   const totalPages = Math.max(1, Math.ceil(filteredTasks.length / PAGE_SIZE));
   const paginatedTasks = filteredTasks.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -147,7 +149,6 @@ function TasksPage() {
   const toggleSelect = (id: string) => {
     setSelected(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
   };
-
   const clearSelection = () => setSelected(new Set());
 
   const handleQuickCreate = async () => {
@@ -155,8 +156,8 @@ function TasksPage() {
     if (!launches[0]) { toast.error("Crie um projeto primeiro"); return; }
     setCreating(true);
     try {
-      const launchId = activeFilter !== "all" && activeFilter !== "today" && activeFilter !== "tomorrow" && activeFilter !== "no_date" && activeFilter !== "concluidas" ? activeFilter : launches[0].id;
-      const { error } = await supabase.from("tasks").insert({ titulo: quickTitle.trim(), status: "todo", launch_id: launchId, assignee_id: user?.id || null, team: filterTeam || "product", prioridade: "média" });
+      const launchId = filterLaunch || (activeFilter !== "all" && activeFilter !== "today" && activeFilter !== "tomorrow" && activeFilter !== "no_date" && activeFilter !== "concluidas" ? activeFilter : launches[0].id);
+      const { error } = await supabase.from("tasks").insert({ titulo: quickTitle.trim(), status: "todo", launch_id: launchId, assignee_id: filterAssignee || user?.id || null, team: filterTeam || "product", prioridade: "média" });
       if (error) throw error;
       setQuickTitle(""); fetchData(); toast.success("Tarefa criada");
     } catch (err: any) { toast.error("Erro ao criar tarefa", { description: err.message }); }
@@ -215,7 +216,9 @@ function TasksPage() {
 
   const todayCount = countFilter("today");
   const allSelected = paginatedTasks.length > 0 && paginatedTasks.every(t => selected.has(t.id));
-  const hasActiveFilters = filterTeam || filterAssignee;
+  const hasActiveFilters = filterTeam || filterAssignee || filterLaunch || filterColaborador;
+
+  const clearAllFilters = () => { setFilterTeam(""); setFilterAssignee(""); setFilterLaunch(""); setFilterColaborador(""); };
 
   return (
     <AppLayout>
@@ -223,29 +226,40 @@ function TasksPage() {
         <div className="flex items-center gap-2 flex-wrap">
           {/* Filtro Time */}
           <select value={filterTeam} onChange={e => setFilterTeam(e.target.value)}
-            className={`text-xs border rounded-lg px-3 py-1.5 outline-none transition-colors bg-white ${filterTeam ? "border-slate-900 text-slate-900 font-semibold" : "border-slate-200 text-slate-500"}`}>
-            <option value="">Todos os times</option>
+            className={`text-xs border rounded-lg px-2.5 py-1.5 outline-none transition-colors bg-white ${filterTeam ? "border-slate-900 text-slate-900 font-semibold" : "border-slate-200 text-slate-500"}`}>
+            <option value="">Time</option>
             {TIMES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
 
           {/* Filtro Responsável */}
           <select value={filterAssignee} onChange={e => setFilterAssignee(e.target.value)}
-            className={`text-xs border rounded-lg px-3 py-1.5 outline-none transition-colors bg-white ${filterAssignee ? "border-slate-900 text-slate-900 font-semibold" : "border-slate-200 text-slate-500"}`}>
-            <option value="">Todos os responsáveis</option>
+            className={`text-xs border rounded-lg px-2.5 py-1.5 outline-none transition-colors bg-white ${filterAssignee ? "border-slate-900 text-slate-900 font-semibold" : "border-slate-200 text-slate-500"}`}>
+            <option value="">Responsável</option>
             {profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
           </select>
 
-          {/* Limpar filtros */}
+          {/* Filtro Projeto */}
+          <select value={filterLaunch} onChange={e => setFilterLaunch(e.target.value)}
+            className={`text-xs border rounded-lg px-2.5 py-1.5 outline-none transition-colors bg-white ${filterLaunch ? "border-slate-900 text-slate-900 font-semibold" : "border-slate-200 text-slate-500"}`}>
+            <option value="">Projeto</option>
+            {launches.map(l => <option key={l.id} value={l.id}>{l.nome}</option>)}
+          </select>
+
+          {/* Filtro Colaborador */}
+          <select value={filterColaborador} onChange={e => setFilterColaborador(e.target.value)}
+            className={`text-xs border rounded-lg px-2.5 py-1.5 outline-none transition-colors bg-white ${filterColaborador ? "border-slate-900 text-slate-900 font-semibold" : "border-slate-200 text-slate-500"}`}>
+            <option value="">Colaborador</option>
+            {profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+          </select>
+
           {hasActiveFilters && (
-            <button onClick={() => { setFilterTeam(""); setFilterAssignee(""); }}
-              className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1 transition-colors">
+            <button onClick={clearAllFilters} className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1 transition-colors">
               <X className="w-3 h-3" /> Limpar
             </button>
           )}
 
           <div className="w-px h-5 bg-slate-200" />
 
-          {/* Views */}
           <div className="flex items-center bg-slate-100 rounded-lg p-0.5">
             <button onClick={() => setView("list")} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${view === "list" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>Lista</button>
             <button onClick={() => setView("kanban")} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${view === "kanban" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>Kanban</button>
@@ -259,12 +273,11 @@ function TasksPage() {
         </div>
       } />
 
-      {view === "kanban" && <TaskKanban launches={launches} onRefresh={fetchData} filterTeam={filterTeam} filterAssignee={filterAssignee} />}
+      {view === "kanban" && <TaskKanban launches={launches} onRefresh={fetchData} filterTeam={filterTeam} filterAssignee={filterAssignee} filterLaunch={filterLaunch} filterColaborador={filterColaborador} />}
       {view === "gantt" && <TaskGantt launches={launches} onRefresh={fetchData} />}
-      {view === "list_table" && <TaskList launches={launches} onRefresh={fetchData} filterTeam={filterTeam} filterAssignee={filterAssignee} />}
+      {view === "list_table" && <TaskList launches={launches} onRefresh={fetchData} filterTeam={filterTeam} filterAssignee={filterAssignee} filterLaunch={filterLaunch} filterColaborador={filterColaborador} />}
 
       <div className={`flex flex-1 overflow-hidden ${view !== "list" ? "hidden" : ""}`}>
-        {/* Sidebar */}
         <div className="w-56 shrink-0 border-r border-slate-100 bg-slate-50/50 overflow-y-auto py-4 px-3">
           <div className="space-y-0.5">
             <SideItem icon={<AlignLeft className="w-4 h-4" />} label="Todos" count={countFilter("all")} active={activeFilter === "all"} onClick={() => setActiveFilter("all")} />
@@ -283,7 +296,6 @@ function TasksPage() {
           )}
         </div>
 
-        {/* Main */}
         <div className="flex-1 overflow-hidden flex flex-col">
           <div className="sticky top-0 bg-white border-b border-slate-100 px-6 py-3 flex items-center gap-3 z-10">
             <input type="text" value={quickTitle} onChange={e => setQuickTitle(e.target.value)}
@@ -327,8 +339,7 @@ function TasksPage() {
                     <div className="flex items-center gap-3 shrink-0">
                       {task.data_entrega && (
                         <div className={`flex items-center gap-1 text-[11px] font-medium ${isOverdue(task.data_entrega) && !isToday(task.data_entrega) ? "text-rose-500" : isToday(task.data_entrega) ? "text-amber-500" : "text-slate-400"}`}>
-                          <Calendar className="w-3 h-3" />
-                          {formatDate(task.data_entrega)}
+                          <Calendar className="w-3 h-3" />{formatDate(task.data_entrega)}
                         </div>
                       )}
                       <div className="h-6 w-6 rounded-full bg-slate-200 flex items-center justify-center text-[9px] font-bold text-slate-500" title={task.assignee?.nome || "Sem responsável"}>
@@ -343,17 +354,13 @@ function TasksPage() {
 
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-6 py-3 border-t border-slate-100 bg-white shrink-0">
-              <span className="text-xs text-slate-400">
-                Exibindo {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filteredTasks.length)} de {filteredTasks.length}
-              </span>
+              <span className="text-xs text-slate-400">Exibindo {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filteredTasks.length)} de {filteredTasks.length}</span>
               <div className="flex items-center gap-2">
-                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                  className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                   <ChevronLeft className="w-4 h-4 text-slate-500" />
                 </button>
                 <span className="text-xs text-slate-600 font-medium">{page} / {totalPages}</span>
-                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                  className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                   <ChevronRight className="w-4 h-4 text-slate-500" />
                 </button>
               </div>
@@ -368,30 +375,26 @@ function TasksPage() {
             <div className="h-6 w-6 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold">{selected.size}</div>
             <span className="text-sm font-medium">selecionada{selected.size !== 1 ? "s" : ""}</span>
           </div>
-          <button onClick={handleDuplicateSelected} title="Duplicar" className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-slate-800 transition-colors">
+          <button onClick={handleDuplicateSelected} className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-slate-800 transition-colors">
             <Copy className="w-4 h-4" /><span className="text-[10px]">Duplicar</span>
           </button>
           <div className="relative">
-            <button onClick={() => setShowMoveSelect(!showMoveSelect)} title="Mover" className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-slate-800 transition-colors">
+            <button onClick={() => setShowMoveSelect(!showMoveSelect)} className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-slate-800 transition-colors">
               <ArrowRight className="w-4 h-4" /><span className="text-[10px]">Mover</span>
             </button>
             {showMoveSelect && (
               <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden min-w-[160px]">
-                {STATUSES.map(s => (
-                  <button key={s.value} onClick={() => handleMoveSelected(s.value)} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
-                    {s.label}
-                  </button>
-                ))}
+                {STATUSES.map(s => <button key={s.value} onClick={() => handleMoveSelected(s.value)} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">{s.label}</button>)}
               </div>
             )}
           </div>
-          <button onClick={handleExportSelected} title="Exportar CSV" className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-slate-800 transition-colors">
+          <button onClick={handleExportSelected} className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-slate-800 transition-colors">
             <Download className="w-4 h-4" /><span className="text-[10px]">Exportar</span>
           </button>
-          <button onClick={() => setDeleteConfirm(true)} title="Excluir" className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-rose-900 text-rose-400 hover:text-rose-300 transition-colors">
+          <button onClick={() => setDeleteConfirm(true)} className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-rose-900 text-rose-400 hover:text-rose-300 transition-colors">
             <Trash2 className="w-4 h-4" /><span className="text-[10px]">Excluir</span>
           </button>
-          <button onClick={() => { const ids = Array.from(selected); supabase.from("tasks").update({ status: "concluído" }).in("id", ids).then(() => { toast.success(`${ids.length} tarefa(s) concluída(s)`); clearSelection(); fetchData(); }); }} title="Concluir" className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-emerald-900 text-emerald-400 hover:text-emerald-300 transition-colors">
+          <button onClick={() => { const ids = Array.from(selected); supabase.from("tasks").update({ status: "concluído" }).in("id", ids).then(() => { toast.success(`${ids.length} tarefa(s) concluída(s)`); clearSelection(); fetchData(); }); }} className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-emerald-900 text-emerald-400 hover:text-emerald-300 transition-colors">
             <Check className="w-4 h-4" /><span className="text-[10px]">Concluir</span>
           </button>
           <button onClick={clearSelection} className="ml-2 pl-4 border-l border-slate-700 text-slate-400 hover:text-white transition-colors">
