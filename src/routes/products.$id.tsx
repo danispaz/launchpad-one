@@ -1,13 +1,20 @@
 import { useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { TopBar } from "@/components/TopBar";
 import { useProductDetail } from "@/hooks/useProductDetail";
 import { LifecycleTransitionDialog } from "@/components/products/LifecycleTransitionDialog";
 import { LifecycleHistoryDisplay } from "@/components/products/LifecycleHistoryDisplay";
 import { ProductRoadmap } from "@/components/products/ProductRoadmap";
+import { EditProductSheet } from "@/components/products/EditProductSheet";
 import { CATEGORY_LABELS, LIFECYCLE_LABELS, LIFECYCLE_ICONS } from "@/lib/schemas/product-schema";
-import { ChevronLeft, ArrowRightLeft, Package, Users, ListTodo } from "lucide-react";
+import { ChevronLeft, ArrowRightLeft, ListTodo, Users, Pencil, Trash2 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/products/$id")({
   head: () => ({ meta: [{ title: "LaunchHub — Detalhes do Produto" }] }),
@@ -26,14 +33,33 @@ const TABS = [
 
 function ProductDetail() {
   const { id } = Route.useParams();
+  const navigate = useNavigate();
   const { product, loading, error, refetch } = useProductDetail(id);
   const [isTransitionDialogOpen, setIsTransitionDialogOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const [activeTab, setActiveTab] = useState("overview");
+  const [deleting, setDeleting] = useState(false);
 
   const handleTransitionComplete = () => {
     refetch();
     setHistoryRefreshKey(k => k + 1);
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const { error } = await supabase.from("products").delete().eq("id", id);
+      if (error) throw error;
+      toast.success("Produto excluído");
+      navigate({ to: "/products" });
+    } catch (err: any) {
+      toast.error("Erro ao excluir produto", { description: err.message });
+    } finally {
+      setDeleting(false);
+      setIsDeleteOpen(false);
+    }
   };
 
   if (loading) {
@@ -67,6 +93,13 @@ function ProductDetail() {
   const healthColor = product.status_saude === "saudavel" ? "text-emerald-600 bg-emerald-50" :
     product.status_saude === "atencao" ? "text-amber-600 bg-amber-50" : "text-rose-600 bg-rose-50";
 
+  // Mock updateProduct para o EditProductSheet
+  const updateProduct = async (productId: string, input: any) => {
+    const { error } = await supabase.from("products").update(input).eq("id", productId);
+    if (error) throw error;
+    await refetch();
+  };
+
   return (
     <AppLayout>
       <TopBar title={product.nome} subtitle="Detalhes do produto" />
@@ -74,7 +107,6 @@ function ProductDetail() {
       <div className="flex-1 overflow-auto">
         <div className="max-w-[1100px] mx-auto px-8 py-8">
 
-          {/* Breadcrumb */}
           <Link to="/products" className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 mb-6 transition-colors">
             <ChevronLeft className="h-3 w-3" /> Produtos
           </Link>
@@ -102,10 +134,22 @@ function ProductDetail() {
               <h1 className="text-3xl font-black text-slate-900 mb-2">{product.nome}</h1>
               {m.descricao_curta && <p className="text-base text-slate-500 leading-relaxed">{m.descricao_curta}</p>}
             </div>
-            <button onClick={() => setIsTransitionDialogOpen(true)}
-              className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-foreground text-background hover:opacity-90 transition-opacity">
-              <ArrowRightLeft className="w-3.5 h-3.5" /> Mudar estágio
-            </button>
+
+            {/* Ações */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button onClick={() => setIsEditOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-slate-200 hover:bg-slate-50 transition-colors text-slate-700">
+                <Pencil className="w-3.5 h-3.5" /> Editar
+              </button>
+              <button onClick={() => setIsDeleteOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-rose-200 hover:bg-rose-50 transition-colors text-rose-600">
+                <Trash2 className="w-3.5 h-3.5" /> Excluir
+              </button>
+              <button onClick={() => setIsTransitionDialogOpen(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-foreground text-background hover:opacity-90 transition-opacity">
+                <ArrowRightLeft className="w-3.5 h-3.5" /> Mudar estágio
+              </button>
+            </div>
           </div>
 
           {/* Cards de info */}
@@ -128,16 +172,13 @@ function ProductDetail() {
             ))}
           </div>
 
-          {/* Conteúdo das abas */}
           {activeTab === "overview" && (
             <div className="space-y-8">
-              {/* Descrição completa */}
               {product.descricao && (
                 <Section title="Descrição completa">
                   <div className="prose prose-sm max-w-none text-slate-600" dangerouslySetInnerHTML={{ __html: product.descricao }} />
                 </Section>
               )}
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <RichField label="Problema que resolve" value={m.problema_resolve} />
                 <RichField label="Proposta de valor" value={m.proposta_valor} />
@@ -148,31 +189,28 @@ function ProductDetail() {
                 <RichField label="Principais objeções" value={m.objecoes_comuns} />
                 <RichField label="Argumento comercial" value={m.argumento_comercial} />
               </div>
-
               <LifecycleHistoryDisplay productId={product.id} key={historyRefreshKey} />
             </div>
           )}
 
           {activeTab === "escopo" && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <RichField label="O que está incluso" value={m.incluso} />
-                <RichField label="O que não está incluso" value={m.nao_incluso} />
-                <RichField label="Pré-requisitos" value={m.prerequisitos} />
-                <RichField label="Limites de uso" value={m.limites_uso} />
-                <RichField label="Serviços adicionais" value={m.servicos_adicionais} />
-                <RichField label="Condições especiais" value={m.condicoes_especiais} />
-                <RichField label="Dependências internas" value={m.dependencias_internas} />
-                <RichField label="Dependências externas" value={m.dependencias_externas} />
-                <RichField label="Critérios de elegibilidade" value={m.criterios_elegibilidade} />
-                <RichField label="Critérios de recusa" value={m.criterios_recusa} />
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <RichField label="O que está incluso" value={m.incluso} />
+              <RichField label="O que não está incluso" value={m.nao_incluso} />
+              <RichField label="Pré-requisitos" value={m.prerequisitos} />
+              <RichField label="Limites de uso" value={m.limites_uso} />
+              <RichField label="Serviços adicionais" value={m.servicos_adicionais} />
+              <RichField label="Condições especiais" value={m.condicoes_especiais} />
+              <RichField label="Dependências internas" value={m.dependencias_internas} />
+              <RichField label="Dependências externas" value={m.dependencias_externas} />
+              <RichField label="Critérios de elegibilidade" value={m.criterios_elegibilidade} />
+              <RichField label="Critérios de recusa" value={m.criterios_recusa} />
             </div>
           )}
 
           {activeTab === "comercial" && (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {m.modelo_cobranca && <InfoCard label="Modelo de cobrança" value={m.modelo_cobranca} />}
                 {m.preco_base && <InfoCard label="Preço base" value={m.preco_base} />}
                 {m.setup_implantacao && <InfoCard label="Setup" value={m.setup_implantacao} />}
@@ -193,7 +231,7 @@ function ProductDetail() {
 
           {activeTab === "entrega" && (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {m.forma_entrega && <InfoCard label="Forma de entrega" value={m.forma_entrega} />}
                 {m.frequencia && <InfoCard label="Frequência" value={m.frequencia} />}
                 {m.prazo_ativacao && <InfoCard label="Prazo de ativação" value={m.prazo_ativacao} />}
@@ -212,9 +250,7 @@ function ProductDetail() {
             </div>
           )}
 
-          {activeTab === "roadmap" && (
-            <ProductRoadmap productId={product.id} />
-          )}
+          {activeTab === "roadmap" && <ProductRoadmap productId={product.id} />}
 
           {activeTab === "tasks" && (
             <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -232,6 +268,13 @@ function ProductDetail() {
         </div>
       </div>
 
+      <EditProductSheet
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        product={product}
+        updateProduct={updateProduct}
+      />
+
       <LifecycleTransitionDialog
         open={isTransitionDialogOpen}
         onOpenChange={setIsTransitionDialogOpen}
@@ -239,6 +282,23 @@ function ProductDetail() {
         estagioAtual={product.estagio_atual}
         onTransitionComplete={handleTransitionComplete}
       />
+
+      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir produto</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir "{product.nome}"? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-rose-500 hover:bg-rose-600">
+              {deleting ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }
