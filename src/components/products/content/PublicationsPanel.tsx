@@ -47,7 +47,8 @@ export function PublicationsPanel({ publications, onUpsert }: any) {
         </Button>
       </div>
 
-      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-x-auto scrollbar-thin">
+        <div className="min-w-[900px]">
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
