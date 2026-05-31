@@ -36,18 +36,18 @@ export function PublicationsPanel({ publications, onUpsert }: any) {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
         <div>
-          <h3 className="text-lg font-bold text-slate-800">Gestão de Publicações</h3>
-          <p className="text-xs text-slate-500">Acompanhe a produção e agendamento.</p>
+          <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Gestão de Publicações</h3>
+          <p className="text-sm text-slate-500 font-medium">Acompanhe a produção, agendamento e performance dos seus conteúdos.</p>
         </div>
-        <Button onClick={() => { setEditingPub({ titulo: "", formato: "blog", status: "ideia", canal: "", data_publicacao: "" }); setIsOpen(true); }} className="h-8 gap-2 text-xs font-bold uppercase tracking-wider">
-          <Plus className="w-3.5 h-3.5" /> Nova Publicação
+        <Button onClick={() => { setEditingPub({ titulo: "", formato: "blog", status: "ideia", canal: "", data_publicacao: "" }); setIsOpen(true); }} className="w-full sm:w-auto h-10 gap-2 text-xs font-bold uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all">
+          <Plus className="w-4 h-4" /> Nova Publicação
         </Button>
       </div>
 
-      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-x-auto scrollbar-thin">
+      <div className="bg-white border border-slate-100 rounded-2xl shadow-xl shadow-slate-200/50 overflow-x-auto scrollbar-thin">
         <div className="min-w-[900px]">
           <Table>
             <TableHeader>
