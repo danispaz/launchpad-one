@@ -10,6 +10,7 @@ import { ProductSummary } from "@/components/products/ProductSummary";
 import { ProductLaunchesList } from "@/components/products/ProductLaunchesList";
 import { LifecycleTransitionDialog } from "@/components/products/LifecycleTransitionDialog";
 import { LifecycleHistoryDisplay } from "@/components/products/LifecycleHistoryDisplay";
+import { ContentTab } from "@/components/products/content/ContentTab";
 import {
   CATEGORY_LABELS,
   LIFECYCLE_LABELS,
