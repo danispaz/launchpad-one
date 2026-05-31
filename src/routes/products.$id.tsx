@@ -141,6 +141,7 @@ function ProductDetail() {
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="bg-slate-100/50 p-1 mb-10 h-12 w-fit">
             <TabsTrigger value="overview" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Visão Geral</TabsTrigger>
+            <TabsTrigger value="content" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Conteúdo</TabsTrigger>
             <TabsTrigger value="roadmap" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Roadmap</TabsTrigger>
             <TabsTrigger value="tasks" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Tarefas</TabsTrigger>
             <TabsTrigger value="team" className="px-6 font-bold text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Time</TabsTrigger>
@@ -149,6 +150,10 @@ function ProductDetail() {
           <TabsContent value="overview" className="space-y-8">
             <ProductSummary productId={product.id} />
             <LifecycleHistoryDisplay productId={product.id} key={historyRefreshKey} />
+          </TabsContent>
+
+          <TabsContent value="content">
+            <ContentTab productId={product.id} />
           </TabsContent>
 
           <TabsContent value="roadmap">
