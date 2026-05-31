@@ -32,7 +32,8 @@ export function IdeasPanel({ personas, ideas, onUpsert, onPromote }: any) {
 
       <div className="grid grid-cols-1 gap-4">
         {ideas.map((idea: any) => {
-          const FormatIcon = FORMAT_ICONS[idea.formato];
+          const formatKey = idea.formato as keyof typeof FORMAT_ICONS;
+          const FormatIcon = FORMAT_ICONS[formatKey] || Plus;
           const persona = personas.find((p: any) => p.id === idea.persona_id);
           return (
             <div key={idea.id} className="bg-white border border-slate-100 rounded-xl p-4 flex items-center justify-between gap-4 hover:shadow-sm transition-shadow">
