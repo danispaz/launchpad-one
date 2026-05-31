@@ -37,8 +37,8 @@ export function ContentTab({ productId }: ContentTabProps) {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="publications" className="w-full">
-        <TabsList className="bg-slate-100/50 p-1 mb-8 h-10 w-fit">
+      <Tabs defaultValue="personas" className="w-full">
+        <TabsList className="bg-slate-100/50 p-1 mb-8 h-12 w-full flex overflow-x-auto overflow-y-hidden scrollbar-none">
           <TabsTrigger value="personas" className="flex items-center gap-2 px-4 text-xs font-bold uppercase tracking-widest">
             <Users className="w-3.5 h-3.5" />
             Personas
