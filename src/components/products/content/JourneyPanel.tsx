@@ -34,7 +34,8 @@ export function JourneyPanel({ personas, journeyStages, onUpsert }: any) {
         <p className="text-xs text-slate-500">Mapeie as necessidades das personas em cada estágio.</p>
       </div>
 
-      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-x-auto scrollbar-thin">
+        <div className="min-w-[1200px]">
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
