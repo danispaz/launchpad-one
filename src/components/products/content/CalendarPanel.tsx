@@ -49,7 +49,8 @@ export function CalendarPanel({ publications }: any) {
         </div>
       </div>
 
-      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-x-auto scrollbar-thin">
+        <div className="min-w-[1000px]">
         <div className="grid grid-cols-7 bg-slate-50/50 border-b border-slate-100">
           {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
             <div key={d} className="p-3 text-center text-[10px] font-black uppercase tracking-widest text-slate-400 border-r last:border-0 border-slate-100">{d}</div>
