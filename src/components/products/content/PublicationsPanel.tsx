@@ -49,66 +49,67 @@ export function PublicationsPanel({ publications, onUpsert }: any) {
 
       <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-x-auto scrollbar-thin">
         <div className="min-w-[900px]">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
-              <TableHead className="font-black uppercase tracking-widest text-[10px]">Título</TableHead>
-              <TableHead className="font-black uppercase tracking-widest text-[10px]">Formato</TableHead>
-              <TableHead className="font-black uppercase tracking-widest text-[10px]">Status</TableHead>
-              <TableHead className="font-black uppercase tracking-widest text-[10px]">Data</TableHead>
-              <TableHead className="font-black uppercase tracking-widest text-[10px]">Responsável</TableHead>
-              <TableHead className="w-[80px]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {publications.map((pub: any) => {
-              const FormatIcon = FORMAT_ICONS[pub.formato as keyof typeof FORMAT_ICONS] || Plus;
-              const responsavel = profiles.find(p => p.id === pub.responsavel_id);
-              return (
-                <TableRow key={pub.id}>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-bold text-slate-800">{pub.titulo}</span>
-                      {pub.canal && <span className="text-[10px] text-slate-400 font-medium">{pub.canal}</span>}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <FormatIcon className="w-3.5 h-3.5 text-slate-400" />
-                      <span className="text-xs text-slate-600">{FORMAT_LABELS[pub.formato as keyof typeof FORMAT_LABELS]}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className={`text-[9px] uppercase font-black px-1.5 h-5 border-none ${getStatusColor(pub.status)}`}>
-                      {STATUS_LABELS[pub.status as keyof typeof STATUS_LABELS]}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-xs text-slate-600">
-                    {pub.data_publicacao ? new Date(pub.data_publicacao).toLocaleDateString() : '-'}
-                  </TableCell>
-                  <TableCell>
-                    {responsavel ? (
-                      <div className="flex items-center gap-2">
-                        <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">
-                          {responsavel.full_name?.charAt(0)}
-                        </div>
-                        <span className="text-xs text-slate-600">{responsavel.full_name}</span>
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
+                <TableHead className="font-black uppercase tracking-widest text-[10px]">Título</TableHead>
+                <TableHead className="font-black uppercase tracking-widest text-[10px]">Formato</TableHead>
+                <TableHead className="font-black uppercase tracking-widest text-[10px]">Status</TableHead>
+                <TableHead className="font-black uppercase tracking-widest text-[10px]">Data</TableHead>
+                <TableHead className="font-black uppercase tracking-widest text-[10px]">Responsável</TableHead>
+                <TableHead className="w-[80px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {publications.map((pub: any) => {
+                const FormatIcon = FORMAT_ICONS[pub.formato as keyof typeof FORMAT_ICONS] || Plus;
+                const responsavel = profiles.find(p => p.id === pub.responsavel_id);
+                return (
+                  <TableRow key={pub.id}>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-bold text-slate-800">{pub.titulo}</span>
+                        {pub.canal && <span className="text-[10px] text-slate-400 font-medium">{pub.canal}</span>}
                       </div>
-                    ) : '-'}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      {pub.url && <a href={pub.url} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded hover:bg-slate-50 text-slate-400"><LinkIcon className="w-3.5 h-3.5" /></a>}
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" onClick={() => { setEditingPub(pub); setIsOpen(true); }}>
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <FormatIcon className="w-3.5 h-3.5 text-slate-400" />
+                        <span className="text-xs text-slate-600">{FORMAT_LABELS[pub.formato as keyof typeof FORMAT_LABELS]}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className={`text-[9px] uppercase font-black px-1.5 h-5 border-none ${getStatusColor(pub.status)}`}>
+                        {STATUS_LABELS[pub.status as keyof typeof STATUS_LABELS]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-slate-600">
+                      {pub.data_publicacao ? new Date(pub.data_publicacao).toLocaleDateString() : '-'}
+                    </TableCell>
+                    <TableCell>
+                      {responsavel ? (
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">
+                            {responsavel.full_name?.charAt(0)}
+                          </div>
+                          <span className="text-xs text-slate-600">{responsavel.full_name}</span>
+                        </div>
+                      ) : '-'}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        {pub.url && <a href={pub.url} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded hover:bg-slate-50 text-slate-400"><LinkIcon className="w-3.5 h-3.5" /></a>}
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" onClick={() => { setEditingPub(pub); setIsOpen(true); }}>
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
