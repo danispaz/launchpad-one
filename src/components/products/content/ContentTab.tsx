@@ -37,26 +37,26 @@ export function ContentTab({ productId }: ContentTabProps) {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="publications" className="w-full">
-        <TabsList className="bg-slate-100/50 p-1 mb-8 h-10 w-fit">
-          <TabsTrigger value="personas" className="flex items-center gap-2 px-4 text-xs font-bold uppercase tracking-widest">
-            <Users className="w-3.5 h-3.5" />
+      <Tabs defaultValue="personas" className="w-full">
+        <TabsList className="bg-slate-100/50 p-1 mb-8 h-12 w-full flex overflow-x-auto overflow-y-hidden scrollbar-none">
+          <TabsTrigger value="personas" className="flex-1 flex items-center justify-center gap-2 px-4 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
+            <Users className="w-4 h-4" />
             Personas
           </TabsTrigger>
-          <TabsTrigger value="journey" className="flex items-center gap-2 px-4 text-xs font-bold uppercase tracking-widest">
-            <Map className="w-3.5 h-3.5" />
+          <TabsTrigger value="journey" className="flex-1 flex items-center justify-center gap-2 px-4 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
+            <Map className="w-4 h-4" />
             Jornada
           </TabsTrigger>
-          <TabsTrigger value="ideas" className="flex items-center gap-2 px-4 text-xs font-bold uppercase tracking-widest">
-            <Lightbulb className="w-3.5 h-3.5" />
+          <TabsTrigger value="ideas" className="flex-1 flex items-center justify-center gap-2 px-4 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
+            <Lightbulb className="w-4 h-4" />
             Ideias
           </TabsTrigger>
-          <TabsTrigger value="publications" className="flex items-center gap-2 px-4 text-xs font-bold uppercase tracking-widest">
-            <Send className="w-3.5 h-3.5" />
+          <TabsTrigger value="publications" className="flex-1 flex items-center justify-center gap-2 px-4 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
+            <Send className="w-4 h-4" />
             Publicações
           </TabsTrigger>
-          <TabsTrigger value="calendar" className="flex items-center gap-2 px-4 text-xs font-bold uppercase tracking-widest">
-            <Calendar className="w-3.5 h-3.5" />
+          <TabsTrigger value="calendar" className="flex-1 flex items-center justify-center gap-2 px-4 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">
+            <Calendar className="w-4 h-4" />
             Calendário
           </TabsTrigger>
         </TabsList>
