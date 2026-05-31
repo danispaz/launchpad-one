@@ -84,6 +84,7 @@ export function JourneyPanel({ personas, journeyStages, onUpsert }: any) {
             ))}
           </TableBody>
         </Table>
+        </div>
       </div>
     </div>
   );
