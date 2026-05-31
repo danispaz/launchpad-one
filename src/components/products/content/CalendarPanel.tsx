@@ -34,22 +34,22 @@ export function CalendarPanel({ publications }: any) {
   const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
         <div>
-          <h3 className="text-lg font-bold text-slate-800">Cronograma</h3>
-          <p className="text-xs text-slate-500">Visão mensal das publicações agendadas.</p>
+          <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Cronograma</h3>
+          <p className="text-sm text-slate-500 font-medium">Visualize sua estratégia de conteúdo distribuída ao longo do mês.</p>
         </div>
-        <div className="flex items-center gap-4">
-          <h4 className="font-black uppercase tracking-widest text-xs text-slate-400">{monthName}</h4>
+        <div className="flex items-center gap-4 bg-white p-2 rounded-xl border border-slate-200 shadow-sm w-full sm:w-auto justify-between">
+          <h4 className="font-black uppercase tracking-widest text-[11px] text-slate-600 px-4 min-w-[150px] text-center">{monthName}</h4>
           <div className="flex gap-1">
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={prevMonth}><ChevronLeft className="w-4 h-4" /></Button>
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={nextMonth}><ChevronRight className="w-4 h-4" /></Button>
+            <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-slate-100 transition-colors" onClick={prevMonth}><ChevronLeft className="w-5 h-5 text-slate-400" /></Button>
+            <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-slate-100 transition-colors" onClick={nextMonth}><ChevronRight className="w-5 h-5 text-slate-400" /></Button>
           </div>
         </div>
       </div>
 
-      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-x-auto scrollbar-thin">
+      <div className="bg-white border border-slate-100 rounded-2xl shadow-xl shadow-slate-200/50 overflow-x-auto scrollbar-thin">
         <div className="min-w-[1000px]">
           <div className="grid grid-cols-7 bg-slate-50/50 border-b border-slate-100">
             {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (

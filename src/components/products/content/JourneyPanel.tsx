@@ -28,13 +28,13 @@ export function JourneyPanel({ personas, journeyStages, onUpsert }: any) {
   }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h3 className="text-lg font-bold text-slate-800">Jornada de Compra</h3>
-        <p className="text-xs text-slate-500">Mapeie as necessidades das personas em cada estágio.</p>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
+        <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Jornada de Compra</h3>
+        <p className="text-sm text-slate-500 font-medium">Mapeie as necessidades das personas em cada estágio do funil de vendas.</p>
       </div>
 
-      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-x-auto scrollbar-thin">
+      <div className="bg-white border border-slate-100 rounded-2xl shadow-xl shadow-slate-200/50 overflow-x-auto scrollbar-thin">
         <div className="min-w-[1200px]">
         <Table>
           <TableHeader>
