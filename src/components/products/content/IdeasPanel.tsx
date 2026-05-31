@@ -31,7 +31,7 @@ export function IdeasPanel({ personas, ideas, onUpsert, onPromote }: any) {
       </div>
 
       <div className="grid grid-cols-1 gap-4">
-        {ideas.map((idea: any) => (
+        {ideas.map((idea: any) => {
           const formatKey = idea.formato as keyof typeof FORMAT_ICONS;
           const FormatIcon = FORMAT_ICONS[formatKey] || Plus;
           const persona = personas.find((p: any) => p.id === idea.persona_id);
