@@ -5,6 +5,7 @@ import { TopBar } from "@/components/TopBar";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ContentTab } from "@/components/marketing/ContentTab";
 
 export const Route = createFileRoute("/marketing")({
   head: () => ({ meta: [{ title: "Marketing — LaunchHub" }] }),
@@ -25,9 +26,8 @@ function MarketingPage() {
             <TabsTrigger value="influenciadores">Influenciadores</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="conteudo" className="flex-1 overflow-hidden">
-             {/* Conteúdo virá aqui */}
-             <div className="flex items-center justify-center h-full text-slate-400">Conteúdo</div>
+          <TabsContent value="conteudo" className="flex-1 overflow-hidden pt-2">
+             <ContentTab />
           </TabsContent>
           
           <TabsContent value="campanhas" className="flex-1 overflow-hidden">

@@ -180,18 +180,18 @@ export function ContentTab() {
         <div className="flex items-center gap-2">
           <div className="flex items-center p-1 border rounded-lg bg-slate-50">
             <Button 
-              variant={view === "agenda" ? "white" : "ghost"} 
+              variant={view === "agenda" ? "outline" : "ghost"} 
               size="sm" 
-              className={`h-7 px-3 ${view === "agenda" ? "shadow-sm" : ""}`}
+              className={`h-7 px-3 bg-white ${view === "agenda" ? "shadow-sm border-slate-200" : "border-transparent"}`}
               onClick={() => setView("agenda")}
             >
               <CalendarIcon className="w-3.5 h-3.5 mr-1.5" />
               Agenda
             </Button>
             <Button 
-              variant={view === "lista" ? "white" : "ghost"} 
+              variant={view === "lista" ? "outline" : "ghost"} 
               size="sm" 
-              className={`h-7 px-3 ${view === "lista" ? "shadow-sm" : ""}`}
+              className={`h-7 px-3 bg-white ${view === "lista" ? "shadow-sm border-slate-200" : "border-transparent"}`}
               onClick={() => setView("lista")}
             >
               <List className="w-3.5 h-3.5 mr-1.5" />
