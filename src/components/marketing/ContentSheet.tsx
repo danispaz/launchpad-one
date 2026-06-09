@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,7 +56,7 @@ export function ContentSheet({ open, onOpenChange, content, profiles, campanhas,
     notas: ""
   });
 
-  useState(() => {
+  useEffect(() => {
     if (content) {
       setFormData({
         titulo: content.titulo || "",
@@ -84,7 +84,7 @@ export function ContentSheet({ open, onOpenChange, content, profiles, campanhas,
         notas: ""
       });
     }
-  });
+  }, [content]);
 
   // Keep state in sync with props changes (especially content and defaultDate)
   useState(() => {
