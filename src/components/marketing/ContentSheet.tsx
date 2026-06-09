@@ -86,25 +86,11 @@ export function ContentSheet({ open, onOpenChange, content, profiles, campanhas,
     }
   }, [content]);
 
-  // Keep state in sync with props changes (especially content and defaultDate)
-  useState(() => {
-    if (content) {
-       setFormData({
-        titulo: content.titulo || "",
-        tipo: content.tipo || "post_social",
-        canal: content.canal || "",
-        status: content.status || "ideia",
-        data_publicacao: content.data_publicacao || "",
-        responsavel_id: content.responsavel_id || "",
-        campanha_id: content.campanha_id || null,
-        influenciador_id: content.influenciador_id || null,
-        link: content.link || "",
-        notas: content.notas || ""
-      });
-    } else {
-       setFormData(prev => ({...prev, data_publicacao: defaultDate || ""}));
+  useEffect(() => {
+    if (!content && defaultDate) {
+      setFormData((prev: any) => ({...prev, data_publicacao: defaultDate}));
     }
-  }, [content, defaultDate]);
+  }, [defaultDate, content]);
 
   const handleSave = async () => {
     if (!formData.titulo) {
