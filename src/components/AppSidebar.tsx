@@ -2,7 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { LayoutDashboard, Rocket, Users, Settings, ChevronRight, ChevronLeft, Package, LogOut, CheckSquare } from "lucide-react";
+import { LayoutDashboard, Rocket, Users, Settings, ChevronRight, ChevronLeft, Package, LogOut, CheckSquare, Megaphone } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +14,7 @@ const items = [
   { title: "Produtos", url: "/products", icon: Package },
   { title: "Projetos", url: "/launches", icon: Rocket },
   { title: "Tarefas", url: "/tasks", icon: CheckSquare },
+  { title: "Marketing", url: "/marketing", icon: Megaphone },
   { title: "Times", url: "/teams", icon: Users },
   { title: "Configurações", url: "/settings", icon: Settings, requiredRoles: ["executive"] },
 ];
