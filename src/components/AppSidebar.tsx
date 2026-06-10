@@ -1,45 +1,44 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { LayoutDashboard, Rocket, Users, Settings, ChevronRight, ChevronLeft, Package, LogOut, CheckSquare, Megaphone } from "lucide-react";
+import { usePermissions } from "@/lib/usePermissions";
+import { 
+  LayoutDashboard, Rocket, Users, Settings, ChevronRight, 
+  ChevronLeft, Package, LogOut, CheckSquare, Megaphone, ShieldCheck 
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-const items = [
-  { title: "Visão geral", url: "/", icon: LayoutDashboard },
-  { title: "Produtos", url: "/products", icon: Package },
-  { title: "Projetos", url: "/launches", icon: Rocket },
-  { title: "Tarefas", url: "/tasks", icon: CheckSquare },
-  { title: "Marketing", url: "/marketing", icon: Megaphone },
-  { title: "Times", url: "/teams", icon: Users },
-  { title: "Configurações", url: "/settings", icon: Settings, requiredRoles: ["executive"] },
+
+const mainItems = [
+  { title: "Visão geral", url: "/", icon: LayoutDashboard, resource: "dashboard" },
+  { title: "Produtos", url: "/products", icon: Package, resource: "produtos" },
+  { title: "Projetos", url: "/launches", icon: Rocket, resource: "projetos" },
+  { title: "Tarefas", url: "/tasks", icon: CheckSquare, resource: "tarefas" },
+  { title: "Marketing", url: "/marketing", icon: Megaphone, resource: "marketing", isGroup: true, subitems: [
+    { title: "Conteúdo", resource: "marketing_conteudo" },
+    { title: "Campanhas", resource: "marketing_campanhas" },
+    { title: "Influenciadores", resource: "marketing_influenciadores" }
+  ]},
+  { title: "Times", url: "/teams", icon: Users, resource: "times" },
+  { title: "Configurações", url: "/settings", icon: Settings, resource: "configuracoes" },
+  { title: "Permissões", url: "/permissoes", icon: ShieldCheck, resource: "permissoes" },
 ];
 
 export function AppSidebar() {
   const { user } = useAuth();
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const { can, loading } = usePermissions();
   const [collapsed, setCollapsed] = useState(false);
 
-  useEffect(() => {
-    if (!user) return;
-    async function fetchRole() {
-      const { data } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user?.id)
-        .single();
-      setUserRole(data?.role || null);
+  const visibleItems = mainItems.filter(item => {
+    if (item.isGroup && item.subitems) {
+      return item.subitems.some(sub => can(sub.resource, "ver"));
     }
-    fetchRole();
-  }, [user]);
-
-  const visibleItems = items.filter((item: any) => {
-    if (!item.requiredRoles) return true;
-    return userRole && item.requiredRoles.includes(userRole);
+    return can(item.resource, "ver");
   });
 
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -69,11 +68,11 @@ export function AppSidebar() {
       </div>
 
       <nav className="flex-1 px-2 py-4 space-y-0.5">
-        {visibleItems.map((item) => {
-          const active = isActive(item.url);
+        {!loading && visibleItems.map((item) => {
+          const active = isActive(item.url || "");
           return (
             <Link
-              key={item.url}
+              key={item.url || item.title}
               to={item.url}
               title={collapsed ? item.title : undefined}
               className={`flex items-center gap-2 rounded px-2 py-1.5 text-sm transition-colors ${

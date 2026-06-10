@@ -16,6 +16,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RoadmapRouteImport } from './routes/roadmap'
 import { Route as RisksRouteImport } from './routes/risks'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as PermissoesRouteImport } from './routes/permissoes'
 import { Route as MarketingRouteImport } from './routes/marketing'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LaunchesRouteImport } from './routes/launches'
@@ -58,6 +59,11 @@ const RisksRoute = RisksRouteImport.update({
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PermissoesRoute = PermissoesRouteImport.update({
+  id: '/permissoes',
+  path: '/permissoes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MarketingRoute = MarketingRouteImport.update({
@@ -106,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/launches': typeof LaunchesRouteWithChildren
   '/login': typeof LoginRoute
   '/marketing': typeof MarketingRoute
+  '/permissoes': typeof PermissoesRoute
   '/profile': typeof ProfileRoute
   '/risks': typeof RisksRoute
   '/roadmap': typeof RoadmapRoute
@@ -122,6 +129,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/marketing': typeof MarketingRoute
+  '/permissoes': typeof PermissoesRoute
   '/profile': typeof ProfileRoute
   '/risks': typeof RisksRoute
   '/roadmap': typeof RoadmapRoute
@@ -140,6 +148,7 @@ export interface FileRoutesById {
   '/launches': typeof LaunchesRouteWithChildren
   '/login': typeof LoginRoute
   '/marketing': typeof MarketingRoute
+  '/permissoes': typeof PermissoesRoute
   '/profile': typeof ProfileRoute
   '/risks': typeof RisksRoute
   '/roadmap': typeof RoadmapRoute
@@ -159,6 +168,7 @@ export interface FileRouteTypes {
     | '/launches'
     | '/login'
     | '/marketing'
+    | '/permissoes'
     | '/profile'
     | '/risks'
     | '/roadmap'
@@ -175,6 +185,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/marketing'
+    | '/permissoes'
     | '/profile'
     | '/risks'
     | '/roadmap'
@@ -192,6 +203,7 @@ export interface FileRouteTypes {
     | '/launches'
     | '/login'
     | '/marketing'
+    | '/permissoes'
     | '/profile'
     | '/risks'
     | '/roadmap'
@@ -210,6 +222,7 @@ export interface RootRouteChildren {
   LaunchesRoute: typeof LaunchesRouteWithChildren
   LoginRoute: typeof LoginRoute
   MarketingRoute: typeof MarketingRoute
+  PermissoesRoute: typeof PermissoesRoute
   ProfileRoute: typeof ProfileRoute
   RisksRoute: typeof RisksRoute
   RoadmapRoute: typeof RoadmapRoute
@@ -270,6 +283,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/permissoes': {
+      id: '/permissoes'
+      path: '/permissoes'
+      fullPath: '/permissoes'
+      preLoaderRoute: typeof PermissoesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/marketing': {
@@ -350,6 +370,7 @@ const rootRouteChildren: RootRouteChildren = {
   LaunchesRoute: LaunchesRouteWithChildren,
   LoginRoute: LoginRoute,
   MarketingRoute: MarketingRoute,
+  PermissoesRoute: PermissoesRoute,
   ProfileRoute: ProfileRoute,
   RisksRoute: RisksRoute,
   RoadmapRoute: RoadmapRoute,
@@ -363,12 +384,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
